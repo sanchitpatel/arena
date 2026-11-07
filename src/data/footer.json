@@ -1,0 +1,13 @@
+{
+  "ctaTitle": "Unlock Your Full Academic Potential Today",
+  "ctaSubtitle": "Start learning with your 24/7 personal AI Tutor. Master tough concepts, ace your exams, and build deep confidence.",
+  "ctaButtonLabel": "Start Learning Free",
+  "ctaButtonLink": "/dashboard",
+  "brandTagline": "Personalized, adaptive 1-on-1 AI tutoring platform powered by cognitive science.",
+  "copyrightText": "AI Tutor. All rights reserved.",
+  "craftedText": "Empowering learners worldwide with intelligent, compassionate education.",
+  "quickLinks": [
+    { "label": "Privacy Policy", "href": "/privacy" },
+    { "label": "Terms & Conditions", "href": "/terms" }
+  ]
+}

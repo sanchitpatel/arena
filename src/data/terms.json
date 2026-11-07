@@ -1,0 +1,58 @@
+{
+  "badge": "Platform Guidelines & Terms",
+  "title": "Terms & Conditions",
+  "subtitle": "Guidelines and fair usage policies governing your access to AI Tutor services, study sessions, and interactive content.",
+  "backButtonLabel": "Back to Home",
+  "sections": [
+    {
+      "icon": "Handshake",
+      "title": "1. Acceptance of Terms",
+      "content": [
+        "By creating an account, engaging in AI tutoring sessions, or browsing the platform, you agree to comply with and be bound by these Terms & Conditions.",
+        "These terms apply to all learners, educators, and visitors utilizing our web platform or API endpoints."
+      ]
+    },
+    {
+      "icon": "CalendarCheck",
+      "title": "2. Educational Use & AI Disclaimer",
+      "content": [
+        "AI Tutor is an adaptive educational companion designed to assist your comprehension, practice, and study efforts.",
+        "While our AI models strive for pedagogical rigor, outputs should be used for learning and study assistance rather than definitive professional, legal, or medical advice.",
+        "Users are encouraged to verify critical factual information and use the platform to deepen their own problem-solving skills."
+      ]
+    },
+    {
+      "icon": "Scales",
+      "title": "3. Fair Use & Academic Integrity",
+      "content": [
+        "AI Tutor promotes active learning and authentic student comprehension.",
+        "Users must not use the platform to commit academic fraud, violate institution honor codes, or submit automated work as their own original creation where forbidden.",
+        "We reserve the right to restrict accounts that abuse automated query limits or engage in prompt injection."
+      ]
+    },
+    {
+      "icon": "CheckCircle",
+      "title": "4. Account Security & Responsibilities",
+      "content": [
+        "You are responsible for safeguarding your authentication credentials and for all activities that occur under your account.",
+        "You agree to notify us immediately if you suspect any unauthorized access to your account."
+      ]
+    },
+    {
+      "icon": "ShieldWarning",
+      "title": "5. Service Availability & Modifications",
+      "content": [
+        "We strive to maintain continuous platform availability, though service may occasionally be interrupted for scheduled maintenance or upgrades.",
+        "We continuously update and refine our tutoring models and platform features to optimize the learning experience."
+      ]
+    },
+    {
+      "icon": "Gavel",
+      "title": "6. Governing Law & Dispute Resolution",
+      "content": [
+        "These Terms & Conditions are governed by applicable internet regulations and international intellectual property standards.",
+        "Any disputes shall be resolved primarily through good-faith mutual mediation."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "AI Tutor — Intelligent Learning Platform",
+  "shortName": "AI Tutor",
+  "tagline": "Master any subject with real-time, adaptive 1-on-1 AI tutoring",
+  "bookButtonLabel": "Start Learning Free",
+  "email": "hello@aitutor.app",
+  "availability": "Available 24/7 Worldwide",
+  "features": [
+    "Personalized Study Plans",
+    "Interactive Problem Solving",
+    "Instant Concept Explanations",
+    "Adaptive Quizzes & Flashcards"
+  ],
+  "socialLinks": {
+    "github": "https://github.com",
+    "twitter": "https://twitter.com",
+    "discord": "https://discord.com"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "eyebrow": "Powered by Advanced AI & Cognitive Science",
+  "telemetry": {
+    "version": "Engine v3.4 Active",
+    "mode": "Socratic Reasoning Core",
+    "latency": "18ms inference"
+  },
+  "headlinePre": "Master Any Subject with",
+  "headlineEmphasis": "Your Personal AI Tutor",
+  "subtitle": "Break through difficult concepts with conversational first-principles explanations, step-by-step problem deconstruction, and adaptive practice tailored to your exact learning style.",
+  "ctaPrimaryLabel": "Start Learning Now",
+  "ctaSecondaryLabel": "Explore Demo Below",
+  "socialProof": {
+    "learnersCount": "45,000+",
+    "learnersLabel": "university students & engineers",
+    "institutions": ["MIT", "Stanford", "Oxford", "Cambridge", "ETH Zürich"],
+    "rating": "4.96/5",
+    "ratingCount": "12,800+ concept breakthroughs"
+  },
+  "interactiveDemos": [
+    {
+      "id": "calculus",
+      "subject": "Mathematics",
+      "topic": "Stokes' Theorem vs Divergence",
+      "badge": "Calculus III",
+      "studentQuery": "How do I conceptually connect the Fundamental Theorem of Calculus to Stokes' Theorem in 3D?",
+      "thinkingTime": "0.74s",
+      "cognitiveSteps": [
+        "Decomposing boundary manifold ∂Ω",
+        "Translating 1D boundary evaluation to 2D curl circulation",
+        "Formulating Socratic intuition checkpoint"
+      ],
+      "tutorCore": "Every high-dimensional theorem in vector calculus is fundamentally the same statement: integrating a derivative over a volume or surface is identical to evaluating the field directly on its boundary.",
+      "mathBlock": "∬_S (∇ × F) · dS = ∮_{∂S} F · dr",
+      "socraticQuestion": "If you slice any open surface into two adjacent patches, what happens to the internal line integrals along their shared seam?",
+      "quiz": {
+        "question": "What happens to the internal line integrals?",
+        "options": [
+          {
+            "id": "opt1",
+            "text": "They cancel identically (traversed in opposite directions)",
+            "correct": true,
+            "feedback": "Correct! Internal seams cancel out, leaving only the outer boundary curl."
+          },
+          {
+            "id": "opt2",
+            "text": "They double in magnitude along the seam",
+            "correct": false,
+            "feedback": "Check the right-hand normal rule: adjacent patches traverse the seam in opposing vectors."
+          }
+        ]
+      }
+    },
+    {
+      "id": "systems",
+      "subject": "Computer Science",
+      "topic": "Raft Consensus Log Invariant",
+      "badge": "Distributed Systems",
+      "studentQuery": "Why can't a Raft leader commit a log entry from an older term simply by counting replicas?",
+      "thinkingTime": "0.62s",
+      "cognitiveSteps": [
+        "Analyzing Figure 8 split-brain scenario in Ongaro paper",
+        "Verifying Leader Completeness Invariant",
+        "Structuring consensus safety proof"
+      ],
+      "tutorCore": "Counting replicas for an older-term entry is unsafe because a future leader could still win an election with a higher term and overwrite those replicas before application.",
+      "codeBlock": "if (entry.term === currentTerm && matchCount > quorum) {\n  commitIndex = entry.index;\n}",
+      "socraticQuestion": "How does Raft solve this? What kind of entry must reach a majority before previous entries are safe?",
+      "quiz": {
+        "question": "Which entry confirms older log safety in Raft?",
+        "options": [
+          {
+            "id": "opt1",
+            "text": "An entry from the leader's current term reaching quorum",
+            "correct": true,
+            "feedback": "Spot on. By committing a current-term entry, the Log Matching Invariant protects all prior entries."
+          },
+          {
+            "id": "opt2",
+            "text": "A heartbeat RPC acknowledge from the previous leader",
+            "correct": false,
+            "feedback": "A leader from an older term may be partitioned or defunct and cannot grant validity."
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics",
+      "subject": "Physics",
+      "topic": "Entanglement & Information",
+      "badge": "Quantum Mechanics",
+      "studentQuery": "Does measuring one entangled qubit transmit information faster than the speed of light?",
+      "thinkingTime": "0.81s",
+      "cognitiveSteps": [
+        "Invoking No-Communication Theorem",
+        "Calculating reduced density matrix trace ρ_A",
+        "Resolving EPR paradox misconception"
+      ],
+      "tutorCore": "No. While measurement outcomes correlate instantaneously across spatial separation, Alice's local measurements look completely random (50/50) without Bob's classical transmission.",
+      "mathBlock": "ρ_A = Tr_B(|ψ⟩⟨ψ|) = ½ |0⟩⟨0| + ½ |1⟩⟨1|",
+      "socraticQuestion": "Can Alice modulate her measurement basis to force Bob's outcome into a deterministic 1 or 0?",
+      "quiz": {
+        "question": "Can Alice force Bob's measured state without a classical signal?",
+        "options": [
+          {
+            "id": "opt1",
+            "text": "No, local density matrix remains invariant regardless of Alice's choice",
+            "correct": true,
+            "feedback": "Exactly right! No faster-than-light signaling is physically possible under quantum mechanics."
+          },
+          {
+            "id": "opt2",
+            "text": "Yes, by rotating the Stern-Gerlach apparatus 90 degrees",
+            "correct": false,
+            "feedback": "Rotating the apparatus alters correlation angles, but Bob's isolated local probability remains ½."
+          }
+        ]
+      }
+    }
+  ],
+  "quickChips": [
+    "Explain Stokes' Theorem intuitively",
+    "Why does Quicksort degrade to O(n²)?",
+    "Derive Schrödinger from Hamiltonian",
+    "Explain Backprop gradient flow"
+  ]
+}
