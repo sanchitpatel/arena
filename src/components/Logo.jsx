@@ -1,4 +1,4 @@
-// AI Tutor brand logo mark — Premium Monochrome
+// Arena brand logo mark — Premium Monochrome
 export default function Logo({ className = 'w-8 h-8', dark = false }) {
   return (
     <div
@@ -16,7 +16,7 @@ export default function Logo({ className = 'w-8 h-8', dark = false }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         className="w-1/2 h-1/2"
-        aria-label="AI Tutor Logo"
+        aria-label="Arena Logo"
       >
         <path d="M12 2v4" />
         <path d="m4.93 4.93 2.83 2.83" />

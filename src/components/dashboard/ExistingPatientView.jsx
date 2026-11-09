@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { UserList, MagnifyingGlass, CheckCircle, Clock, ArrowRight, ArrowLeft, Hash, Phone, User, HourglassHigh, CalendarBlank, CalendarCheck, CaretLeft, CaretRight, CaretDown, FirstAid, X, Check, Ticket, Eye, FileText, Stethoscope, Users, Sparkle, Globe, DeviceMobile, CircleNotch, WarningCircle, ArrowClockwise } from '../icons';
 import { searchExistingPatients, checkinExistingPatient, subscribeToClinicRealtime } from '../../services/clinicService';
 import { supabase } from '../../utils/supabase';
-import { formatPatientId } from '../../utils/patientId';
+import { formatPatientId } from '../../utils/playerId';
 
 // Live clinical database integration
 

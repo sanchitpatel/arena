@@ -19,6 +19,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'ai_tutor_auth_token'
+    storageKey: 'arena_auth_token'
   }
 });

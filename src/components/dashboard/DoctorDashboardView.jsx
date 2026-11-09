@@ -12,7 +12,7 @@ import {
   checkinExistingPatient,
   subscribeToClinicRealtime
 } from '../../services/clinicService';
-import { formatPatientId } from '../../utils/patientId';
+import { formatPatientId } from '../../utils/playerId';
 
 // Standard clinical follow-up intervals in days (0 indicates no follow-up needed / treatment done)
 const FOLLOW_UP_INTERVALS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 18, 20, 24, 30];

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { UserCirclePlus, ArrowRight, HourglassHigh, Phone, FirstAid, FileText, User, CheckCircle, Ticket, Sparkle, X, WarningCircle, Queue, Users, Printer } from '../icons';
 import { registerNewPatient } from '../../services/clinicService';
-import { formatPatientId } from '../../utils/patientId';
+import { formatPatientId } from '../../utils/playerId';
 
 export const NewPatientView = ({ onNavigate }) => {
   const [formData, setFormData] = useState({

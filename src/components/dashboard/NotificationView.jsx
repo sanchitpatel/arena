@@ -8,7 +8,7 @@ import {
   buildNotificationMessage,
   subscribeToClinicRealtime
 } from '../../services/clinicService';
-import { formatPatientId } from '../../utils/patientId';
+import { formatPatientId } from '../../utils/playerId';
 
 export const GoogleIcon = ({ size = 18, className = '' }) => (
   <svg

@@ -1,7 +1,8 @@
 {
-  "name": "ai-tutor",
+  "name": "arena",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Arena — High-Octane Mobile-First Live Event Game Platform",
   "type": "module",
   "scripts": {
     "dev": "vite",

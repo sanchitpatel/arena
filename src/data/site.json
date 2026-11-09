@@ -1,15 +1,15 @@
 {
-  "name": "AI Tutor — Intelligent Learning Platform",
-  "shortName": "AI Tutor",
-  "tagline": "Master any subject with real-time, adaptive 1-on-1 AI tutoring",
-  "bookButtonLabel": "Start Learning Free",
-  "email": "hello@aitutor.app",
-  "availability": "Available 24/7 Worldwide",
+  "name": "Arena — Live Game & Scoreboard",
+  "shortName": "Arena",
+  "tagline": "High-octane mobile-first live game arena for Incubation Lab inauguration",
+  "bookButtonLabel": "Enter Arena",
+  "email": "arena@bmiil.com",
+  "availability": "Live Event Mode — Venue Wi-Fi Connected",
   "features": [
-    "Personalized Study Plans",
-    "Interactive Problem Solving",
-    "Instant Concept Explanations",
-    "Adaptive Quizzes & Flashcards"
+    "Instant Mobile Game Participation",
+    "Sub-10ms Local Network Realtime Sync",
+    "Live Audience Interactive Scoreboard",
+    "Touch-Optimized Zero-Jank Mobile UX"
   ],
   "socialLinks": {
     "github": "https://github.com",
