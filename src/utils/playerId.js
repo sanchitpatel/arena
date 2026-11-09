@@ -1,91 +1,39 @@
 /**
- * Arena Player Identification & Guest ID Utility
- * Generates and formats player IDs in the format: Guest001, Guest002, Guest003...
- * Designed for 200+ concurrent mobile attendees with offline device persistence.
+ * Player identification for Arena live game.
+ * Assigns each attendee a random ID: Guest001, Guest002, Guest003...
+ * Persisted in browser localStorage so mobile reloads keep the same player.
  */
 
 const STORAGE_KEY = 'arena_guest_id';
 
-/**
- * Formats a numeric value or ID string into standardized "Guest001" format (3-digit minimum padding).
- * Example: 1 -> "Guest001", 42 -> "Guest042", 215 -> "Guest215"
- */
-export function formatGuestId(number) {
-  const parsed = parseInt(number, 10);
-  if (isNaN(parsed) || parsed < 0) return 'Guest001';
-  return `Guest${String(parsed).padStart(3, '0')}`;
+// Formats a number to 3-digit padded string: 1 -> "Guest001", 42 -> "Guest042"
+export function formatGuestId(num) {
+  const n = parseInt(num, 10);
+  if (isNaN(n) || n < 1) return 'Guest001';
+  return `Guest${String(n).padStart(3, '0')}`;
 }
 
-/**
- * Generates a random guest ID between min and max (inclusive).
- * Default range 1 to 500 comfortably accommodates 200+ attendees with low collision probability.
- */
-export function generateRandomGuestId(min = 1, max = 500) {
+// Generates a random Guest ID between min and max (e.g. Guest001 to Guest500)
+export function generateGuestId(min = 1, max = 500) {
   const randomNum = Math.floor(Math.random() * (max - min + 1)) + min;
   return formatGuestId(randomNum);
 }
 
-/**
- * Normalizes any incoming player code, legacy ID, or raw number into "Guest001" standard format.
- * Examples:
- *   "5" -> "Guest005"
- *   "guest23" -> "Guest023"
- *   "AR-104" -> "Guest104"
- *   "Guest001" -> "Guest001"
- */
-export function formatPlayerId(code, fallback = 'Guest001') {
-  if (!code) return fallback;
-  const str = String(code).trim();
-
-  // If already matching exact Guest + digits format, ensure 3-digit padding
-  const guestMatch = str.match(/^guest[ -_]?(\d+)$/i);
-  if (guestMatch) {
-    return formatGuestId(guestMatch[1]);
-  }
-
-  // If it's a numeric string or contains digits at the end
-  const digitsMatch = str.match(/(\d+)/);
-  if (digitsMatch) {
-    return formatGuestId(digitsMatch[1]);
-  }
-
-  return fallback;
-}
-
-/**
- * Gets or assigns a persistent Guest ID on the attendee's mobile device.
- * Checks localStorage / sessionStorage so refreshing the mobile browser doesn't change the player's identity.
- */
-export function getOrAssignPlayerId() {
+// Retrieves existing player ID from phone storage, or generates and saves a new one
+export function getPlayerId() {
   if (typeof window === 'undefined') return 'Guest001';
 
-  try {
-    let storedId = window.localStorage.getItem(STORAGE_KEY) || window.sessionStorage.getItem(STORAGE_KEY);
-    if (!storedId) {
-      storedId = generateRandomGuestId();
-      window.localStorage.setItem(STORAGE_KEY, storedId);
-      window.sessionStorage.setItem(STORAGE_KEY, storedId);
-    }
-    return formatPlayerId(storedId);
-  } catch {
-    return generateRandomGuestId();
+  let id = window.localStorage.getItem(STORAGE_KEY);
+  if (!id) {
+    id = generateGuestId();
+    window.localStorage.setItem(STORAGE_KEY, id);
   }
+  return id;
 }
 
-/**
- * Clears or resets the local guest ID (useful for testing or switching users).
- */
-export function resetLocalPlayerId() {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-    window.sessionStorage.removeItem(STORAGE_KEY);
-  } catch (err) {
-    console.warn('[PlayerID] Unable to clear stored player ID:', err);
-  }
-}
+// Backwards-compatible aliases for existing callers
+export const formatPlayerId = formatGuestId;
+export const formatPatientId = formatGuestId;
+export const getOrAssignPlayerId = getPlayerId;
 
-// Aliased for backwards compatibility with any lingering components
-export const formatPatientId = formatPlayerId;
-
-export default formatPlayerId;
+export default getPlayerId;
