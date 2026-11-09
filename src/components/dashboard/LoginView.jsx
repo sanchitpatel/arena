@@ -91,7 +91,7 @@ export const LoginView = ({ onEnterArena }) => {
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-6">
           <Logo className="w-20 h-20 sm:w-20 sm:h-20 mb-3" />
-          <h1 className="font-arena text-3xl sm:text-4xl font-black tracking-wider text-zinc-900">
+          <h1 className="font-arena text-[36px] sm:text-[40px] font-black tracking-wider text-zinc-900">
             ARENA
           </h1>
         </div>
