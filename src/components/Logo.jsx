@@ -9,11 +9,10 @@ export default function Logo({ className = 'w-12 h-12', dark = false }) {
 
       {/* Main emblem badge */}
       <div
-        className={`relative flex h-full w-full items-center justify-center rounded-2xl transition-all ${
-          dark
+        className={`relative flex h-full w-full items-center justify-center rounded-2xl transition-all ${dark
             ? 'bg-black text-white border border-zinc-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]'
             : 'bg-gradient-to-b from-zinc-800 to-zinc-950 text-white border border-zinc-700/80 shadow-[0_8px_24px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)]'
-        }`}
+          }`}
       >
         <GameController
           weight="fill"

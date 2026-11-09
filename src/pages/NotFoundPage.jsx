@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import Logo from '../components/Logo';
-import { GameController } from '../components/icons';
+import { Sword } from '../components/icons';
 
 export default function NotFoundPage({ onGoHome }) {
   return (
@@ -18,13 +18,13 @@ export default function NotFoundPage({ onGoHome }) {
         className="relative z-10 flex max-w-sm flex-col items-center"
       >
         {/* Arena Emblem Badge */}
-        <Logo className="mb-6 h-16 w-16" />
+        <Logo className="mb-6 h-20 w-20" />
 
-        <h1 className="font-display text-7xl sm:text-8xl font-black tracking-tighter bg-gradient-to-b from-white via-zinc-200 to-zinc-600 bg-clip-text text-transparent">
+        <h1 className="font-display text-7xl sm:text-7xl font-black tracking-tighter bg-gradient-to-b from-white via-zinc-200 to-zinc-600 bg-clip-text text-transparent">
           404
         </h1>
 
-        <h2 className="mt-1 font-display text-xl sm:text-2xl font-bold tracking-tight text-zinc-200">
+        <h2 className="mt-2 font-display text-xl sm:text-2xl font-bold tracking-tight text-zinc-200">
           Page Not Found
         </h2>
 
@@ -33,9 +33,9 @@ export default function NotFoundPage({ onGoHome }) {
           <button
             onClick={onGoHome}
             type="button"
-            className="inline-flex h-13 items-center justify-center gap-3 rounded-full bg-white px-8 py-3.5 font-sans text-[15px] sm:text-base font-bold text-black whitespace-nowrap border border-white/60 shadow-[0_4px_28px_rgba(255,255,255,0.22),0_1px_3px_rgba(0,0,0,0.9)] active:scale-[0.96] active:bg-zinc-200 transition-transform duration-100 ease-out cursor-pointer select-none"
+            className="inline-flex h-13 items-center justify-center gap-2.5 rounded-full bg-white px-8 py-3.5 font-sans text-[15px] sm:text-base font-bold text-black whitespace-nowrap border border-white/60 shadow-[0_4px_28px_rgba(255,255,255,0.22),0_1px_3px_rgba(0,0,0,0.9)] active:scale-[0.96] active:bg-zinc-200 transition-transform duration-100 ease-out cursor-pointer select-none"
           >
-            <GameController size={22} weight="fill" className="shrink-0 text-black" />
+            <Sword size={22} weight="fill" className="shrink-0 text-black" />
             <span className="leading-none">Return to Arena</span>
           </button>
         </div>
