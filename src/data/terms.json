@@ -1,57 +1,47 @@
 {
-  "badge": "Platform Guidelines & Terms",
-  "title": "Terms & Conditions",
-  "subtitle": "Guidelines and fair usage policies governing your access to AI Tutor services, study sessions, and interactive content.",
-  "backButtonLabel": "Back to Home",
+  "badge": "Arena Rules & Fair Play",
+  "title": "Arena Game Terms & Rules",
+  "subtitle": "Guidelines and fair play policies governing the live multiplayer game at the Incubation Lab Inauguration Event.",
+  "backButtonLabel": "Back to Arena",
   "sections": [
     {
       "icon": "Handshake",
-      "title": "1. Acceptance of Terms",
+      "title": "1. Event Participation & Eligibility",
       "content": [
-        "By creating an account, engaging in AI tutoring sessions, or browsing the platform, you agree to comply with and be bound by these Terms & Conditions.",
-        "These terms apply to all learners, educators, and visitors utilizing our web platform or API endpoints."
-      ]
-    },
-    {
-      "icon": "CalendarCheck",
-      "title": "2. Educational Use & AI Disclaimer",
-      "content": [
-        "AI Tutor is an adaptive educational companion designed to assist your comprehension, practice, and study efforts.",
-        "While our AI models strive for pedagogical rigor, outputs should be used for learning and study assistance rather than definitive professional, legal, or medical advice.",
-        "Users are encouraged to verify critical factual information and use the platform to deepen their own problem-solving skills."
+        "Participation is exclusively open to registered attendees and students connected to the local Incubation Lab Wi-Fi network.",
+        "Each attendee is assigned a unique Guest ID and matching Orb Number upon entrance."
       ]
     },
     {
       "icon": "Scales",
-      "title": "3. Fair Use & Academic Integrity",
+      "title": "2. Fair Play & One-Device Rule",
       "content": [
-        "AI Tutor promotes active learning and authentic student comprehension.",
-        "Users must not use the platform to commit academic fraud, violate institution honor codes, or submit automated work as their own original creation where forbidden.",
-        "We reserve the right to restrict accounts that abuse automated query limits or engage in prompt injection."
+        "Each player must participate using only one mobile device. Multiple device registration or botting is strictly prohibited.",
+        "Scores and round answers are atomically verified by the local server. Any attempt to tamper with client storage or bypass timers results in disqualification."
       ]
     },
     {
       "icon": "CheckCircle",
-      "title": "4. Account Security & Responsibilities",
+      "title": "3. Scoring & Leaderboard Rules",
       "content": [
-        "You are responsible for safeguarding your authentication credentials and for all activities that occur under your account.",
-        "You agree to notify us immediately if you suspect any unauthorized access to your account."
+        "Points are awarded based on answer correctness and response speed.",
+        "The live scoreboard is continuously synchronized via local WebSockets. All leaderboard standings decided by the game engine at round close are final."
       ]
     },
     {
       "icon": "ShieldWarning",
-      "title": "5. Service Availability & Modifications",
+      "title": "4. Local Network & Offline Environment",
       "content": [
-        "We strive to maintain continuous platform availability, though service may occasionally be interrupted for scheduled maintenance or upgrades.",
-        "We continuously update and refine our tutoring models and platform features to optimize the learning experience."
+        "The game operates in an air-gapped local venue network with zero external internet connectivity.",
+        "Players must remain connected to the official Incubation Lab Wi-Fi throughout the live challenge to ensure real-time score updates."
       ]
     },
     {
       "icon": "Gavel",
-      "title": "6. Governing Law & Dispute Resolution",
+      "title": "5. Code of Conduct & Prizes",
       "content": [
-        "These Terms & Conditions are governed by applicable internet regulations and international intellectual property standards.",
-        "Any disputes shall be resolved primarily through good-faith mutual mediation."
+        "All attendees agree to maintain sportsmanlike conduct throughout the inauguration tournament.",
+        "Inauguration event winners will be announced immediately following the conclusion of the final round."
       ]
     }
   ]

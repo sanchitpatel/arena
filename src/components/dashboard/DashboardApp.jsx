@@ -1,206 +1,143 @@
-import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AuthProvider } from './AuthContext';
 import { LoginView } from './LoginView';
 import { DashboardShell } from './DashboardShell';
 import { NewPatientView } from './NewPatientView';
 import { ExistingPatientView } from './ExistingPatientView';
 import { DoctorDashboardView } from './DoctorDashboardView';
 import { NotificationView } from './NotificationView';
-import { CircleNotch } from '../icons';
+import { getPlayerId } from '../../utils/playerId';
 
-// Unified Hash Parser for PWA & Browser History navigation
-const parseDashboardHash = (hash) => {
-  const clean = (hash || '').replace(/^#\/?/, '').trim();
-  if (!clean || clean === 'dashboard') {
-    return { tab: 'dashboard', date: null, month: null };
-  }
-  if (clean.startsWith('dashboard/date/')) {
-    const date = clean.replace('dashboard/date/', '').trim();
-    return { tab: 'dashboard', date: date || null, month: null };
-  }
-  if (clean === 'existing-patient') {
-    return { tab: 'existing-patient', date: null, month: null };
-  }
-  if (clean.startsWith('existing-patient/month/')) {
-    const month = clean.replace('existing-patient/month/', '').trim();
-    return { tab: 'existing-patient', date: null, month: month || null };
-  }
-  if (clean === 'new-patient') {
-    return { tab: 'new-patient', date: null, month: null };
-  }
-  if (clean === 'notifications' || clean === 'notification') {
-    return { tab: 'notifications', date: null, month: null };
-  }
-  return { tab: 'dashboard', date: null, month: null };
+/**
+ * Route Mappings for Clean Native Mobile URLs (Zero '#' in URLs)
+ * - /arena          -> Main Game/Onboarding View (Root Tab)
+ * - /leaderboard    -> Live Scoreboard / Rankings
+ * - /live           -> Active Challenge / Round View
+ * - /notifications  -> Event Announcements / Notifications
+ */
+const ROOT_TAB = 'new-patient';
+const ROOT_PATH = '/arena';
+
+const TAB_TO_PATH = {
+  'new-patient': '/arena',
+  'existing-patient': '/leaderboard',
+  'dashboard': '/live',
+  'notifications': '/notifications',
 };
 
-// Unified Hash Builder
-const buildDashboardHash = (tab, date, month) => {
-  if (tab === 'dashboard') {
-    return date ? `#dashboard/date/${date}` : '#dashboard';
-  }
-  if (tab === 'existing-patient') {
-    return month ? `#existing-patient/month/${month}` : '#existing-patient';
-  }
-  if (tab === 'new-patient') {
-    return '#new-patient';
-  }
-  if (tab === 'notifications') {
-    return '#notifications';
-  }
-  return '#dashboard';
+const PATH_TO_TAB = {
+  '/arena': 'new-patient',
+  '/leaderboard': 'existing-patient',
+  '/live': 'dashboard',
+  '/notifications': 'notifications',
+  '/records': 'existing-patient',
+  '/': 'new-patient',
 };
+
+function parsePathToTab(pathname) {
+  if (!pathname) return ROOT_TAB;
+  const clean = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  return PATH_TO_TAB[clean] || ROOT_TAB;
+}
 
 const DashboardContent = () => {
-  const { user, loading, signOut } = useAuth();
-  const [guestMode, setGuestMode] = useState(false);
-  const [authView, setAuthView] = useState(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      const h = window.location.hash.toLowerCase();
-      if (h.includes('register') || h.includes('signup')) return 'register';
-      if (h.includes('forgot') || h.includes('reset')) return 'forgot-password';
+  // Check if guest has entered or has already joined on this device
+  const [isEntered, setIsEntered] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const path = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+    // If attendee accesses a direct game tab or already entered in this session
+    if (path === '/leaderboard' || path === '/live' || path === '/notifications' || path === '/arena') {
+      return true;
     }
-    return 'login';
+    return window.sessionStorage.getItem('arena_entered') === 'true';
   });
 
   const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      return parseDashboardHash(window.location.hash).tab;
-    }
-    return 'dashboard';
+    if (typeof window === 'undefined') return ROOT_TAB;
+    return parsePathToTab(window.location.pathname);
   });
 
-  const [selectedDate, setSelectedDate] = useState(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      return parseDashboardHash(window.location.hash).date;
-    }
-    return null;
-  });
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(null);
 
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      return parseDashboardHash(window.location.hash).month;
-    }
-    return null;
-  });
-
-  // Synchronize state when browser navigation occurs (e.g. Android back button or gesture)
+  /**
+   * Native Mobile Back-Button Behavior:
+   * Listens to popstate (Android hardware back, iOS swipe back).
+   * Synchronizes active tab smoothly without page reload or layout distortion.
+   */
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // Only initialize and synchronize hash history if user is authenticated
-    if (!user) return;
 
-    const handleSyncFromHash = () => {
-      const parsed = parseDashboardHash(window.location.hash);
-      setActiveTab(parsed.tab);
-      setSelectedDate(parsed.date);
-      setSelectedMonth(parsed.month);
-    };
+    const handlePopState = () => {
+      const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
 
-    // Initialize root in browser history if starting cold
-    const currentHash = window.location.hash;
-    if (!currentHash || currentHash === '#' || currentHash === '#/') {
-      window.history.replaceState(null, '', '#dashboard');
-      handleSyncFromHash();
-    } else if (currentHash !== '#dashboard') {
-      // Ensure #dashboard is the root in history stack so back button can reach it
-      window.history.replaceState(null, '', '#dashboard');
-      window.history.pushState(null, '', currentHash);
-      handleSyncFromHash();
-    } else {
-      handleSyncFromHash();
-    }
-
-    window.addEventListener('popstate', handleSyncFromHash);
-    window.addEventListener('hashchange', handleSyncFromHash);
-
-    return () => {
-      window.removeEventListener('popstate', handleSyncFromHash);
-      window.removeEventListener('hashchange', handleSyncFromHash);
-    };
-  }, [user]);
-
-  // Handlers that update history entries
-  const handleTabChange = (newTab) => {
-    const parsed = parseDashboardHash(window.location.hash);
-
-    // If tapping current tab while in a detail sub-view, reset back to overview
-    if (newTab === parsed.tab) {
-      if (newTab === 'dashboard' && parsed.date) {
-        window.location.hash = '#dashboard';
+      if (currentPath === '' || currentPath === '/') {
+        // Returned to root
+        if (!isEntered) {
+          setIsEntered(false);
+        } else {
+          setActiveTab(ROOT_TAB);
+        }
         return;
       }
-      if (newTab === 'existing-patient' && parsed.month) {
-        window.location.hash = '#existing-patient';
-        return;
-      }
-      return;
-    }
 
-    const targetHash = buildDashboardHash(newTab, null, null);
-    if (window.location.hash !== targetHash) {
-      window.location.hash = targetHash;
-    }
-  };
-
-  const handleSelectDate = (dateKey) => {
-    if (dateKey) {
-      const targetHash = buildDashboardHash('dashboard', dateKey, null);
-      if (window.location.hash !== targetHash) {
-        window.location.hash = targetHash;
-      }
-    } else {
-      if (window.location.hash.includes('/date/')) {
-        window.history.back();
+      const targetTab = PATH_TO_TAB[currentPath];
+      if (targetTab) {
+        setIsEntered(true);
+        setActiveTab(targetTab);
       } else {
-        window.location.hash = '#dashboard';
+        setActiveTab(ROOT_TAB);
       }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isEntered]);
+
+  /**
+   * Handle Tab Switching with Clean HTML5 URLs (No Hash)
+   * Adds entry to history stack so Back button returns to previous tab or Root (/arena).
+   */
+  const handleTabChange = useCallback((newTab) => {
+    setActiveTab(newTab);
+    const targetPath = TAB_TO_PATH[newTab] || ROOT_PATH;
+
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({ tab: newTab }, '', targetPath);
     }
+  }, []);
+
+  const handleSelectDate = useCallback((dateKey) => {
+    setSelectedDate(dateKey);
+  }, []);
+
+  const handleSelectMonth = useCallback((monthKey) => {
+    setSelectedMonth(monthKey);
+  }, []);
+
+  // When guest clicks "Enter Arena" on Onboarding screen
+  const handleEnterArena = (playerData) => {
+    try {
+      window.sessionStorage.setItem('arena_entered', 'true');
+    } catch {}
+
+    setIsEntered(true);
+    setActiveTab(ROOT_TAB);
+
+    // Push clean root URL for native back stack
+    window.history.pushState({ tab: ROOT_TAB }, '', ROOT_PATH);
   };
 
-  const handleSelectMonth = (monthKey) => {
-    if (monthKey) {
-      const targetHash = buildDashboardHash('existing-patient', null, monthKey);
-      if (window.location.hash !== targetHash) {
-        window.location.hash = targetHash;
-      }
-    } else {
-      if (window.location.hash.includes('/month/')) {
-        window.history.back();
-      } else {
-        window.location.hash = '#existing-patient';
-      }
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen w-full bg-[#e6ebf2] text-zinc-900 flex flex-col items-center justify-center p-6 relative">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none" />
-        <div className="relative z-10 flex flex-col items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-white border border-zinc-200 flex items-center justify-center shadow-[0_4px_20px_rgba(16,185,129,0.15)] animate-pulse overflow-hidden">
-            <img src="/logo.png" alt="Clinic Logo" className="w-full h-full object-contain" />
-          </div>
-          <div className="flex items-center gap-2 text-sm text-zinc-600 font-medium">
-            <CircleNotch size={18} className="animate-spin text-emerald-600" />
-            <span>Connecting...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // If user has not yet clicked Enter/Proceed, render the Onboarding/Login view
-  if (!user && !guestMode) {
+  // 1. Direct Onboarding Screen (Transformed LoginView)
+  if (!isEntered) {
     return (
       <LoginView
-        onExploreDemo={() => setGuestMode(true)}
-        onEnterArena={() => setGuestMode(true)}
+        onEnterArena={handleEnterArena}
       />
     );
   }
 
-  // Once entered, render the main responsive Arena game views (transformed dashboard)
+  // 2. Main Arena Dashboard Shell & Responsive Views (Root /arena shows first)
   return (
     <DashboardShell activeTab={activeTab} onTabChange={handleTabChange}>
       <div className={activeTab === 'new-patient' ? 'block' : 'hidden'}>

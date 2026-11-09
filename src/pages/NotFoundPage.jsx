@@ -28,7 +28,7 @@ export default function NotFoundPage({ onGoHome }) {
         </h2>
 
         <p className="mt-3 font-sans text-sm font-light leading-relaxed text-zinc-400">
-          The page or study session you are looking for doesn’t exist, has expired, or the link is incorrect.
+          The arena page or game session you are looking for doesn’t exist, has expired, or the link is incorrect.
         </p>
 
         <div className="mt-8 flex items-center justify-center">
@@ -37,7 +37,7 @@ export default function NotFoundPage({ onGoHome }) {
             className="group inline-flex h-11 items-center gap-2 rounded-full bg-white px-6 font-sans text-xs font-semibold text-black border border-white/20 shadow-[0_2px_16px_rgba(255,255,255,0.1)] transition-all duration-300 ease-premium hover:bg-neutral-200 active:scale-95 cursor-pointer"
           >
             <ArrowLeft size={14} weight="bold" className="transition-transform group-hover:-translate-x-0.5" />
-            <span>Return to Home</span>
+            <span>Return to Arena</span>
           </button>
         </div>
       </motion.div>
