@@ -33,9 +33,9 @@ export default function NotFoundPage({ onGoHome }) {
           <button
             onClick={onGoHome}
             type="button"
-            className="inline-flex h-13 items-center justify-center gap-3 rounded-full bg-white px-8 py-3.5 font-sans text-[15px] sm:text-base font-bold text-black whitespace-nowrap border border-white/60 shadow-[0_4px_28px_rgba(255,255,255,0.22),0_1px_3px_rgba(0,0,0,0.9)] active:scale-[0.96] active:bg-zinc-200 transition-transform duration-100 ease-out cursor-pointer select-none"
+            className="inline-flex h-[52px] items-center justify-center gap-2.5 rounded-full bg-white px-7 font-sans text-[15px] sm:text-base font-bold text-black whitespace-nowrap border border-white/60 shadow-[0_4px_28px_rgba(255,255,255,0.22),0_1px_3px_rgba(0,0,0,0.9)] active:scale-[0.96] active:bg-zinc-200 transition-transform duration-100 ease-out cursor-pointer select-none"
           >
-            <Swords size={20} strokeWidth={2.4} className="shrink-0 text-black" />
+            <Swords size={25} strokeWidth={2.4} className="shrink-0 text-black" />
             <span className="leading-none">Return to Arena</span>
           </button>
         </div>

@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        arena: ['"Orbitron"', 'system-ui', 'sans-serif'],
+        arena: ['"Aquire"', 'system-ui', 'sans-serif'],
         sans: ['"Plus Jakarta Sans Variable"', '"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['"Plus Jakarta Sans Variable"', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],

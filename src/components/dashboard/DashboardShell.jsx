@@ -1,20 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useAuth } from './AuthContext';
 import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell } from '../icons';
+import Logo from '../Logo';
+import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import {
   getPendingNotificationCount,
   subscribeToClinicRealtime
 } from '../../services/clinicService';
 
-export const DashboardShell = ({ activeTab, onTabChange, children }) => {
-  const { user, signOut } = useAuth();
+export const DashboardShell = ({
+  activeTab,
+  onTabChange,
+  player,
+  onSignOut,
+  children
+}) => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const profileRef = useRef(null);
   const mobileProfileRef = useRef(null);
   const mobileProfileBtnRef = useRef(null);
+
+  // Player identity fallback resolution
+  const guestId = player?.guest_id || getPlayerId() || 'Guest001';
+  const orbNumber = player?.orb_number || getOrbNumber(guestId) || 1;
+  const displayName = player?.name || guestId;
+  const avatar = player?.avatar || '⚡';
 
   useEffect(() => {
     let isMounted = true;
@@ -54,14 +65,11 @@ export const DashboardShell = ({ activeTab, onTabChange, children }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSignOut = async () => {
-    try {
-      setIsLoggingOut(true);
-      await signOut();
-    } catch (err) {
-      console.error('Error signing out:', err);
-    } finally {
-      setIsLoggingOut(false);
+  const handleSignOutClick = () => {
+    setProfileMenuOpen(false);
+    setMobileProfileOpen(false);
+    if (typeof onSignOut === 'function') {
+      onSignOut();
     }
   };
 
@@ -101,17 +109,17 @@ export const DashboardShell = ({ activeTab, onTabChange, children }) => {
           ======================================================== */}
       <aside className="hidden md:flex flex-col w-60 lg:w-64 bg-[#e6ebf2] border-r border-zinc-300/60 shrink-0 h-full z-30 shadow-[4px_0_16px_#c8d0db]">
 
-        {/* Brand Header */}
+        {/* Arena Brand Header */}
         <div className="p-4 border-b border-zinc-300/50 flex items-center gap-2.5">
-          <div className="w-14 h-14 rounded-full bg-[#e6ebf2] shadow-[4px_4px_8px_#c2c9d4,-4px_-4px_8px_#ffffff] border border-white/60 flex items-center justify-center overflow-hidden shrink-0">
-            <img src="/logo.png" alt="Dr. Pragya Mishra Clinic Logo" className="w-full h-full object-contain" />
+          <div className="w-12 h-12 rounded-2xl bg-[#e6ebf2] shadow-[3px_3px_6px_#c2c9d4,-3px_-3px_6px_#ffffff] border border-white/60 flex items-center justify-center overflow-hidden shrink-0">
+            <Logo className="w-8 h-8" />
           </div>
           <div className="overflow-hidden">
-            <h1 className="text-base font-bold tracking-tight text-zinc-900 truncate">
-              Dr. Pragya Mishra
+            <h1 className="text-base font-black tracking-wider text-zinc-900 truncate font-arena">
+              ARENA
             </h1>
             <p className="text-[10px] font-bold text-emerald-700 tracking-wider uppercase mt-0.5">
-              Clinical Portal
+              Live Battleground
             </p>
           </div>
         </div>
@@ -154,7 +162,7 @@ export const DashboardShell = ({ activeTab, onTabChange, children }) => {
           })}
         </div>
 
-        {/* Doctor / Assistant Session Profile & Expandable Signout */}
+        {/* Attendee / Guest Player Profile & Expandable Sign Out */}
         <div
           ref={profileRef}
           className="m-3 p-3 rounded-2xl bg-[#e6ebf2] border border-white/80 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] transition-all duration-300 ease-out"
@@ -165,12 +173,17 @@ export const DashboardShell = ({ activeTab, onTabChange, children }) => {
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
             className="w-full flex items-center gap-2.5 text-left cursor-pointer group"
           >
-            <div className="w-8 h-8 rounded-full bg-[#e6ebf2] shadow-[inset_2px_2px_4px_#c2c9d4,inset_-2px_-2px_4px_#ffffff] border border-white/50 flex items-center justify-center text-emerald-800 text-xs font-bold shrink-0">
-              {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-[inset_1px_1px_2px_rgba(255,255,255,0.4),2px_2px_5px_#c2c9d4] border border-white/40 flex items-center justify-center text-sm font-bold shrink-0">
+              {avatar}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-zinc-800 truncate">
-                {user?.email || 'Authenticated User'}
+              <div className="text-xs font-bold text-zinc-900 truncate">
+                {displayName}
+              </div>
+              <div className="text-[10px] font-semibold text-emerald-700 font-mono tracking-tight flex items-center gap-1.5 mt-0.5">
+                <span>{guestId}</span>
+                <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                <span className="text-zinc-600">Orb #{orbNumber}</span>
               </div>
             </div>
             <div className="text-zinc-400 group-hover:text-zinc-600">
@@ -186,12 +199,11 @@ export const DashboardShell = ({ activeTab, onTabChange, children }) => {
             <div className="overflow-hidden">
               <button
                 type="button"
-                onClick={handleSignOut}
-                disabled={isLoggingOut}
+                onClick={handleSignOutClick}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-100/50 hover:bg-rose-100/80 shadow-[inset_2px_2px_4px_#ddb6b6,inset_-2px_-2px_4px_#ffffff] hover:shadow-[inset_3px_3px_5px_#ddb6b6,inset_-3px_-3px_5px_#ffffff] active:scale-[0.98] transition-all cursor-pointer border border-rose-300/60"
               >
                 <SignOut size={15} weight="bold" />
-                <span>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</span>
+                <span>Sign Out</span>
               </button>
             </div>
           </div>
@@ -208,27 +220,31 @@ export const DashboardShell = ({ activeTab, onTabChange, children }) => {
           className="md:hidden fixed bottom-20 right-3 z-50 w-64 bg-[#e6ebf2] border border-white/90 rounded-2xl p-4 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6,0_8px_20px_rgba(0,0,0,0.12)] transition-all duration-200 ease-out"
         >
           <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-zinc-300/60">
-            <div className="w-8 h-8 rounded-full bg-[#e6ebf2] shadow-[inset_2px_2px_4px_#ffffff,inset_-2px_-2px_4px_#c2c9d4] border border-white/60 flex items-center justify-center text-emerald-800 text-xs font-bold shrink-0">
-              {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-[inset_1px_1px_2px_rgba(255,255,255,0.4),2px_2px_5px_#c2c9d4] border border-white/40 flex items-center justify-center text-base font-bold shrink-0">
+              {avatar}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-zinc-800 truncate">
-                {user?.email || 'Authenticated User'}
+              <div className="text-xs font-bold text-zinc-900 truncate">
+                {displayName}
               </div>
-              <div className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider">
-                Active Session
+              <div className="text-[10px] font-semibold text-emerald-700 font-mono tracking-tight flex items-center gap-1.5 mt-0.5">
+                <span>{guestId}</span>
+                <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                <span className="text-zinc-600">Orb #{orbNumber}</span>
+              </div>
+              <div className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider mt-0.5">
+                Active Live Session
               </div>
             </div>
           </div>
 
           <button
             type="button"
-            onClick={handleSignOut}
-            disabled={isLoggingOut}
+            onClick={handleSignOutClick}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-100/60 hover:bg-rose-100/90 shadow-[inset_2px_2px_4px_#ddb6b6,inset_-2px_-2px_4px_#ffffff] hover:shadow-[inset_3px_3px_5px_#ddb6b6,inset_-3px_-3px_5px_#ffffff] active:scale-[0.98] transition-all cursor-pointer border border-rose-300/60"
           >
             <SignOut size={15} weight="bold" />
-            <span>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</span>
+            <span>Sign Out</span>
           </button>
         </div>
       )}

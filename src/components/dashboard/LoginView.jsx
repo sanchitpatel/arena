@@ -89,16 +89,11 @@ export const LoginView = ({ onEnterArena }) => {
 
       <div className="w-full max-w-[430px] relative z-10">
         {/* Brand Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#e6ebf2] shadow-[6px_6px_14px_#c2c9d4,-6px_-6px_14px_#ffffff] mb-2.5">
-            <Logo dark className="w-14 h-14 !rounded-full shadow-sm" />
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl font-sans">
+        <div className="flex flex-col items-center text-center mb-6">
+          <Logo className="w-20 h-20 sm:w-20 sm:h-20 mb-3" />
+          <h1 className="font-arena text-3xl sm:text-4xl font-black tracking-wider text-zinc-900">
             ARENA
           </h1>
-          <p className="text-xs text-zinc-500 font-medium tracking-wide uppercase mt-0.5">
-            Incubation Lab Inauguration
-          </p>
         </div>
 
         {/* Neumorphic Main Onboarding Card */}

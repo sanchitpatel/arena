@@ -1,6 +1,14 @@
 @import '@fontsource-variable/plus-jakarta-sans';
-@import '@fontsource/orbitron/700.css';
-@import '@fontsource/orbitron/900.css';
+
+@font-face {
+  font-family: 'Aquire';
+  src: url('./assets/fonts/aquire.woff2') format('woff2'),
+       url('./assets/fonts/aquire.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,6 +21,7 @@
 :root {
   --font-sans: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-display: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-arena: 'Aquire', system-ui, -apple-system, sans-serif;
 
   /* Surfaces & Ink */
   --ink: #09090B;
@@ -74,6 +83,10 @@ input,
 select,
 textarea {
   font-family: inherit;
+}
+
+.font-arena {
+  font-family: 'Aquire', var(--font-arena), system-ui, sans-serif !important;
 }
 
 a {
