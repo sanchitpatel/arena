@@ -27,6 +27,10 @@ export default defineConfig([
               group: ['@phosphor-icons/react', '@phosphor-icons/react/*'],
               message: 'Import icons from src/components/icons (or ./icons / ../icons) instead.',
             },
+            {
+              group: ['lucide-react', 'lucide-react/*'],
+              message: 'Import icons from src/components/icons (or ./icons / ../icons) instead.',
+            },
           ],
         },
       ],

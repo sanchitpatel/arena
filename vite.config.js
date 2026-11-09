@@ -59,7 +59,29 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    exclude: ['@phosphor-icons/react'],
+    exclude: ['@phosphor-icons/react', 'lucide-react'],
     include: ['react', 'react-dom', 'framer-motion', '@supabase/supabase-js']
+  },
+  build: {
+    target: 'es2022',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-framer';
+            }
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase';
+            }
+          }
+        }
+      }
+    }
   }
 });

@@ -122,3 +122,6 @@ export { Wind } from '@phosphor-icons/react/dist/icons/Wind';
 export { X } from '@phosphor-icons/react/dist/icons/X';
 export { XCircle } from '@phosphor-icons/react/dist/icons/XCircle';
 export { YoutubeLogo } from '@phosphor-icons/react/dist/icons/YoutubeLogo';
+
+// Official Esports & Battle Icons (Tree-shaken, 100% local)
+export { Swords, Sword as LucideSword } from 'lucide-react';
