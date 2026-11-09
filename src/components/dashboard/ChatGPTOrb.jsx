@@ -55,18 +55,18 @@ void main(){
   );
 
   float f = fbm(p + 1.15 * (w - vec3(0.5)));
-  f = clamp(f * 1.15 - 0.08 + uv.y * 0.26, 0.0, 1.0);
+  f = clamp(f * 1.15 - 0.06 + uv.y * 0.28, 0.0, 1.0);
 
-  // Soothing velvety palette
-  vec3 deep  = vec3(0.02, 0.38, 0.98); // Rich azure base
-  vec3 mid   = vec3(0.20, 0.65, 1.00); // Luminous cyan
-  vec3 sky   = vec3(0.66, 0.89, 1.00); // Soft sky wash
-  vec3 cream = vec3(0.98, 0.99, 1.00); // Warm silky highlight
+  // Soothing velvety palette - rich light sky blue with refined white crests
+  vec3 deep  = vec3(0.10, 0.48, 0.99); // Soft azure base
+  vec3 mid   = vec3(0.24, 0.65, 1.00); // Luminous cyan
+  vec3 sky   = vec3(0.62, 0.88, 1.00); // Vibrant light sky blue
+  vec3 cream = vec3(0.99, 0.995, 1.00); // Silky cloud white
 
-  // Broad overlapping smoothsteps for buttery seamless blends
-  vec3 col = mix(deep, mid, smoothstep(0.05, 0.52, f));
-  col = mix(col, sky, smoothstep(0.36, 0.78, f));
-  col = mix(col, cream, smoothstep(0.64, 0.98, f));
+  // Expanded light sky blue capacity; moderated white coverage
+  vec3 col = mix(deep, mid, smoothstep(0.02, 0.38, f));
+  col = mix(col, sky, smoothstep(0.22, 0.68, f));
+  col = mix(col, cream, smoothstep(0.62, 0.94, f));
 
   // Soft spherical lighting
   vec3 L = normalize(vec3(-0.4, 0.55, 0.72));
@@ -157,7 +157,7 @@ export default function ChatGPTOrb({ orbNumber = 1, avatar = '⚡', size = 'w-28
         className={`relative ${size} overflow-hidden rounded-full`}
         style={{
           boxShadow: '0 14px 36px rgba(2,110,220,0.30)',
-          background: 'linear-gradient(180deg,#d8f3ff,#2c98ff 70%,#0a6cff)',
+          background: 'linear-gradient(180deg,#e5f7ff,#5ec3ff 65%,#1c86ff)',
         }}
       >
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full rounded-full" />
