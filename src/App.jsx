@@ -4,16 +4,37 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsPage from './pages/TermsPage';
 import NotFoundPage from './pages/NotFoundPage';
 
+// Whitelist of valid paths for the Arena application
+const VALID_APP_PATHS = new Set([
+  '/',
+  '',
+  '/onboarding',
+  '/arena',
+  '/leaderboard',
+  '/live',
+  '/notifications',
+  '/records',
+]);
+
 function resolveRoute() {
   if (typeof window === 'undefined') return 'app';
-  const path = window.location.pathname.toLowerCase();
+
+  // Normalize path by stripping trailing slashes and converting to lowercase
+  const path = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
   const hash = window.location.hash.toLowerCase();
 
+  // 1. Explicit Legal and Info pages
   if (path === '/terms' || hash === '#terms') return 'terms';
   if (path === '/privacy' || hash === '#privacy' || hash === '#privacy-policy') return 'privacy';
   if (path === '/404' || hash === '#404') return '404';
 
-  return 'app';
+  // 2. Valid Arena application routes
+  if (VALID_APP_PATHS.has(path)) {
+    return 'app';
+  }
+
+  // 3. Any unrecognized, misspelled, or wrong URL -> 404 Not Found
+  return '404';
 }
 
 export default function App() {
