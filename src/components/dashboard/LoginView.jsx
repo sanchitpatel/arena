@@ -3,6 +3,7 @@ import { claimOrRegisterGuest } from '../../services/arenaService';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import { CircleNotch, ArrowRight, Sparkle, User, ShieldCheck } from '../icons';
 import Logo from '../Logo';
+import ChatGPTOrb from './ChatGPTOrb';
 
 const AVATAR_OPTIONS = ['⚡', '🔥', '🚀', '👑', '🎯', '💎', '👾', '🌟'];
 
@@ -105,30 +106,16 @@ export const LoginView = ({ onEnterArena }) => {
             </div>
           ) : (
             <form onSubmit={handleEnterArena} className="space-y-6">
-              {/* The Glowing Player Orb Badge */}
-              <div className="flex flex-col items-center justify-center pt-1">
-                <div className="relative group">
-                  {/* Outer pulsating glow ring */}
-                  <div className="absolute -inset-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full blur-md opacity-70 group-hover:opacity-100 transition duration-500 animate-pulse" />
-                  
-                  {/* Main circular Orb */}
-                  <div className="relative w-24 h-24 rounded-full bg-gradient-to-b from-[#18181b] to-[#09090b] text-white flex flex-col items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),0_8px_20px_rgba(0,0,0,0.35)] border border-white/20">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400">
-                      ORB
-                    </span>
-                    <span className="text-3xl font-black tracking-tight font-mono text-white">
-                      {orbNumber}
-                    </span>
-                  </div>
+              {/* The Ethereal ChatGPT-Style Player Orb */}
+              <div className="flex flex-col items-center justify-center pt-2">
+                <ChatGPTOrb
+                  orbNumber={orbNumber}
+                  avatar={selectedAvatar}
+                  size="w-28 h-28"
+                />
 
-                  {/* Avatar badge on orb */}
-                  <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#e6ebf2] shadow-[2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] border border-white flex items-center justify-center text-sm">
-                    {selectedAvatar}
-                  </div>
-                </div>
-
-                <div className="mt-3 text-center">
-                  <span className="inline-block px-3 py-1 rounded-full bg-emerald-600/10 border border-emerald-600/25 text-emerald-800 font-mono text-xs font-bold tracking-wider">
+                <div className="mt-4 text-center">
+                  <span className="inline-block px-3.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-900 font-mono text-xs font-bold tracking-wider">
                     {guestId}
                   </span>
                   <p className="text-[11px] text-zinc-500 mt-1">
