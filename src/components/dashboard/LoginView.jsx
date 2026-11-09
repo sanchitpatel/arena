@@ -111,7 +111,7 @@ export const LoginView = ({ onEnterArena }) => {
                 <ChatGPTOrb
                   orbNumber={orbNumber}
                   avatar={selectedAvatar}
-                  size="w-28 h-28"
+                  size="w-32 h-32"
                 />
 
                 <div className="mt-4 text-center">

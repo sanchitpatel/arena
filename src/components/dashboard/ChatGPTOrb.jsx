@@ -1,104 +1,140 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
 
-// Soft cloud-wisp texture (static SVG noise → white alpha wisps)
-const WISPS = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.008 0.014' numOctaves='4' seed='7'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.7 -0.6'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`;
+const VERT = `attribute vec2 a; void main(){ gl_Position = vec4(a, 0., 1.); }`;
 
-// Organic morphing shapes so blobs never look like circles
-const MORPH = [
-  '42% 58% 63% 37% / 45% 40% 60% 55%',
-  '60% 40% 38% 62% / 58% 62% 38% 42%',
-  '38% 62% 55% 45% / 40% 55% 45% 60%',
-  '42% 58% 63% 37% / 45% 40% 60% 55%',
-];
+const FRAG = `
+precision highp float;
+uniform float t;
+uniform vec2 res;
 
-// Each blob uses a different duration so the loop never visibly repeats
-function Blob({ className, x, y, scale, rotate, duration, delay = 0 }) {
-  return (
-    <motion.div
-      className={`absolute will-change-transform ${className}`}
-      animate={{ x, y, scale, rotate, borderRadius: MORPH }}
-      transition={{ duration, delay, repeat: Infinity, ease: 'easeInOut' }}
-    />
-  );
+float hash(vec3 p){ p = fract(p*0.3183099 + .1); p *= 17.; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+float noise(vec3 x){
+  vec3 i = floor(x), f = fract(x);
+  f = f*f*(3. - 2.*f);
+  return mix(
+    mix(mix(hash(i), hash(i+vec3(1,0,0)), f.x), mix(hash(i+vec3(0,1,0)), hash(i+vec3(1,1,0)), f.x), f.y),
+    mix(mix(hash(i+vec3(0,0,1)), hash(i+vec3(1,0,1)), f.x), mix(hash(i+vec3(0,1,1)), hash(i+vec3(1,1,1)), f.x), f.y),
+    f.z);
+}
+float fbm(vec3 p){
+  float a = .5, s = 0.;
+  for(int i=0;i<5;i++){ s += a*noise(p); p = p*2.03 + vec3(1.7,9.2,3.1); a *= .5; }
+  return s;
 }
 
-export default function ChatGPTOrb({ orbNumber = 1, avatar = '⚡', size = 'w-28 h-28' }) {
+void main(){
+  vec2 uv = (gl_FragCoord.xy - .5*res) / (.5*min(res.x,res.y));
+  float r = length(uv);
+  float px = 2. / min(res.x,res.y);
+  float mask = 1. - smoothstep(1. - 1.5*px, 1., r);
+  if(mask <= 0.){ gl_FragColor = vec4(0.); return; }
+
+  // point on sphere surface, rotated over time => fog drifts around inside
+  float z = sqrt(max(1. - r*r, 0.));
+  vec3 n = vec3(uv, z);
+  float c = cos(t*.35), s = sin(t*.35);
+  vec3 p = vec3(c*n.x + s*n.z, n.y, -s*n.x + c*n.z) * 1.5;
+
+  // domain warp = organic, non-repeating swirls
+  vec3 w = vec3(
+    fbm(p + vec3(0., t*.45, 0.)),
+    fbm(p + vec3(5.2, 1.3, 2.8) - t*.38),
+    fbm(p + vec3(2.1, 7.7, 4.4) + t*.30));
+  float f = fbm(p + 2.4*(w - .5));
+  f = clamp(f*1.35 - .12 + uv.y*.30, 0., 1.);   // bias: bright top, deep blue bottom
+
+  vec3 deep  = vec3(0.02, 0.36, 1.00);
+  vec3 mid   = vec3(0.17, 0.60, 1.00);
+  vec3 sky   = vec3(0.62, 0.88, 1.00);
+  vec3 cream = vec3(1.00, 0.99, 0.94);
+
+  vec3 col = mix(deep, mid, smoothstep(.15, .45, f));
+  col = mix(col, sky,   smoothstep(.42, .68, f));
+  col = mix(col, cream, smoothstep(.66, .92, f));
+
+  // 3D shading
+  vec3 L = normalize(vec3(-.45, .6, .65));
+  float diff = dot(n, L)*.5 + .5;
+  col *= mix(.78, 1.06, diff);                                  // soft light/dark sides
+  col += vec3(.55,.8,1.) * pow(1. - z, 3.) * .22;               // faint fresnel glow at edge
+  col += vec3(1.) * pow(max(dot(n, normalize(L + vec3(0,0,1))), 0.), 40.) * .22; // soft specular
+
+  gl_FragColor = vec4(col*mask, mask);
+}
+`;
+
+function useOrbGL(canvasRef, speed) {
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true });
+    if (!gl) return;
+
+    const sh = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, 'a');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+    const uT = gl.getUniformLocation(prog, 't');
+    const uRes = gl.getUniformLocation(prog, 'res');
+
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = canvas.clientWidth * dpr;
+      canvas.height = canvas.clientHeight * dpr;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+
+    const start = performance.now() + Math.random() * 20000; // each orb gets a unique pattern
+    let raf;
+    const loop = (now) => {
+      gl.uniform1f(uT, ((now - start) / 1000) * speed);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+    };
+  }, [canvasRef, speed]);
+}
+
+export default function ChatGPTOrb({ orbNumber = 1, avatar = '⚡', size = 'w-28 h-28', speed = 1 }) {
+  const canvasRef = useRef(null);
+  useOrbGL(canvasRef, speed);
+
   return (
     <div className="relative flex flex-col items-center justify-center select-none">
-      {/* Soft ambient glow (subtle, not a neon halo) */}
       <div className="pointer-events-none absolute inset-2 -z-10 rounded-full bg-sky-400/40 blur-2xl" />
 
       <div
-        className={`relative ${size} overflow-hidden rounded-full`}
-        style={{
-          isolation: 'isolate',
-          WebkitMaskImage: '-webkit-radial-gradient(white, black)', // Safari: clip blurred children
-          background: 'linear-gradient(180deg,#d8f3ff 0%,#8ad4ff 35%,#2c98ff 70%,#0a6cff 100%)',
-        }}
+        className={`relative ${size} rounded-full`}
+        style={{ boxShadow: '0 14px 36px rgba(2,110,220,0.30)' }}
       >
-        {/* Deep azure mass, bottom */}
-        <Blob
-          className="-bottom-[35%] -left-[15%] h-[85%] w-[130%] bg-[#0a6cff] blur-xl"
-          x={['0%', '8%', '-6%', '0%']}
-          y={['0%', '-6%', '4%', '0%']}
-          scale={[1, 1.12, 0.96, 1]}
-          rotate={[0, 12, -8, 0]}
-          duration={11}
-        />
-        {/* Bright cyan mid-layer, left */}
-        <Blob
-          className="top-[28%] -left-[25%] h-[60%] w-[75%] bg-[#4cc3ff] blur-xl"
-          x={['0%', '14%', '4%', '0%']}
-          y={['0%', '-8%', '8%', '0%']}
-          scale={[1, 0.9, 1.1, 1]}
-          rotate={[0, -20, 10, 0]}
-          duration={13}
-        />
-        {/* Deep blue accent, right */}
-        <Blob
-          className="top-[40%] -right-[20%] h-[55%] w-[60%] bg-[#0058f0] opacity-80 blur-xl"
-          x={['0%', '-10%', '6%', '0%']}
-          y={['0%', '6%', '-6%', '0%']}
-          scale={[1, 1.1, 0.92, 1]}
-          rotate={[0, 25, -12, 0]}
-          duration={9}
-        />
-        {/* Cream-white cloud, top-right (the signature highlight) */}
-        <Blob
-          className="-top-[18%] -right-[12%] h-[60%] w-[75%] bg-[#fffdf2] blur-lg"
-          x={['0%', '-12%', '6%', '0%']}
-          y={['0%', '8%', '-4%', '0%']}
-          scale={[1, 1.15, 0.92, 1]}
-          rotate={[0, -15, 10, 0]}
-          duration={10}
-        />
-        {/* Pale sky wash, top-left */}
-        <Blob
-          className="-top-[20%] -left-[15%] h-[55%] w-[70%] bg-[#e6f8ff] blur-lg"
-          x={['0%', '10%', '-4%', '0%']}
-          y={['0%', '6%', '-6%', '0%']}
-          scale={[1, 1.08, 0.94, 1]}
-          rotate={[0, 18, -10, 0]}
-          duration={14}
-        />
+        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full rounded-full" />
 
-        {/* Cloud wisp texture, slowly rotating = the "liquid" feel */}
-        <motion.div
-          className="pointer-events-none absolute -inset-[25%] opacity-50 blur-[1px]"
-          style={{ backgroundImage: WISPS, backgroundSize: 'cover' }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-        />
-
-        {/* Very soft bottom depth, no glass rim */}
-        <div className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_-8px_20px_rgba(0,50,200,0.25)]" />
-
-        {/* Label */}
         <div className="relative z-10 flex h-full w-full flex-col items-center justify-center text-center pointer-events-none">
-          <span className="font-arena text-[10px] font-black uppercase tracking-widest text-sky-950/70">
-            ORB
-          </span>
+          <span className="font-arena text-[10px] font-black uppercase tracking-widest text-sky-950/70">ORB</span>
           <span className="font-arena mt-0.5 text-3xl font-black leading-none tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,40,160,0.6)] sm:text-[34px]">
             {orbNumber}
           </span>
