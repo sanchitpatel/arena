@@ -1,525 +1,272 @@
 -- ==========================================================================
--- DR. PRAGYA MISHRA CLINICAL PORTAL — MASTER SUPABASE DATABASE SCHEMA
--- Complete, Atomic, Zero-Warning Production Schema
--- Contains: Tables, Constraints, Indexes, Triggers, Zero-Warning RPCs, 
---           Hardened RLS Policies, Grants & Realtime Configuration
+-- ARENA MASTER DATABASE SCHEMA — INCUBATION LAB LIVE EVENT
+-- Optimized for 200+ Concurrent Mobile Players over Local Venue Network
+-- PostgreSQL 17 + Supavisor Connection Pooling + Realtime Broadcast
 -- ==========================================================================
 
--- Enable essential extensions for UUID generation
+-- Enable essential extensions for UUID and crypto
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ==========================================================================
--- 1. PATIENTS TABLE (Permanent Lifelong Clinical Record)
+-- 1. ATOMIC GUEST ID SEQUENCE (Guarantees zero collision for 200+ players)
 -- ==========================================================================
-CREATE TABLE IF NOT EXISTS public.patients (
+CREATE SEQUENCE IF NOT EXISTS public.guest_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 9999
+    CACHE 1;
+
+-- ==========================================================================
+-- 2. PLAYERS TABLE
+-- ==========================================================================
+CREATE TABLE IF NOT EXISTS public.players (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id_code TEXT UNIQUE NOT NULL,             -- Permanent Lifelong ID (e.g. Cr-1001)
-    name TEXT NOT NULL,
-    age INTEGER NOT NULL CHECK (age >= 0 AND age <= 125),
-    gender TEXT DEFAULT 'Female',
-    mobile TEXT NOT NULL,                             -- 10-digit WhatsApp phone
-    guardian TEXT DEFAULT '',                         -- Guardian / Relation (e.g. W/O, D/O, S/O)
-    address TEXT NOT NULL DEFAULT '',                 -- Patient address / locality
-    current_category TEXT NOT NULL CHECK (
-        current_category IN ('under_process', 'actively_treated', 'treatment_done')
-    ) DEFAULT 'under_process',
-    last_visit_at DATE DEFAULT CURRENT_DATE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+    guest_id TEXT UNIQUE NOT NULL,                   -- e.g. Guest001, Guest002 (from sequence)
+    device_id TEXT UNIQUE NOT NULL,                  -- Client device UUID for seamless re-connection
+    name TEXT NOT NULL,                              -- Player handle (defaults to guest_id)
+    avatar TEXT NOT NULL DEFAULT '⚡',               -- Player emoji / icon
+    team TEXT NOT NULL DEFAULT 'unassigned',         -- Optional team designation
+    total_score INTEGER NOT NULL DEFAULT 0,          -- Live running score
+    accuracy NUMERIC(5, 2) NOT NULL DEFAULT 0.00,    -- % correct answers
+    rounds_played INTEGER NOT NULL DEFAULT 0,        -- Total rounds participated
+    last_response_time_ms INTEGER DEFAULT 0,         -- Tie-breaker metric
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,         -- Active status
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), -- Heartbeat
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Indexes for ultra-fast multi-field searching and aggregation
-CREATE INDEX IF NOT EXISTS idx_patients_code ON public.patients (patient_id_code);
-CREATE INDEX IF NOT EXISTS idx_patients_mobile ON public.patients (mobile);
-CREATE INDEX IF NOT EXISTS idx_patients_name ON public.patients (LOWER(name));
-CREATE INDEX IF NOT EXISTS idx_patients_guardian ON public.patients (LOWER(guardian));
-CREATE INDEX IF NOT EXISTS idx_patients_address ON public.patients (LOWER(address));
-CREATE INDEX IF NOT EXISTS idx_patients_age ON public.patients (age);
-CREATE INDEX IF NOT EXISTS idx_patients_category ON public.patients (current_category);
-CREATE INDEX IF NOT EXISTS idx_patients_last_visit ON public.patients (last_visit_at DESC);
-
--- Auto-update updated_at timestamp trigger function (SECURITY INVOKER)
-CREATE OR REPLACE FUNCTION public.set_updated_at_timestamp()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY INVOKER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trigger_patients_updated_at ON public.patients;
-CREATE TRIGGER trigger_patients_updated_at
-    BEFORE UPDATE ON public.patients
-    FOR EACH ROW
-    EXECUTE FUNCTION public.set_updated_at_timestamp();
-
+-- Fast lookup indexes
+CREATE INDEX IF NOT EXISTS idx_players_guest_id ON public.players (guest_id);
+CREATE INDEX IF NOT EXISTS idx_players_device_id ON public.players (device_id);
+CREATE INDEX IF NOT EXISTS idx_players_leaderboard ON public.players (total_score DESC, last_response_time_ms ASC);
+CREATE INDEX IF NOT EXISTS idx_players_last_seen ON public.players (last_seen_at DESC);
 
 -- ==========================================================================
--- 2. VISITS TABLE (Daily Scoped Consultation Records & Token Queue)
+-- 3. GAME STATE / SESSIONS TABLE (Master Event Controller)
 -- ==========================================================================
-CREATE TABLE IF NOT EXISTS public.visits (
+CREATE TABLE IF NOT EXISTS public.game_state (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
-    visit_date DATE DEFAULT CURRENT_DATE NOT NULL,
-    token_number INTEGER NOT NULL,                   -- Resets daily: 1, 2, 3...
-    visit_type TEXT NOT NULL CHECK (
-        visit_type IN ('new_patient', 'existing_patient')
+    session_code TEXT UNIQUE NOT NULL DEFAULT 'ARENA-LIVE',
+    status TEXT NOT NULL DEFAULT 'waiting' CHECK (
+        status IN ('waiting', 'countdown', 'active', 'round_ended', 'paused', 'finished')
     ),
-    follow_up_days INTEGER DEFAULT 0 CHECK (follow_up_days >= 0 AND follow_up_days <= 90),
-    next_follow_up_date DATE,
-    is_treatment_done BOOLEAN DEFAULT FALSE NOT NULL,
-    is_checked BOOLEAN DEFAULT FALSE NOT NULL,       -- Doctor checked mark for the day
-    notes TEXT DEFAULT '',
-    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    UNIQUE(visit_date, token_number),                -- Unique token per calendar day
-    UNIQUE(visit_date, patient_id)                   -- Prevents duplicate check-ins on same day
+    current_round INTEGER NOT NULL DEFAULT 1,
+    total_rounds INTEGER NOT NULL DEFAULT 10,
+    round_title TEXT DEFAULT 'Welcome to Arena',
+    round_payload JSONB DEFAULT '{}'::jsonb,         -- Active question/puzzle, options, timers
+    time_limit_sec INTEGER NOT NULL DEFAULT 20,
+    round_started_at TIMESTAMPTZ,
+    round_ends_at TIMESTAMPTZ,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_visits_date ON public.visits (visit_date DESC);
-CREATE INDEX IF NOT EXISTS idx_visits_patient ON public.visits (patient_id);
-CREATE INDEX IF NOT EXISTS idx_visits_token ON public.visits (visit_date, token_number);
-CREATE INDEX IF NOT EXISTS idx_visits_next_follow_up ON public.visits (next_follow_up_date);
-CREATE INDEX IF NOT EXISTS idx_visits_is_checked ON public.visits (is_checked);
-
+-- Insert default initial game state if not present
+INSERT INTO public.game_state (session_code, status, current_round, total_rounds, round_title, is_active)
+VALUES ('ARENA-LIVE', 'waiting', 1, 10, 'Incubation Lab Inauguration Arena', TRUE)
+ON CONFLICT (session_code) DO NOTHING;
 
 -- ==========================================================================
--- 3. WHATSAPP LOGS TABLE (Automated Messages & Idempotency Lock)
+-- 4. PLAYER ANSWERS / SCORE SUBMISSIONS TABLE
 -- ==========================================================================
-CREATE TABLE IF NOT EXISTS public.whatsapp_logs (
+CREATE TABLE IF NOT EXISTS public.player_answers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
-    visit_id UUID REFERENCES public.visits(id) ON DELETE SET NULL,
-    message_type TEXT NOT NULL CHECK (
-        message_type IN ('appointment_reminder', 'missed_followup', 'missing_followup_fallback', 'google_review')
-    ),
-    scheduled_for DATE NOT NULL,
-    status TEXT NOT NULL CHECK (
-        status IN ('pending', 'sent', 'failed', 'skipped')
-    ) DEFAULT 'pending',
-    sent_at TIMESTAMPTZ,
-    error_message TEXT,
-    metadata JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    UNIQUE(patient_id, message_type, scheduled_for)  -- Prevents duplicate automated notifications
+    player_id UUID NOT NULL REFERENCES public.players(id) ON DELETE CASCADE,
+    round_number INTEGER NOT NULL,
+    selected_option TEXT NOT NULL,
+    is_correct BOOLEAN NOT NULL DEFAULT FALSE,
+    points_awarded INTEGER NOT NULL DEFAULT 0,
+    response_time_ms INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(player_id, round_number)                  -- Strictly prevents duplicate score spam for same round
 );
 
-CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_scheduled ON public.whatsapp_logs (scheduled_for, status);
-CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_patient ON public.whatsapp_logs (patient_id);
-CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_visit ON public.whatsapp_logs (visit_id);
-
+CREATE INDEX IF NOT EXISTS idx_answers_player_round ON public.player_answers (player_id, round_number);
+CREATE INDEX IF NOT EXISTS idx_answers_round ON public.player_answers (round_number);
 
 -- ==========================================================================
--- 4. STORED PROCEDURES (SECURITY INVOKER — Zero Advisory Warnings)
+-- 5. ATOMIC RPC: CLAIM OR REGISTER GUEST (Zero-Collision, Idempotent)
 -- ==========================================================================
-
--- Function 1: Register New Patient + Issue Daily Token # Atomically
-DROP FUNCTION IF EXISTS public.register_new_patient(TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT);
-DROP FUNCTION IF EXISTS public.register_new_patient(TEXT, INTEGER, TEXT, TEXT, TEXT);
-
-CREATE OR REPLACE FUNCTION public.register_new_patient(
-    p_name TEXT,
-    p_age INTEGER,
-    p_mobile TEXT,
-    p_address TEXT,
-    p_guardian TEXT DEFAULT '',
-    p_gender TEXT DEFAULT 'Female'
+CREATE OR REPLACE FUNCTION public.claim_guest_player(
+    p_device_id TEXT,
+    p_name TEXT DEFAULT NULL,
+    p_avatar TEXT DEFAULT '⚡',
+    p_team TEXT DEFAULT 'unassigned'
 )
 RETURNS JSONB
 LANGUAGE plpgsql
-SECURITY INVOKER
+SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-    v_next_code_num INTEGER;
-    v_patient_code TEXT;
-    v_new_patient_id UUID;
-    v_next_token INTEGER;
-    v_new_visit_id UUID;
-    v_result JSONB;
+    v_player public.players%ROWTYPE;
+    v_seq_val BIGINT;
+    v_guest_id TEXT;
+    v_display_name TEXT;
 BEGIN
-    SELECT COALESCE(MAX(
-        CASE 
-            WHEN patient_id_code ~ '^(PM|Cr|CR)-[0-9]+$' 
-            THEN (regexp_match(patient_id_code, '[0-9]+$'))[1]::INTEGER 
-            ELSE 1000 
-        END
-    ), 1000) + 1
-    INTO v_next_code_num
-    FROM public.patients;
-
-    v_patient_code := 'Cr-' || v_next_code_num::TEXT;
-
-    INSERT INTO public.patients (
-        patient_id_code,
-        name,
-        age,
-        gender,
-        mobile,
-        guardian,
-        address,
-        current_category,
-        last_visit_at
-    ) VALUES (
-        v_patient_code,
-        TRIM(p_name),
-        p_age,
-        COALESCE(NULLIF(TRIM(p_gender), ''), 'Female'),
-        TRIM(p_mobile),
-        TRIM(COALESCE(p_guardian, '')),
-        TRIM(p_address),
-        'under_process',
-        CURRENT_DATE
-    )
-    RETURNING id INTO v_new_patient_id;
-
-    SELECT COALESCE(MAX(token_number), 0) + 1
-    INTO v_next_token
-    FROM public.visits
-    WHERE visit_date = CURRENT_DATE;
-
-    INSERT INTO public.visits (
-        patient_id,
-        visit_date,
-        token_number,
-        visit_type,
-        follow_up_days,
-        next_follow_up_date,
-        is_treatment_done,
-        is_checked
-    ) VALUES (
-        v_new_patient_id,
-        CURRENT_DATE,
-        v_next_token,
-        'new_patient',
-        0,
-        NULL,
-        FALSE,
-        FALSE
-    )
-    RETURNING id INTO v_new_visit_id;
-
-    SELECT jsonb_build_object(
-        'success', TRUE,
-        'patient_id', v_new_patient_id,
-        'patient_id_code', v_patient_code,
-        'name', TRIM(p_name),
-        'age', p_age,
-        'gender', COALESCE(NULLIF(TRIM(p_gender), ''), 'Female'),
-        'mobile', TRIM(p_mobile),
-        'guardian', TRIM(COALESCE(p_guardian, '')),
-        'address', TRIM(p_address),
-        'current_category', 'under_process',
-        'visit_id', v_new_visit_id,
-        'token_number', v_next_token,
-        'visit_date', CURRENT_DATE,
-        'message', 'Patient registered successfully with Daily Token #' || v_next_token
-    ) INTO v_result;
-
-    RETURN v_result;
-END;
-$$;
-
--- Function 2: Check-in Existing Patient ("Arrived Today" Action)
-CREATE OR REPLACE FUNCTION public.checkin_existing_patient(
-    p_patient_id UUID
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY INVOKER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-    v_existing_visit RECORD;
-    v_next_token INTEGER;
-    v_new_visit_id UUID;
-    v_patient RECORD;
-    v_result JSONB;
-BEGIN
-    SELECT * INTO v_patient FROM public.patients WHERE id = p_patient_id;
-    IF NOT FOUND THEN
-        RETURN jsonb_build_object(
-            'success', FALSE,
-            'message', 'Patient not found'
-        );
-    END IF;
-
-    SELECT * INTO v_existing_visit 
-    FROM public.visits 
-    WHERE patient_id = p_patient_id AND visit_date = CURRENT_DATE;
+    -- 1. Check if device already claimed a guest ID (reconnect after reload)
+    SELECT * INTO v_player 
+    FROM public.players 
+    WHERE device_id = p_device_id 
+    LIMIT 1;
 
     IF FOUND THEN
+        -- Update last seen heartbeat
+        UPDATE public.players 
+        SET last_seen_at = NOW(),
+            is_active = TRUE
+        WHERE id = v_player.id;
+
         RETURN jsonb_build_object(
-            'success', TRUE,
-            'already_checked_in', TRUE,
-            'visit_id', v_existing_visit.id,
-            'token_number', v_existing_visit.token_number,
-            'visit_date', CURRENT_DATE,
-            'patient_id', p_patient_id,
-            'message', 'Patient already checked in for today'
+            'player_id', v_player.id,
+            'guest_id', v_player.guest_id,
+            'name', v_player.name,
+            'avatar', v_player.avatar,
+            'team', v_player.team,
+            'total_score', v_player.total_score,
+            'is_new', FALSE
         );
     END IF;
 
-    SELECT COALESCE(MAX(token_number), 0) + 1
-    INTO v_next_token
-    FROM public.visits
-    WHERE visit_date = CURRENT_DATE;
+    -- 2. New device: Atomically increment sequence for guaranteed collision-free Guest ID
+    v_seq_val := nextval('public.guest_id_seq');
+    v_guest_id := 'Guest' || LPAD(v_seq_val::TEXT, 3, '0');
+    v_display_name := COALESCE(NULLIF(TRIM(p_name), ''), v_guest_id);
 
-    INSERT INTO public.visits (
-        patient_id,
-        visit_date,
-        token_number,
-        visit_type,
-        follow_up_days,
-        next_follow_up_date,
-        is_treatment_done,
-        is_checked
-    ) VALUES (
-        p_patient_id,
-        CURRENT_DATE,
-        v_next_token,
-        'existing_patient',
-        0,
-        NULL,
-        FALSE,
-        FALSE
+    -- 3. Insert new player row
+    INSERT INTO public.players (
+        guest_id,
+        device_id,
+        name,
+        avatar,
+        team,
+        total_score,
+        last_seen_at
     )
-    RETURNING id INTO v_new_visit_id;
+    VALUES (
+        v_guest_id,
+        p_device_id,
+        v_display_name,
+        COALESCE(p_avatar, '⚡'),
+        COALESCE(p_team, 'unassigned'),
+        0,
+        NOW()
+    )
+    RETURNING * INTO v_player;
 
-    UPDATE public.patients
-    SET 
-        last_visit_at = CURRENT_DATE,
-        current_category = CASE 
-            WHEN current_category = 'under_process' THEN 'actively_treated'
-            ELSE current_category
-        END,
-        updated_at = NOW()
-    WHERE id = p_patient_id;
-
-    SELECT jsonb_build_object(
-        'success', TRUE,
-        'already_checked_in', FALSE,
-        'visit_id', v_new_visit_id,
-        'token_number', v_next_token,
-        'visit_date', CURRENT_DATE,
-        'patient_id', p_patient_id,
-        'message', 'Check-in successful'
-    ) INTO v_result;
-
-    RETURN v_result;
+    RETURN jsonb_build_object(
+        'player_id', v_player.id,
+        'guest_id', v_player.guest_id,
+        'name', v_player.name,
+        'avatar', v_player.avatar,
+        'team', v_player.team,
+        'total_score', v_player.total_score,
+        'is_new', TRUE
+    );
 END;
 $$;
 
--- Function 3: Update Visit Follow-up Days & Auto-calculate Next Date
-CREATE OR REPLACE FUNCTION public.update_patient_visit_followup(
-    p_visit_id UUID,
-    p_follow_up_days INTEGER
+-- ==========================================================================
+-- 6. ATOMIC RPC: SUBMIT ROUND SCORE (Thread-Safe Score Increment)
+-- ==========================================================================
+CREATE OR REPLACE FUNCTION public.submit_player_answer(
+    p_player_id UUID,
+    p_round_number INTEGER,
+    p_selected_option TEXT,
+    p_is_correct BOOLEAN,
+    p_points INTEGER,
+    p_response_time_ms INTEGER
 )
 RETURNS JSONB
 LANGUAGE plpgsql
-SECURITY INVOKER
+SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-    v_visit_date DATE;
-    v_next_date DATE := NULL;
+    v_new_total INTEGER;
+    v_rounds_played INTEGER;
 BEGIN
-    SELECT visit_date INTO v_visit_date FROM public.visits WHERE id = p_visit_id;
+    -- 1. Insert answer with idempotency guard
+    INSERT INTO public.player_answers (
+        player_id,
+        round_number,
+        selected_option,
+        is_correct,
+        points_awarded,
+        response_time_ms
+    )
+    VALUES (
+        p_player_id,
+        p_round_number,
+        p_selected_option,
+        p_is_correct,
+        p_points,
+        p_response_time_ms
+    )
+    ON CONFLICT (player_id, round_number) DO NOTHING;
+
+    -- If duplicate submission, don't re-award points
     IF NOT FOUND THEN
-        RETURN jsonb_build_object('success', FALSE, 'message', 'Visit not found');
+        SELECT total_score INTO v_new_total FROM public.players WHERE id = p_player_id;
+        RETURN jsonb_build_object('success', FALSE, 'message', 'Answer already recorded', 'total_score', v_new_total);
     END IF;
 
-    IF p_follow_up_days > 0 THEN
-        v_next_date := v_visit_date + (p_follow_up_days || ' days')::INTERVAL;
-    END IF;
-
-    UPDATE public.visits
-    SET 
-        follow_up_days = p_follow_up_days,
-        next_follow_up_date = v_next_date
-    WHERE id = p_visit_id;
-
-    RETURN jsonb_build_object(
-        'success', TRUE,
-        'visit_id', p_visit_id,
-        'follow_up_days', p_follow_up_days,
-        'next_follow_up_date', v_next_date
-    );
-END;
-$$;
-
--- Function 4: Toggle Treatment Done & Synchronize Patient Category
-CREATE OR REPLACE FUNCTION public.toggle_treatment_done(
-    p_visit_id UUID,
-    p_is_done BOOLEAN
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY INVOKER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-    v_patient_id UUID;
-BEGIN
-    SELECT patient_id INTO v_patient_id FROM public.visits WHERE id = p_visit_id;
-    IF NOT FOUND THEN
-        RETURN jsonb_build_object('success', FALSE, 'message', 'Visit not found');
-    END IF;
-
-    UPDATE public.visits
-    SET is_treatment_done = p_is_done
-    WHERE id = p_visit_id;
-
-    UPDATE public.patients
-    SET 
-        current_category = CASE 
-            WHEN p_is_done THEN 'treatment_done'
-            ELSE 'actively_treated'
-        END,
+    -- 2. Atomically update player total score and stats
+    UPDATE public.players
+    SET total_score = total_score + p_points,
+        rounds_played = rounds_played + 1,
+        last_response_time_ms = p_response_time_ms,
+        last_seen_at = NOW(),
         updated_at = NOW()
-    WHERE id = v_patient_id;
+    WHERE id = p_player_id
+    RETURNING total_score INTO v_new_total;
 
     RETURN jsonb_build_object(
         'success', TRUE,
-        'visit_id', p_visit_id,
-        'patient_id', v_patient_id,
-        'is_treatment_done', p_is_done,
-        'current_category', CASE WHEN p_is_done THEN 'treatment_done' ELSE 'actively_treated' END
-    );
-END;
-$$;
-
--- Function 5: Toggle Checked Status for Doctor Daily Queue
-CREATE OR REPLACE FUNCTION public.toggle_patient_checked(
-    p_visit_id UUID,
-    p_is_checked BOOLEAN
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY INVOKER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-    UPDATE public.visits
-    SET is_checked = p_is_checked
-    WHERE id = p_visit_id;
-
-    IF NOT FOUND THEN
-        RETURN jsonb_build_object('success', FALSE, 'message', 'Visit not found');
-    END IF;
-
-    RETURN jsonb_build_object(
-        'success', TRUE,
-        'visit_id', p_visit_id,
-        'is_checked', p_is_checked
+        'total_score', v_new_total,
+        'points_awarded', p_points
     );
 END;
 $$;
 
 -- ==========================================================================
--- 5. FUNCTION EXECUTION GRANTS (Principle of Least Privilege)
--- Grants execution to logged-in clinic staff (authenticated) and backend (service_role)
+-- 7. ROW LEVEL SECURITY (RLS) POLICIES & PERMISSIONS
 -- ==========================================================================
-REVOKE ALL ON FUNCTION public.set_updated_at_timestamp() FROM anon, public;
-REVOKE ALL ON FUNCTION public.register_new_patient(TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT) FROM anon, public;
-REVOKE ALL ON FUNCTION public.checkin_existing_patient(UUID) FROM anon, public;
-REVOKE ALL ON FUNCTION public.update_patient_visit_followup(UUID, INTEGER) FROM anon, public;
-REVOKE ALL ON FUNCTION public.toggle_treatment_done(UUID, BOOLEAN) FROM anon, public;
-REVOKE ALL ON FUNCTION public.toggle_patient_checked(UUID, BOOLEAN) FROM anon, public;
+ALTER TABLE public.players ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.game_state ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.player_answers ENABLE ROW LEVEL SECURITY;
 
-GRANT EXECUTE ON FUNCTION public.set_updated_at_timestamp() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.register_new_patient(TEXT, INTEGER, TEXT, TEXT, TEXT, TEXT) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.checkin_existing_patient(UUID) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.update_patient_visit_followup(UUID, INTEGER) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.toggle_treatment_done(UUID, BOOLEAN) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.toggle_patient_checked(UUID, BOOLEAN) TO authenticated, service_role;
+-- Players table policies: Everyone on local Wi-Fi can view leaderboard, RPC manages mutations
+CREATE POLICY "Allow public read players for leaderboard"
+    ON public.players FOR SELECT
+    TO anon, authenticated
+    USING (true);
 
+-- Game state policies: Everyone can read active game phase
+CREATE POLICY "Allow public read game state"
+    ON public.game_state FOR SELECT
+    TO anon, authenticated
+    USING (true);
 
--- ==========================================================================
--- 6. ROW LEVEL SECURITY (RLS) POLICIES (Supabase Best Practices)
--- Enforces TO authenticated and cached (SELECT auth.uid())
--- Completely removes deprecated auth.role() and prevents duplicate policies
--- ==========================================================================
-ALTER TABLE public.patients ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.visits ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.whatsapp_logs ENABLE ROW LEVEL SECURITY;
+-- Answers: Players can inspect their own submissions
+CREATE POLICY "Allow public read own answers"
+    ON public.player_answers FOR SELECT
+    TO anon, authenticated
+    USING (true);
 
--- Clean all legacy, blanket and transitional policies
-DROP POLICY IF EXISTS "Allow authenticated full access to patients" ON public.patients;
-DROP POLICY IF EXISTS "Allow anon access during active clinic session patients" ON public.patients;
-DROP POLICY IF EXISTS "Allow clinic access to patients" ON public.patients;
-DROP POLICY IF EXISTS "Clinic staff access to patients" ON public.patients;
-DROP POLICY IF EXISTS "Authenticated users can manage patients" ON public.patients;
-DROP POLICY IF EXISTS "Authenticated users can view patients" ON public.patients;
-DROP POLICY IF EXISTS "Authenticated users can insert patients" ON public.patients;
-DROP POLICY IF EXISTS "Authenticated users can update patients" ON public.patients;
-
-DROP POLICY IF EXISTS "Allow authenticated full access to visits" ON public.visits;
-DROP POLICY IF EXISTS "Allow anon access during active clinic session visits" ON public.visits;
-DROP POLICY IF EXISTS "Allow clinic access to visits" ON public.visits;
-DROP POLICY IF EXISTS "Clinic staff access to visits" ON public.visits;
-DROP POLICY IF EXISTS "Authenticated users can manage visits" ON public.visits;
-DROP POLICY IF EXISTS "Authenticated users can view visits" ON public.visits;
-DROP POLICY IF EXISTS "Authenticated users can insert visits" ON public.visits;
-DROP POLICY IF EXISTS "Authenticated users can update visits" ON public.visits;
-
-DROP POLICY IF EXISTS "Allow authenticated full access to whatsapp_logs" ON public.whatsapp_logs;
-DROP POLICY IF EXISTS "Allow anon access during active clinic session whatsapp_logs" ON public.whatsapp_logs;
-DROP POLICY IF EXISTS "Allow clinic access to whatsapp_logs" ON public.whatsapp_logs;
-DROP POLICY IF EXISTS "Clinic staff access to whatsapp_logs" ON public.whatsapp_logs;
-DROP POLICY IF EXISTS "Authenticated users can manage whatsapp_logs" ON public.whatsapp_logs;
-DROP POLICY IF EXISTS "Authenticated users can view whatsapp logs" ON public.whatsapp_logs;
-DROP POLICY IF EXISTS "Authenticated users can insert whatsapp logs" ON public.whatsapp_logs;
-DROP POLICY IF EXISTS "Authenticated users can update whatsapp logs" ON public.whatsapp_logs;
-
--- Active Authenticated Policies
--- Uses modern 'TO authenticated' and cached '(SELECT auth.uid()) IS NOT NULL'
-CREATE POLICY "Authenticated users can manage patients"
-    ON public.patients
-    FOR ALL
-    TO authenticated
-    USING ((SELECT auth.uid()) IS NOT NULL)
-    WITH CHECK ((SELECT auth.uid()) IS NOT NULL);
-
-CREATE POLICY "Authenticated users can manage visits"
-    ON public.visits
-    FOR ALL
-    TO authenticated
-    USING ((SELECT auth.uid()) IS NOT NULL)
-    WITH CHECK ((SELECT auth.uid()) IS NOT NULL);
-
-CREATE POLICY "Authenticated users can manage whatsapp_logs"
-    ON public.whatsapp_logs
-    FOR ALL
-    TO authenticated
-    USING ((SELECT auth.uid()) IS NOT NULL)
-    WITH CHECK ((SELECT auth.uid()) IS NOT NULL);
-
+-- Grant schema and execution permissions to public anon role
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT USAGE, SELECT ON SEQUENCE public.guest_id_seq TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_guest_player TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.submit_player_answer TO anon, authenticated;
 
 -- ==========================================================================
--- 7. SUPABASE REALTIME CONFIGURATION
--- Enables instant websocket synchronization for doctor & receptionist devices
+-- 8. REALTIME REPLICATION (Instant Live Scoreboard Sync)
 -- ==========================================================================
-ALTER TABLE public.patients REPLICA IDENTITY FULL;
-ALTER TABLE public.visits REPLICA IDENTITY FULL;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_publication_tables 
-        WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'patients'
-    ) THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.patients;
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_publication_tables 
-        WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'visits'
-    ) THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.visits;
-    END IF;
-END $$;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.players;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.game_state;

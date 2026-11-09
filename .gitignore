@@ -16,6 +16,7 @@ dist-ssr
 .env.*
 AGENTS.md
 .agents
+.gemini
 skills-lock.json
 
 # Editor directories and files

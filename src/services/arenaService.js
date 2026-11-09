@@ -1,14 +1,14 @@
 import { supabase } from '../utils/supabase';
-import { getOrAssignPlayerId, generateRandomGuestId } from '../utils/playerId';
+import { getDeviceId, savePlayerRecord } from '../utils/playerId';
 
 /**
- * Arena Service — Real-time Multiplayer Game Engine & Live Scoreboard
- * Tuned for 200+ concurrent connections over local Wi-Fi / self-hosted Supabase.
+ * Arena Service — Real-time Multiplayer Engine & Live Leaderboard
+ * Tailored for 200+ concurrent mobile players over local Wi-Fi / self-hosted Supabase.
  */
 
 /**
- * Subscribes to real-time leaderboard score updates via Supabase Realtime channel.
- * Uses postgres_changes with automatic fallback or broadcast.
+ * Subscribes to live leaderboard score updates via Supabase Realtime WebSocket.
+ * Listens for any UPDATE or INSERT on the `players` table.
  */
 export function subscribeToLeaderboard(callback) {
   try {
@@ -16,7 +16,7 @@ export function subscribeToLeaderboard(callback) {
       .channel('arena_leaderboard_feed')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'arena_scores' },
+        { event: '*', schema: 'public', table: 'players' },
         (payload) => {
           if (typeof callback === 'function') callback(payload);
         }
@@ -31,7 +31,7 @@ export function subscribeToLeaderboard(callback) {
       supabase.removeChannel(channel);
     };
   } catch (err) {
-    console.error('[Arena Realtime] Subscription error:', err);
+    console.error('[Arena Realtime] Leaderboard subscription error:', err);
     return () => {};
   }
 }
@@ -62,21 +62,21 @@ export function subscribeToGameState(callback) {
 }
 
 /**
- * Fetches the current top leaderboard standings.
+ * Fetches the current top leaderboard standings ordered by total_score DESC.
  */
-export async function fetchLeaderboard(limit = 20) {
+export async function fetchLeaderboard(limit = 25) {
   try {
     const { data, error } = await supabase
-      .from('arena_scores')
-      .select('id, player_id, score, accuracy, response_time_ms, rank, player:players(name, avatar, team, badge_code)')
-      .order('score', { ascending: false })
-      .order('response_time_ms', { ascending: true })
+      .from('players')
+      .select('id, guest_id, name, avatar, team, total_score, accuracy, rounds_played, last_response_time_ms')
+      .order('total_score', { ascending: false })
+      .order('last_response_time_ms', { ascending: true })
       .limit(limit);
 
     if (error) throw error;
     return { success: true, data: data || [] };
   } catch (err) {
-    console.warn('[Arena Service] fetchLeaderboard:', err.message);
+    console.warn('[Arena Service] fetchLeaderboard error:', err.message);
     return { success: false, data: [], error: err.message };
   }
 }
@@ -97,49 +97,61 @@ export async function fetchActiveGameState() {
     if (error) throw error;
     return { success: true, data };
   } catch (err) {
-    console.warn('[Arena Service] fetchActiveGameState:', err.message);
+    console.warn('[Arena Service] fetchActiveGameState error:', err.message);
     return { success: false, data: null, error: err.message };
   }
 }
 
 /**
- * Register or login a player anonymously or with display handle and Guest ID.
+ * Atomically claims or reconnects a guest player using PostgreSQL sequence + device token.
+ * Prevents any ID collision and recovers existing session across mobile refreshes.
  */
-export async function registerPlayer({ name, team = 'unassigned', avatar = '⚡', guestId = null } = {}) {
+export async function claimOrRegisterGuest({ name = null, avatar = '⚡', team = 'unassigned' } = {}) {
   try {
-    const assignedGuestId = guestId || getOrAssignPlayerId() || generateRandomGuestId();
-    const displayName = (name && name.trim()) || assignedGuestId;
+    const deviceId = getDeviceId();
 
-    const { data, error } = await supabase
-      .from('players')
-      .insert([
-        {
-          name: displayName,
-          badge_code: assignedGuestId,
-          team,
-          avatar,
-        },
-      ])
-      .select()
-      .single();
+    // Call atomic PostgreSQL function
+    const { data, error } = await supabase.rpc('claim_guest_player', {
+      p_device_id: deviceId,
+      p_name: name,
+      p_avatar: avatar,
+      p_team: team,
+    });
 
     if (error) throw error;
+
+    if (data) {
+      savePlayerRecord(data);
+    }
+
     return { success: true, data };
   } catch (err) {
-    console.error('[Arena Service] registerPlayer error:', err);
-    return { success: false, error: err.message };
+    console.error('[Arena Service] claimOrRegisterGuest error:', err);
+    return { success: false, data: null, error: err.message };
   }
 }
 
+// Aliased for convenience
+export const registerPlayer = claimOrRegisterGuest;
+
 /**
- * Submit player score / round answer.
+ * Submit round answer and score. Thread-safe atomic update via PostgreSQL RPC.
  */
-export async function submitRoundScore({ playerId, roundId, scoreIncrement, responseTimeMs }) {
+export async function submitRoundScore({
+  playerId,
+  roundNumber,
+  selectedOption,
+  isCorrect = false,
+  points = 0,
+  responseTimeMs = 0,
+}) {
   try {
-    const { data, error } = await supabase.rpc('submit_arena_score', {
+    const { data, error } = await supabase.rpc('submit_player_answer', {
       p_player_id: playerId,
-      p_round_id: roundId,
-      p_score_increment: scoreIncrement,
+      p_round_number: roundNumber,
+      p_selected_option: selectedOption,
+      p_is_correct: isCorrect,
+      p_points: points,
       p_response_time_ms: responseTimeMs,
     });
 
