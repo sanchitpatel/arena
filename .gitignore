@@ -29,3 +29,12 @@ skills-lock.json
 *.sln
 *.sw?
 .wrangler/
+
+# Supabase Local Data & Secrets
+supabase/docker/.env
+supabase/docker/.env.*
+!supabase/docker/.env.example
+supabase/docker/volumes/db/data/
+supabase/docker/volumes/storage/
+supabase/docker/volumes/snippets/
+supabase/docker/backups/
