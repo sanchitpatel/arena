@@ -7,59 +7,75 @@ precision highp float;
 uniform float t;
 uniform vec2 res;
 
-float hash(vec3 p){ p = fract(p*0.3183099 + .1); p *= 17.; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+float hash(vec3 p){
+  p = fract(p * 0.3183099 + vec3(0.1));
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
 float noise(vec3 x){
-  vec3 i = floor(x), f = fract(x);
-  f = f*f*(3. - 2.*f);
+  vec3 i = floor(x);
+  vec3 f = fract(x);
+  // Quintic Hermite curve for buttery C2 continuity (eliminates noise creases)
+  f = f * f * f * (f * (f * 6.0 - vec3(15.0)) + vec3(10.0));
   return mix(
-    mix(mix(hash(i), hash(i+vec3(1,0,0)), f.x), mix(hash(i+vec3(0,1,0)), hash(i+vec3(1,1,0)), f.x), f.y),
-    mix(mix(hash(i+vec3(0,0,1)), hash(i+vec3(1,0,1)), f.x), mix(hash(i+vec3(0,1,1)), hash(i+vec3(1,1,1)), f.x), f.y),
+    mix(mix(hash(i), hash(i + vec3(1.0, 0.0, 0.0)), f.x),
+        mix(hash(i + vec3(0.0, 1.0, 0.0)), hash(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+    mix(mix(hash(i + vec3(0.0, 0.0, 1.0)), hash(i + vec3(1.0, 0.0, 1.0)), f.x),
+        mix(hash(i + vec3(0.0, 1.0, 1.0)), hash(i + vec3(1.0, 1.0, 1.0)), f.x), f.y),
     f.z);
 }
+
+// Buttery 3-octave harmonic waves (strips high-frequency mottled noise)
 float fbm(vec3 p){
-  float a = .5, s = 0.;
-  for(int i=0;i<5;i++){ s += a*noise(p); p = p*2.03 + vec3(1.7,9.2,3.1); a *= .5; }
-  return s;
+  return 0.58 * noise(p) + 0.28 * noise(p * 1.9 + vec3(1.7, 4.3, 2.1)) + 0.14 * noise(p * 3.6 + vec3(5.1, 1.2, 8.4));
 }
 
 void main(){
-  vec2 uv = (gl_FragCoord.xy - .5*res) / (.5*min(res.x,res.y));
+  vec2 uv = (gl_FragCoord.xy - 0.5 * res) / (0.5 * min(res.x, res.y));
   float r = length(uv);
-  float px = 2. / min(res.x,res.y);
-  float mask = 1. - smoothstep(1. - 1.5*px, 1., r);
-  if(mask <= 0.){ gl_FragColor = vec4(0.); return; }
+  float px = 2.0 / min(res.x, res.y);
+  float mask = 1.0 - smoothstep(1.0 - 1.5 * px, 1.0, r);
+  if (mask <= 0.0) { gl_FragColor = vec4(0.0); return; }
 
-  // point on sphere surface, rotated over time => fog drifts around inside
-  float z = sqrt(max(1. - r*r, 0.));
+  // Spherical 3D surface
+  float z = sqrt(max(1.0 - r * r, 0.0));
   vec3 n = vec3(uv, z);
-  float c = cos(t*.35), s = sin(t*.35);
-  vec3 p = vec3(c*n.x + s*n.z, n.y, -s*n.x + c*n.z) * 1.5;
 
-  // domain warp = organic, non-repeating swirls
+  // Slow, serene rotation around sphere
+  float c = cos(t * 0.22);
+  float s = sin(t * 0.22);
+  vec3 p = vec3(c * n.x + s * n.z, n.y, -s * n.x + c * n.z) * 1.25;
+
+  // Broad, silky domain warping
   vec3 w = vec3(
-    fbm(p + vec3(0., t*.45, 0.)),
-    fbm(p + vec3(5.2, 1.3, 2.8) - t*.38),
-    fbm(p + vec3(2.1, 7.7, 4.4) + t*.30));
-  float f = fbm(p + 2.4*(w - .5));
-  f = clamp(f*1.35 - .12 + uv.y*.30, 0., 1.);   // bias: bright top, deep blue bottom
+    noise(p * 0.95 + vec3(0.0, t * 0.20, 0.0)),
+    noise(p * 0.95 + vec3(3.2, 1.1, 4.5) - vec3(0.0, 0.0, t * 0.18)),
+    noise(p * 0.95 + vec3(1.5, 6.7, 2.3) + vec3(t * 0.15, 0.0, 0.0))
+  );
 
-  vec3 deep  = vec3(0.02, 0.36, 1.00);
-  vec3 mid   = vec3(0.17, 0.60, 1.00);
-  vec3 sky   = vec3(0.62, 0.88, 1.00);
-  vec3 cream = vec3(1.00, 0.99, 0.94);
+  float f = fbm(p + 1.15 * (w - vec3(0.5)));
+  f = clamp(f * 1.15 - 0.08 + uv.y * 0.26, 0.0, 1.0);
 
-  vec3 col = mix(deep, mid, smoothstep(.15, .45, f));
-  col = mix(col, sky,   smoothstep(.42, .68, f));
-  col = mix(col, cream, smoothstep(.66, .92, f));
+  // Soothing velvety palette
+  vec3 deep  = vec3(0.02, 0.38, 0.98); // Rich azure base
+  vec3 mid   = vec3(0.20, 0.65, 1.00); // Luminous cyan
+  vec3 sky   = vec3(0.66, 0.89, 1.00); // Soft sky wash
+  vec3 cream = vec3(0.98, 0.99, 1.00); // Warm silky highlight
 
-  // 3D shading
-  vec3 L = normalize(vec3(-.45, .6, .65));
-  float diff = dot(n, L)*.5 + .5;
-  col *= mix(.78, 1.06, diff);                                  // soft light/dark sides
-  col += vec3(.55,.8,1.) * pow(1. - z, 3.) * .22;               // faint fresnel glow at edge
-  col += vec3(1.) * pow(max(dot(n, normalize(L + vec3(0,0,1))), 0.), 40.) * .22; // soft specular
+  // Broad overlapping smoothsteps for buttery seamless blends
+  vec3 col = mix(deep, mid, smoothstep(0.05, 0.52, f));
+  col = mix(col, sky, smoothstep(0.36, 0.78, f));
+  col = mix(col, cream, smoothstep(0.64, 0.98, f));
 
-  gl_FragColor = vec4(col*mask, mask);
+  // Soft spherical lighting
+  vec3 L = normalize(vec3(-0.4, 0.55, 0.72));
+  float diff = dot(n, L) * 0.5 + 0.5;
+  col *= mix(0.82, 1.06, diff);
+  col += vec3(0.50, 0.78, 1.00) * pow(1.0 - z, 3.2) * 0.20; // Silky rim glow
+  col += vec3(1.00) * pow(max(dot(n, normalize(L + vec3(0.0, 0.0, 1.0))), 0.0), 36.0) * 0.18; // Specular luster
+
+  gl_FragColor = vec4(col * mask, mask);
 }
 `;
 
@@ -77,12 +93,18 @@ function useOrbGL(canvasRef, speed) {
       const s = gl.createShader(type);
       gl.shaderSource(s, src);
       gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        console.error('Shader compilation error:', gl.getShaderInfoLog(s));
+      }
       return s;
     };
     const prog = gl.createProgram();
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT));
     gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
     gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      console.error('Program linking error:', gl.getProgramInfoLog(prog));
+    }
     gl.useProgram(prog);
 
     const buf = gl.createBuffer();
