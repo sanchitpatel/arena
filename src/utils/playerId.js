@@ -48,6 +48,13 @@ export function formatGuestId(num) {
   return `Guest${String(n).padStart(3, '0')}`;
 }
 
+// Extracts integer Orb Number from guestId string (e.g. "Guest043" -> 43, "Guest001" -> 1)
+export function getOrbNumber(guestId) {
+  if (!guestId) return 1;
+  const digits = String(guestId).replace(/\D/g, '');
+  return parseInt(digits, 10) || 1;
+}
+
 /**
  * Returns a stable unique device UUID for the attendee's smartphone.
  * Synced across localStorage and 12-hour cookie.

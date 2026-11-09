@@ -23,7 +23,8 @@ CREATE SEQUENCE IF NOT EXISTS public.guest_id_seq
 -- ==========================================================================
 CREATE TABLE IF NOT EXISTS public.players (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    guest_id TEXT UNIQUE NOT NULL,                   -- e.g. Guest001, Guest002 (from sequence)
+    orb_number INTEGER UNIQUE NOT NULL,              -- Exact integer for player's glowing Orb (1, 2, 43, 58)
+    guest_id TEXT UNIQUE NOT NULL,                   -- e.g. Guest001, Guest002 (matches orb_number with padding)
     device_id TEXT UNIQUE NOT NULL,                  -- Client device UUID for seamless re-connection
     name TEXT NOT NULL,                              -- Player handle (defaults to guest_id)
     avatar TEXT NOT NULL DEFAULT '⚡',               -- Player emoji / icon
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS public.players (
 );
 
 -- Fast lookup indexes
+CREATE INDEX IF NOT EXISTS idx_players_orb_number ON public.players (orb_number);
 CREATE INDEX IF NOT EXISTS idx_players_guest_id ON public.players (guest_id);
 CREATE INDEX IF NOT EXISTS idx_players_device_id ON public.players (device_id);
 CREATE INDEX IF NOT EXISTS idx_players_leaderboard ON public.players (total_score DESC, last_response_time_ms ASC);
@@ -123,6 +125,7 @@ BEGIN
 
         RETURN jsonb_build_object(
             'player_id', v_player.id,
+            'orb_number', v_player.orb_number,
             'guest_id', v_player.guest_id,
             'name', v_player.name,
             'avatar', v_player.avatar,
@@ -132,13 +135,14 @@ BEGIN
         );
     END IF;
 
-    -- 2. New device: Atomically increment sequence for guaranteed collision-free Guest ID
+    -- 2. New device: Atomically increment sequence for guaranteed collision-free Guest ID & Orb number
     v_seq_val := nextval('public.guest_id_seq');
     v_guest_id := 'Guest' || LPAD(v_seq_val::TEXT, 3, '0');
     v_display_name := COALESCE(NULLIF(TRIM(p_name), ''), v_guest_id);
 
     -- 3. Insert new player row
     INSERT INTO public.players (
+        orb_number,
         guest_id,
         device_id,
         name,
@@ -148,6 +152,7 @@ BEGIN
         last_seen_at
     )
     VALUES (
+        v_seq_val,
         v_guest_id,
         p_device_id,
         v_display_name,
@@ -160,6 +165,7 @@ BEGIN
 
     RETURN jsonb_build_object(
         'player_id', v_player.id,
+        'orb_number', v_player.orb_number,
         'guest_id', v_player.guest_id,
         'name', v_player.name,
         'avatar', v_player.avatar,
