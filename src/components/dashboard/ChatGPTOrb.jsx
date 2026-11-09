@@ -66,8 +66,12 @@ void main(){
 function useOrbGL(canvasRef, speed) {
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true });
     if (!gl) return;
+
+    const onLost = (e) => e.preventDefault();
+    canvas.addEventListener('webglcontextlost', onLost);
 
     const sh = (type, src) => {
       const s = gl.createShader(type);
@@ -114,12 +118,12 @@ function useOrbGL(canvasRef, speed) {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      canvas.removeEventListener('webglcontextlost', onLost);
     };
   }, [canvasRef, speed]);
 }
 
-export default function ChatGPTOrb({ orbNumber = 1, avatar = '⚡', size = 'w-28 h-28', speed = 1 }) {
+export default function ChatGPTOrb({ orbNumber = 1, avatar = '⚡', size = 'w-28 h-28', speed = 0.45 }) {
   const canvasRef = useRef(null);
   useOrbGL(canvasRef, speed);
 
@@ -128,8 +132,11 @@ export default function ChatGPTOrb({ orbNumber = 1, avatar = '⚡', size = 'w-28
       <div className="pointer-events-none absolute inset-2 -z-10 rounded-full bg-sky-400/40 blur-2xl" />
 
       <div
-        className={`relative ${size} rounded-full`}
-        style={{ boxShadow: '0 14px 36px rgba(2,110,220,0.30)' }}
+        className={`relative ${size} overflow-hidden rounded-full`}
+        style={{
+          boxShadow: '0 14px 36px rgba(2,110,220,0.30)',
+          background: 'linear-gradient(180deg,#d8f3ff,#2c98ff 70%,#0a6cff)',
+        }}
       >
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full rounded-full" />
 
