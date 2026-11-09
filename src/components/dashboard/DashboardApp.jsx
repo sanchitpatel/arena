@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
 import { LoginView } from './LoginView';
-import { RegisterView } from './RegisterView';
-import { ForgotPasswordView } from './ForgotPasswordView';
 import { DashboardShell } from './DashboardShell';
 import { NewPatientView } from './NewPatientView';
 import { ExistingPatientView } from './ExistingPatientView';
 import { DoctorDashboardView } from './DoctorDashboardView';
 import { NotificationView } from './NotificationView';
-import { LearningConsoleApp } from '../learning-console/LearningConsoleApp';
 import { CircleNotch } from '../icons';
 
 // Unified Hash Parser for PWA & Browser History navigation
@@ -193,35 +190,17 @@ const DashboardContent = () => {
     );
   }
 
-  // If user is not authenticated and not exploring demo, render the Auth views (Login / Register / Forgot Password)
+  // If user has not yet clicked Enter/Proceed, render the Onboarding/Login view
   if (!user && !guestMode) {
-    if (authView === 'register') {
-      return (
-        <RegisterView
-          onNavigateToLogin={() => setAuthView('login')}
-          onExploreDemo={() => setGuestMode(true)}
-        />
-      );
-    }
-    if (authView === 'forgot-password') {
-      return (
-        <ForgotPasswordView
-          onNavigateToLogin={() => setAuthView('login')}
-          onExploreDemo={() => setGuestMode(true)}
-        />
-      );
-    }
     return (
       <LoginView
-        onNavigateToRegister={() => setAuthView('register')}
-        onNavigateToForgotPassword={() => setAuthView('forgot-password')}
         onExploreDemo={() => setGuestMode(true)}
+        onEnterArena={() => setGuestMode(true)}
       />
     );
   }
 
-  // Preserved legacy clinic views (if specifically requested via #clinic)
-  if (typeof window !== 'undefined' && window.location.hash.includes('clinic')) {
+  // Once entered, render the main responsive Arena game views (transformed dashboard)
   return (
     <DashboardShell activeTab={activeTab} onTabChange={handleTabChange}>
       <div className={activeTab === 'new-patient' ? 'block' : 'hidden'}>
@@ -243,22 +222,6 @@ const DashboardContent = () => {
         <NotificationView />
       </div>
     </DashboardShell>
-    );
-  }
-
-  return (
-    <LearningConsoleApp
-      onSignOut={async () => {
-        setGuestMode(false);
-        if (user && signOut) {
-          try {
-            await signOut();
-          } catch (e) {
-            console.error('Sign out error:', e);
-          }
-        }
-      }}
-    />
   );
 };
 
