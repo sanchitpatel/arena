@@ -165,7 +165,10 @@ export default function ChatGPTOrb({ orbNumber = 1, avatar = '1', size = 'w-28 h
 
         <div className="relative z-10 flex h-full w-full flex-col items-center justify-center text-center pointer-events-none">
           <span className="font-sans text-[12px] -mt-2 font-black uppercase tracking-widest text-sky-950/70">ORB</span>
-          <span className="font-arena mt-0.5 text-4xl font-black leading-none tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,40,160,0.6)] sm:text-[34px]">
+          <span
+            className="font-arena mt-0.5 text-4xl font-black leading-none tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,40,160,0.6)] sm:text-[34px]"
+            style={{ WebkitTextStroke: '1px #a4a4a9ff', paintOrder: 'stroke fill' }}
+          >
             {orbNumber}
           </span>
         </div>

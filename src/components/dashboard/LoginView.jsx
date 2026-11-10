@@ -117,7 +117,7 @@ export const LoginView = ({ onEnterArena }) => {
                 />
 
                 <div className="mt-4 text-center">
-                  <span className="inline-block px-3.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-900 font-mono text-xs font-bold tracking-wider">
+                  <span className="font-arena inline-block px-3.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-900 text-[13px] tracking-wider">
                     {guestId}
                   </span>
                   <p className="text-[11px] text-zinc-500 mt-1">
