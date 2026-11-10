@@ -105,6 +105,17 @@ export async function fetchActiveGameState() {
 // In-flight singleton promise to guarantee only 1 network request per device mount
 let activeClaimPromise = null;
 
+// Enforces a strict 5-second timeout on network RPC calls to prevent indefinite spinner hanging
+const RPC_TIMEOUT_MS = 4000;
+
+function withTimeout(promise, ms, errorMsg = 'Server response timed out. Please check Wi-Fi connection.') {
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(errorMsg)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
 /**
  * Atomically claims or reconnects a guest player using PostgreSQL sequence + device token.
  * Prevents any ID collision and recovers existing session across mobile refreshes.
@@ -119,13 +130,15 @@ export async function claimOrRegisterGuest({ name = null, avatar = '1', team = '
     try {
       const deviceId = getDeviceId();
 
-      // Call atomic PostgreSQL function
-      const { data, error } = await supabase.rpc('claim_guest_player', {
+      // Call atomic PostgreSQL function with strict timeout
+      const rpcCall = supabase.rpc('claim_guest_player', {
         p_device_id: deviceId,
         p_name: name,
         p_avatar: avatar,
         p_team: team,
       });
+
+      const { data, error } = await withTimeout(rpcCall, RPC_TIMEOUT_MS);
 
       if (error) throw error;
 

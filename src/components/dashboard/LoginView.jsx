@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { claimOrRegisterGuest } from '../../services/arenaService';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import { normalizePlayerInput, validatePlayerHandle } from '../../utils/sanitize';
@@ -44,77 +44,70 @@ export const LoginView = ({ onEnterArena }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
   // On mount, claim or reconnect this device in PostgreSQL to fetch official sequential Orb & Guest ID
-  useEffect(() => {
-    let isMounted = true;
+  const initGuest = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage('');
+      const res = await claimOrRegisterGuest();
 
-    async function initGuest() {
-      try {
-        setIsLoading(true);
-        const res = await claimOrRegisterGuest();
-        if (!isMounted) return;
+      if (res.success && res.data) {
+        const assignedGuestId = res.data.guest_id;
+        const assignedOrb = res.data.orb_number || getOrbNumber(assignedGuestId);
+        setGuestId(assignedGuestId);
+        setOrbNumber(assignedOrb);
 
-        if (res.success && res.data) {
-          const assignedGuestId = res.data.guest_id;
-          const assignedOrb = res.data.orb_number || getOrbNumber(assignedGuestId);
-          setGuestId(assignedGuestId);
-          setOrbNumber(assignedOrb);
+        // Priority for username restoration:
+        // 1. Locally typed/cached draft (protects accidental refresh while typing)
+        // 2. Already registered handle in DB (if previously customized)
+        // 3. Fallback to empty (placeholder will display assigned Guest ID)
+        let cachedDraft = '';
+        try {
+          cachedDraft = window.localStorage.getItem(STORAGE_KEY_DRAFT_NAME) || '';
+        } catch {}
 
-          // Priority for username restoration:
-          // 1. Locally typed/cached draft (protects accidental refresh while typing)
-          // 2. Already registered handle in DB (if previously customized)
-          // 3. Fallback to empty (placeholder will display assigned Guest ID)
-          let cachedDraft = '';
+        if (cachedDraft) {
+          setPlayerName(cachedDraft);
+        } else if (res.data.name && res.data.name !== assignedGuestId) {
+          setPlayerName(res.data.name);
           try {
-            cachedDraft = window.localStorage.getItem(STORAGE_KEY_DRAFT_NAME) || '';
+            window.localStorage.setItem(STORAGE_KEY_DRAFT_NAME, res.data.name);
           } catch {}
-
-          if (cachedDraft) {
-            setPlayerName(cachedDraft);
-          } else if (res.data.name && res.data.name !== assignedGuestId) {
-            setPlayerName(res.data.name);
-            try {
-              window.localStorage.setItem(STORAGE_KEY_DRAFT_NAME, res.data.name);
-            } catch {}
-          } else {
-            setPlayerName('');
-          }
-
-          // Same smart caching for avatar selection
-          let cachedAvatar = '';
-          try {
-            cachedAvatar = window.localStorage.getItem(STORAGE_KEY_DRAFT_AVATAR) || '';
-          } catch {}
-
-          if (cachedAvatar) {
-            setSelectedAvatar(cachedAvatar);
-          } else if (res.data.avatar) {
-            const num = parseInt(String(res.data.avatar).replace(/\D/g, ''), 10);
-            const validNum = num >= 1 && num <= 30 ? String(num) : '1';
-            setSelectedAvatar(validNum);
-            try {
-              window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, validNum);
-            } catch {}
-          }
-
-          if (res.data.team) setSelectedTeam(res.data.team);
         } else {
-          setErrorMessage('Unable to connect to local Arena server. Please check Wi-Fi.');
+          setPlayerName('');
         }
-      } catch (err) {
-        console.warn('[Onboarding] Error claiming player ID:', err);
-        if (isMounted) {
-          setErrorMessage('Unable to connect to local Arena server. Please check Wi-Fi.');
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
 
-    initGuest();
-    return () => {
-      isMounted = false;
-    };
+        // Same smart caching for avatar selection
+        let cachedAvatar = '';
+        try {
+          cachedAvatar = window.localStorage.getItem(STORAGE_KEY_DRAFT_AVATAR) || '';
+        } catch {}
+
+        if (cachedAvatar) {
+          setSelectedAvatar(cachedAvatar);
+        } else if (res.data.avatar) {
+          const num = parseInt(String(res.data.avatar).replace(/\D/g, ''), 10);
+          const validNum = num >= 1 && num <= 30 ? String(num) : '1';
+          setSelectedAvatar(validNum);
+          try {
+            window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, validNum);
+          } catch {}
+        }
+
+        if (res.data.team) setSelectedTeam(res.data.team);
+      } else {
+        setErrorMessage(res?.error || 'Unable to connect to local Arena server. Please check Wi-Fi.');
+      }
+    } catch (err) {
+      console.warn('[Onboarding] Error claiming player ID:', err);
+      setErrorMessage(err.message || 'Unable to connect to local Arena server. Please check Wi-Fi.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    initGuest();
+  }, [initGuest]);
 
   // Instant real-time draft caching on every keystroke
   const handleNameChange = (e) => {
@@ -206,7 +199,7 @@ export const LoginView = ({ onEnterArena }) => {
         </div>
 
         {/* Neumorphic Main Onboarding Card */}
-        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-7 sm:p-9 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
+        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 sm:p-9 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
           {isLoading && !guestId ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
               <CircleNotch size={32} className="animate-spin text-slate-500" />
@@ -217,7 +210,7 @@ export const LoginView = ({ onEnterArena }) => {
               <p className="text-xs font-semibold text-rose-600">{errorMessage}</p>
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={initGuest}
                 className="px-5 py-2.5 bg-zinc-900 text-white text-xs font-bold rounded-full shadow hover:bg-zinc-800 transition cursor-pointer"
               >
                 Retry Connection
@@ -266,7 +259,7 @@ export const LoginView = ({ onEnterArena }) => {
                   />
                 </div>
                 {errorMessage && (
-                  <p className="text-[11px] font-medium text-rose-500 pl-2 pt-0.5">
+                  <p className="text-[10.5px] font-medium text-rose-500 pl-2 pt-0.5">
                     {errorMessage}
                   </p>
                 )}

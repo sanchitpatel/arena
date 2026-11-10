@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Resolve URL: when accessed remotely (e.g. mobile phone via Cloudflare tunnel or LAN),
-// use window.location.origin so Vite's reverse proxy securely routes /rest and /realtime to Supabase port 8000.
+// Resolve URL: on localhost, directly connects to Supabase on port 8000.
+// On remote mobile tunnels (e.g. Cloudflare tunnel), routes via window.location.origin
+// so Vite proxies API and Realtime traffic seamlessly.
 const getSupabaseUrl = () => {
   if (typeof window !== 'undefined') {
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (!isLocal) {
+    const isTunnel = window.location.hostname.includes('trycloudflare.com') || window.location.hostname.includes('tunnel');
+    if (isTunnel) {
       return window.location.origin;
     }
   }
