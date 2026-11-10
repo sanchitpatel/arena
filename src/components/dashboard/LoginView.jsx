@@ -155,7 +155,7 @@ export const LoginView = ({ onEnterArena }) => {
                 </div>
 
                 <div className="p-3 bg-[#F2F7FC] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
-                  <div className="grid grid-cols-6 gap-2 max-h-[160px] overflow-y-auto p-2 pr-1.5 scrollbar-thin">
+                  <div className="grid grid-cols-5 gap-2.5 sm:gap-3 max-h-[185px] overflow-y-auto p-1.5 pr-1 scrollbar-thin">
                     {CURATED_AVATARS.map((av) => {
                       const isSelected = String(selectedAvatar) === String(av.id) || String(selectedAvatar) === String(av.num);
                       return (
@@ -163,12 +163,13 @@ export const LoginView = ({ onEnterArena }) => {
                           key={av.id}
                           type="button"
                           onClick={() => setSelectedAvatar(av.id)}
-                          className={`relative flex items-center justify-center p-0.5 rounded-full transition-all duration-150 cursor-pointer ${isSelected
-                              ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-[#e6ebf2] scale-110 shadow-md z-10'
-                              : 'opacity-80 hover:opacity-100 hover:scale-105 active:scale-95'
-                            }`}
+                          className={`relative flex items-center justify-center p-0.5 rounded-full transition-all duration-150 cursor-pointer ${
+                            isSelected
+                              ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-[#F2F7FC] scale-105 shadow-md z-10'
+                              : 'opacity-85 hover:opacity-100 hover:scale-105 active:scale-95'
+                          }`}
                         >
-                          <ArenaAvatar id={av.id} size="sm" className="w-10 h-10 shadow-sm" />
+                          <ArenaAvatar id={av.id} size="md" className="w-12 h-12 sm:w-[50px] sm:h-[50px] shadow-sm" />
                         </button>
                       );
                     })}
