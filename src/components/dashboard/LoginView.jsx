@@ -4,14 +4,13 @@ import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import { CircleNotch, ArrowRight, Sparkle, User, ShieldCheck } from '../icons';
 import Logo from '../Logo';
 import ChatGPTOrb from './ChatGPTOrb';
-
-const AVATAR_OPTIONS = ['⚡', '🔥', '🚀', '👑', '🎯', '💎', '👾', '🌟'];
+import ArenaAvatar, { CURATED_AVATARS } from '../avatars/ArenaAvatar';
 
 export const LoginView = ({ onEnterArena }) => {
   const [guestId, setGuestId] = useState(() => getPlayerId() || 'Guest001');
   const [orbNumber, setOrbNumber] = useState(() => getOrbNumber(guestId) || 1);
   const [playerName, setPlayerName] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState('⚡');
+  const [selectedAvatar, setSelectedAvatar] = useState('1');
   const [selectedTeam, setSelectedTeam] = useState('Alpha');
   const [isLoading, setIsLoading] = useState(true);
   const [isEntering, setIsEntering] = useState(false);
@@ -142,27 +141,38 @@ export const LoginView = ({ onEnterArena }) => {
                 </div>
               </div>
 
-              {/* Avatar Selector */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-600 pl-1 flex items-center gap-1.5">
-                  <Sparkle size={13} weight="bold" className="text-emerald-700" />
-                  Choose Emblem
-                </label>
-                <div className="flex items-center justify-between gap-1 p-1.5 bg-[#e6ebf2] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
-                  {AVATAR_OPTIONS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => setSelectedAvatar(emoji)}
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center text-base transition-all duration-150 cursor-pointer ${
-                        selectedAvatar === emoji
-                          ? 'bg-gradient-to-b from-emerald-600 to-emerald-700 text-white shadow-[2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] scale-110'
-                          : 'hover:bg-black/5 text-zinc-700'
-                      }`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+              {/* Curated Lorelei Avatar Selector */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between pl-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-600 flex items-center gap-1.5">
+                    <Sparkle size={13} weight="bold" className="text-sky-600" />
+                    Choose Avatar
+                  </label>
+                  <span className="text-[11px] font-semibold text-zinc-500 font-mono">
+                    {CURATED_AVATARS.length} Curated
+                  </span>
+                </div>
+
+                <div className="p-2.5 bg-[#e6ebf2] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
+                  <div className="grid grid-cols-6 gap-2 max-h-[160px] overflow-y-auto p-1 pr-1.5 scrollbar-thin">
+                    {CURATED_AVATARS.map((av) => {
+                      const isSelected = String(selectedAvatar) === String(av.id) || String(selectedAvatar) === String(av.num);
+                      return (
+                        <button
+                          key={av.id}
+                          type="button"
+                          onClick={() => setSelectedAvatar(av.id)}
+                          className={`relative flex items-center justify-center p-0.5 rounded-full transition-all duration-150 cursor-pointer ${
+                            isSelected
+                              ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-[#e6ebf2] scale-110 shadow-md z-10'
+                              : 'opacity-80 hover:opacity-100 hover:scale-105 active:scale-95'
+                          }`}
+                        >
+                          <ArenaAvatar id={av.id} size="sm" className="w-10 h-10 shadow-sm" />
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 

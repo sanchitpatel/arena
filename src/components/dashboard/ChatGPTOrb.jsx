@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import ArenaAvatar from '../avatars/ArenaAvatar';
 
 const VERT = `attribute vec2 a; void main(){ gl_Position = vec4(a, 0., 1.); }`;
 
@@ -109,7 +110,7 @@ function useOrbGL(canvasRef, speed) {
 
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(prog, 'a');
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
@@ -171,8 +172,8 @@ export default function ChatGPTOrb({ orbNumber = 1, avatar = '⚡', size = 'w-28
       </div>
 
       {avatar && (
-        <div className="absolute -bottom-1 -right-1 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white bg-white/90 text-sm shadow-[0_4px_12px_rgba(0,0,0,0.18)] backdrop-blur-md">
-          {avatar}
+        <div className="absolute -bottom-1 -right-1 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-white shadow-[0_4px_14px_rgba(0,0,0,0.22)] backdrop-blur-md overflow-hidden">
+          <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
         </div>
       )}
     </div>
