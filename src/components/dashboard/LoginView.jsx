@@ -63,7 +63,7 @@ export const LoginView = ({ onEnterArena }) => {
         let cachedDraft = '';
         try {
           cachedDraft = window.localStorage.getItem(STORAGE_KEY_DRAFT_NAME) || '';
-        } catch {}
+        } catch { }
 
         if (cachedDraft) {
           setPlayerName(cachedDraft);
@@ -71,7 +71,7 @@ export const LoginView = ({ onEnterArena }) => {
           setPlayerName(res.data.name);
           try {
             window.localStorage.setItem(STORAGE_KEY_DRAFT_NAME, res.data.name);
-          } catch {}
+          } catch { }
         } else {
           setPlayerName('');
         }
@@ -80,7 +80,7 @@ export const LoginView = ({ onEnterArena }) => {
         let cachedAvatar = '';
         try {
           cachedAvatar = window.localStorage.getItem(STORAGE_KEY_DRAFT_AVATAR) || '';
-        } catch {}
+        } catch { }
 
         if (cachedAvatar) {
           setSelectedAvatar(cachedAvatar);
@@ -90,7 +90,7 @@ export const LoginView = ({ onEnterArena }) => {
           setSelectedAvatar(validNum);
           try {
             window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, validNum);
-          } catch {}
+          } catch { }
         }
 
         if (res.data.team) setSelectedTeam(res.data.team);
@@ -159,7 +159,7 @@ export const LoginView = ({ onEnterArena }) => {
       try {
         window.localStorage.setItem(STORAGE_KEY_DRAFT_NAME, displayName);
         window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, String(selectedAvatar));
-      } catch {}
+      } catch { }
 
       // 2. Submit normalized name & avatar to PostgreSQL
       const res = await claimOrRegisterGuest({
@@ -191,15 +191,15 @@ export const LoginView = ({ onEnterArena }) => {
     <div className="min-h-screen w-full bg-[#f0f2f5] text-zinc-800 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans select-none">
       <div className="w-full max-w-[430px] relative z-10">
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-5">
-          <Logo className="w-[68px] h-[68px] sm:w-20 sm:h-20 mb-2" />
+        <div className="flex flex-col items-center text-center mb-3">
+          <Logo className="w-[68px] h-[68px] sm:w-20 sm:h-20 mb-1" />
           <h1 className="font-arena text-[32px] sm:text-[36px] font-black tracking-wider text-zinc-900">
             ARENA
           </h1>
         </div>
 
         {/* Neumorphic Main Onboarding Card */}
-        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 sm:p-9 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
+        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-4 sm:p-9 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
           {isLoading && !guestId ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
               <CircleNotch size={32} className="animate-spin text-slate-500" />
@@ -228,12 +228,12 @@ export const LoginView = ({ onEnterArena }) => {
 
                 <div className="mt-4 text-center">
                   <span
-                    className="font-arena inline-block px-3.5 py-1 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[13.5px] tracking-wider shadow-sm"
+                    className="font-arena inline-block px-3.5 py-1 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[12.5px] tracking-wider shadow-sm"
                     style={{ WebkitTextStroke: '0.5px' }}
                   >
                     {guestId || 'Guest...'}
                   </span>
-                  <p className="text-[12px] text-zinc-500/80 mt-1">
+                  <p className="text-[11px] text-zinc-500/80 mt-1">
                     Your assigned player identity on venue network
                   </p>
                 </div>
@@ -254,7 +254,7 @@ export const LoginView = ({ onEnterArena }) => {
                     maxLength={16}
                     autoComplete="off"
                     spellCheck="false"
-                    className="w-full py-3 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-sm rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus-visible:outline-none focus-visible:ring-0 selection:bg-sky-200 selection:text-zinc-900 transition-colors duration-150 placeholder:text-zinc-400"
+                    className="w-full py-2.5 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-[13px] rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus-visible:outline-none focus-visible:ring-0 selection:bg-sky-200 selection:text-zinc-900 transition-colors duration-150 placeholder:text-zinc-400"
                     style={{ outline: 'none', WebkitTapHighlightColor: 'transparent' }}
                   />
                 </div>
@@ -266,10 +266,10 @@ export const LoginView = ({ onEnterArena }) => {
               </div>
 
               {/* Curated Lorelei Avatar Selector */}
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between pl-1">
-                  <label className="text-[14px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5 -mt-1.5">
-                    <UserCircle size={20} weight="bold" className="text-zinc-500/80 " />
+                  <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5 -mt-2">
+                    <UserCircle size={17} weight="bold" className="text-zinc-500/80 " />
                     Choose Avatar
                   </label>
                 </div>
@@ -283,11 +283,10 @@ export const LoginView = ({ onEnterArena }) => {
                           key={av.id}
                           type="button"
                           onClick={() => handleAvatarSelect(av.id)}
-                          className={`relative flex items-center justify-center p-0.5 rounded-full transition-all duration-150 cursor-pointer ${
-                            isSelected
-                              ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-[#F2F7FC] scale-105 shadow-md z-10'
-                              : 'opacity-85 hover:opacity-100 hover:scale-105 active:scale-95'
-                          }`}
+                          className={`relative flex items-center justify-center p-0.5 rounded-full transition-all duration-150 cursor-pointer ${isSelected
+                            ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-[#F2F7FC] scale-105 shadow-md z-10'
+                            : 'opacity-85 hover:opacity-100 hover:scale-105 active:scale-95'
+                            }`}
                         >
                           <ArenaAvatar id={av.id} size="md" className="w-12 h-12 sm:w-[50px] sm:h-[50px] shadow-sm" />
                         </button>
