@@ -103,23 +103,23 @@ export const DashboardShell = ({
   ];
 
   return (
-    <div className="h-screen w-full bg-[#e6ebf2] text-zinc-800 flex flex-col md:flex-row font-sans selection:bg-emerald-500/20 selection:text-emerald-900 overflow-hidden">
+    <div className="h-screen w-full bg-[#f0f2f5] text-zinc-800 flex flex-col md:flex-row font-sans selection:bg-sky-200 selection:text-zinc-900 overflow-hidden">
 
       {/* ========================================================
           1. DESKTOP SIDEBAR (Soft Slate Neumorphic Theme)
           ======================================================== */}
-      <aside className="hidden md:flex flex-col w-60 lg:w-64 bg-[#e6ebf2] border-r border-zinc-300/60 shrink-0 h-full z-30 shadow-[4px_0_16px_#c8d0db]">
+      <aside className="hidden md:flex flex-col w-60 lg:w-64 bg-[#ebedf2] border-r border-slate-300/60 shrink-0 h-full z-30 shadow-[4px_0_16px_#c8d0db]">
 
         {/* Arena Brand Header */}
         <div className="p-4 border-b border-zinc-300/50 flex items-center gap-2.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#e6ebf2] shadow-[3px_3px_6px_#c2c9d4,-3px_-3px_6px_#ffffff] border border-white/60 flex items-center justify-center overflow-hidden shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-[#ebedf2] shadow-[3px_3px_6px_#c2c9d4,-3px_-3px_6px_#ffffff] border border-white/60 flex items-center justify-center overflow-hidden shrink-0">
             <Logo className="w-8 h-8" />
           </div>
           <div className="overflow-hidden">
             <h1 className="text-base font-black tracking-wider text-zinc-900 truncate font-arena">
               ARENA
             </h1>
-            <p className="text-[10px] font-bold text-emerald-700 tracking-wider uppercase mt-0.5">
+            <p className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase mt-0.5">
               Live Battleground
             </p>
           </div>
@@ -139,15 +139,15 @@ export const DashboardShell = ({
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left text-sm transition-all duration-200 group cursor-pointer ${isActive
-                  ? 'bg-[#e6ebf2] text-emerald-900 shadow-[3px_3px_8px_#c6ced9,-3px_-3px_8px_#ffffff] border border-white font-bold'
+                  ? 'bg-[#ebedf2] text-zinc-900 shadow-[3px_3px_8px_#c6ced9,-3px_-3px_8px_#ffffff] border border-white font-bold'
                   : 'text-zinc-600 hover:text-zinc-900 hover:shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] font-medium border border-transparent'
                   }`}
               >
                 <div className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all shrink-0 ${isActive
-                  ? 'bg-gradient-to-b from-emerald-600 to-emerald-700 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]'
-                  : 'bg-[#e6ebf2] text-zinc-500 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] group-hover:text-emerald-700'
+                  ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
+                  : 'bg-[#ebedf2] text-zinc-500 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] group-hover:text-zinc-900'
                   }`}>
-                  <Icon size={24} weight={isActive ? 'regular' : 'duotone'} />
+                  <Icon size={24} weight={isActive ? 'bold' : 'duotone'} />
                 </div>
                 <div className="flex-1 min-w-0 truncate">
                   <div className="leading-tight truncate">{item.label}</div>
@@ -166,7 +166,7 @@ export const DashboardShell = ({
         {/* Attendee / Guest Player Profile & Expandable Sign Out */}
         <div
           ref={profileRef}
-          className="m-3 p-3 rounded-2xl bg-[#e6ebf2] border border-white/80 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] transition-all duration-300 ease-out"
+          className="m-3 p-3 rounded-2xl bg-[#ebedf2] border border-white/80 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] transition-all duration-300 ease-out"
         >
           {/* Header Row Trigger */}
           <button
@@ -181,14 +181,14 @@ export const DashboardShell = ({
               <div className="text-xs font-bold text-zinc-900 truncate">
                 {displayName}
               </div>
-              <div className="text-[10px] font-semibold text-emerald-700 font-mono tracking-tight flex items-center gap-1.5 mt-0.5">
+              <div className="text-[10px] font-semibold text-zinc-600 font-mono tracking-tight flex items-center gap-1.5 mt-0.5">
                 <span>{guestId}</span>
-                <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
                 <span className="text-zinc-600">Orb #{orbNumber}</span>
               </div>
             </div>
             <div className="text-zinc-400 group-hover:text-zinc-600">
-              <CaretUp size={14} weight="bold" className={`transition-transform duration-300 ease-out ${profileMenuOpen ? 'rotate-180 text-emerald-700' : ''}`} />
+              <CaretUp size={14} weight="bold" className={`transition-transform duration-300 ease-out ${profileMenuOpen ? 'rotate-180 text-zinc-900' : ''}`} />
             </div>
           </button>
 
@@ -218,7 +218,7 @@ export const DashboardShell = ({
       {mobileProfileOpen && (
         <div
           ref={mobileProfileRef}
-          className="md:hidden fixed bottom-20 right-3 z-50 w-64 bg-[#e6ebf2] border border-white/90 rounded-2xl p-4 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6,0_8px_20px_rgba(0,0,0,0.12)] transition-all duration-200 ease-out"
+          className="md:hidden fixed bottom-20 right-3 z-50 w-64 bg-[#ebedf2] border border-white/90 rounded-2xl p-4 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6,0_8px_20px_rgba(0,0,0,0.12)] transition-all duration-200 ease-out"
         >
           <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-zinc-300/60">
             <div className="w-10 h-10 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] border-2 border-white flex items-center justify-center overflow-hidden shrink-0">
@@ -228,12 +228,12 @@ export const DashboardShell = ({
               <div className="text-xs font-bold text-zinc-900 truncate">
                 {displayName}
               </div>
-              <div className="text-[10px] font-semibold text-emerald-700 font-mono tracking-tight flex items-center gap-1.5 mt-0.5">
+              <div className="text-[10px] font-semibold text-zinc-600 font-mono tracking-tight flex items-center gap-1.5 mt-0.5">
                 <span>{guestId}</span>
-                <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
                 <span className="text-zinc-600">Orb #{orbNumber}</span>
               </div>
-              <div className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider mt-0.5">
+              <div className="text-[9px] text-sky-700 font-bold uppercase tracking-wider mt-0.5">
                 Active Live Session
               </div>
             </div>
@@ -250,7 +250,7 @@ export const DashboardShell = ({
         </div>
       )}
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#e6ebf2]/95 backdrop-blur-lg border-t border-zinc-300/70 shadow-[0_-4px_16px_#c8d0db] px-2 py-1.5">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#ebedf2]/95 backdrop-blur-lg border-t border-slate-300/60 shadow-[0_-4px_20px_rgba(197,204,214,0.7)] px-2 py-1.5">
         <div className="flex items-center justify-around max-w-md mx-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -263,15 +263,15 @@ export const DashboardShell = ({
                   setMobileProfileOpen(false);
                 }}
                 className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all duration-200 cursor-pointer ${isActive
-                    ? 'text-emerald-800 font-bold'
+                    ? 'text-zinc-900 font-bold'
                     : 'text-zinc-500 font-medium hover:text-zinc-800'
                   }`}
               >
                 <div className="relative">
                   <div
                     className={`p-1.5 rounded-xl transition-all duration-200 mb-0.5 ${isActive
-                        ? 'bg-gradient-to-b from-emerald-600 to-emerald-700 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
-                        : 'bg-[#e6ebf2] shadow-[inset_2px_2px_4px_#ffffff,inset_-2px_-2px_4px_#c8d0db] text-zinc-500'
+                        ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
+                        : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] text-zinc-500 hover:text-zinc-900'
                       }`}
                   >
                     <Icon size={22} weight={isActive ? 'bold' : 'duotone'} />
@@ -294,14 +294,14 @@ export const DashboardShell = ({
             onClick={() => setMobileProfileOpen((prev) => !prev)}
             title="Profile"
             className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all duration-200 cursor-pointer ${mobileProfileOpen
-                ? 'text-emerald-800 font-bold'
+                ? 'text-zinc-900 font-bold'
                 : 'text-zinc-500 font-medium hover:text-zinc-800'
               }`}
           >
             <div
               className={`p-1.5 rounded-xl transition-all duration-200 mb-0.5 ${mobileProfileOpen
-                  ? 'bg-gradient-to-b from-emerald-600 to-emerald-700 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
-                  : 'bg-[#e6ebf2] shadow-[inset_2px_2px_4px_#ffffff,inset_-2px_-2px_4px_#c8d0db] text-zinc-500'
+                  ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
+                  : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] text-zinc-500 hover:text-zinc-900'
                 }`}
             >
               <UserCircle size={22} weight={mobileProfileOpen ? 'bold' : 'duotone'} />
@@ -329,7 +329,7 @@ export const DashboardShell = ({
 
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1.5 text-zinc-700 font-medium px-3.5 py-1.5 rounded-full bg-[#e6ebf2] shadow-[inset_2px_2px_4px_#c2c9d4,inset_-2px_-2px_4px_#ffffff] border border-white/40">
-              <CalendarCheck size={18} className="text-emerald-700" weight="bold" />
+              <CalendarCheck size={18} className="text-zinc-700" weight="bold" />
               <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
             </div>
           </div>

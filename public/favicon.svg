@@ -1,14 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <rect width="48" height="48" rx="13" fill="#ffffff" stroke="#e4e4e7" stroke-width="1.5" />
-  <g transform="translate(12, 12)" stroke="#09090b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <path d="M12 2v4" />
-    <path d="m4.93 4.93 2.83 2.83" />
-    <path d="M2 12h4" />
-    <path d="m4.93 19.07 2.83-2.83" />
-    <path d="M12 18v4" />
-    <path d="m19.07 19.07-2.83-2.83" />
-    <path d="M20 12h-4" />
-    <path d="m19.07 4.93-2.83 2.83" />
-    <circle cx="12" cy="12" r="3" fill="#09090b" fill-opacity="0.2" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- Badge Background Gradient -->
+    <linearGradient id="arenaBadgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#27272a" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+    <!-- Subtle Inner Border Highlight -->
+    <linearGradient id="arenaBorderGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#52525b" />
+      <stop offset="100%" stop-color="#18181b" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Squircle Emblem Badge -->
+  <rect x="12" y="12" width="232" height="232" rx="58" fill="url(#arenaBadgeGrad)" stroke="url(#arenaBorderGrad)" stroke-width="4" />
+
+  <!-- Centered GameController Icon (Fill weight matching Logo.jsx) -->
+  <g transform="translate(51.2, 51.2) scale(0.6)" fill="#ffffff" filter="url(#shadow)">
+    <path d="M247.44,173.75a.68.68,0,0,0,0-.14L231.05,89.44c0-.06,0-.12,0-.18A60.08,60.08,0,0,0,172,40H83.89a59.88,59.88,0,0,0-59,49.52L8.58,173.61a.68.68,0,0,0,0,.14,36,36,0,0,0,60.9,31.71l.35-.37L109.52,160h37l39.71,45.09c.11.13.23.25.35.37A36.08,36.08,0,0,0,212,216a36,36,0,0,0,35.43-42.25ZM104,112H96v8a8,8,0,0,1-16,0v-8H72a8,8,0,0,1,0-16h8V88a8,8,0,0,1,16,0v8h8a8,8,0,0,1,0,16Zm40-8a8,8,0,0,1,8-8h24a8,8,0,0,1,0,16H152A8,8,0,0,1,144,104Zm84.37,87.47a19.84,19.84,0,0,1-12.9,8.23A20.09,20.09,0,0,1,198,194.31L167.8,160H172a60,60,0,0,0,51-28.38l8.74,45A19.82,19.82,0,0,1,228.37,191.47Z" />
   </g>
 </svg>
