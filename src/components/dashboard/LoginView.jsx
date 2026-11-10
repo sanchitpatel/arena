@@ -87,9 +87,6 @@ export const LoginView = ({ onEnterArena }) => {
 
   return (
     <div className="min-h-screen w-full bg-[#f0f2f5] text-zinc-800 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans select-none">
-      {/* Background ambient accents */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
-
       <div className="w-full max-w-[430px] relative z-10">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-6">
@@ -131,9 +128,9 @@ export const LoginView = ({ onEnterArena }) => {
 
               {/* Player Handle Input */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-600 pl-1 flex items-center gap-1.5">
-                  <User size={13} weight="bold" className="text-emerald-700" />
-                  Player Handle (Optional)
+                <label className="text-[14px] font-bold tracking-wider text-zinc-500 pl-1 flex items-center gap-1.5">
+                  <User size={15} weight="bold" className="text-zinc-500" />
+                  Username
                 </label>
                 <div className="relative">
                   <input
@@ -142,7 +139,7 @@ export const LoginView = ({ onEnterArena }) => {
                     onChange={(e) => setPlayerName(e.target.value)}
                     placeholder={guestId}
                     maxLength={20}
-                    className="w-full py-3.5 px-4 bg-[#e6ebf2] text-zinc-900 font-semibold text-sm rounded-2xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:border-emerald-600/50 transition-all placeholder:text-zinc-400"
+                    className="w-full py-3.5 px-4 bg-[#e6ebf2] text-zinc-900 font-semibold text-sm rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:border-emerald-600/50 transition-all placeholder:text-zinc-400"
                   />
                 </div>
               </div>
