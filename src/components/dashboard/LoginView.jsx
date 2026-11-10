@@ -11,8 +11,12 @@ const STORAGE_KEY_DRAFT_NAME = 'arena_draft_username';
 const STORAGE_KEY_DRAFT_AVATAR = 'arena_draft_avatar';
 
 export const LoginView = ({ onEnterArena }) => {
-  const [guestId, setGuestId] = useState(() => getPlayerId() || 'Guest001');
-  const [orbNumber, setOrbNumber] = useState(() => getOrbNumber(guestId) || 1);
+  // Initialize with verified local guest ID if returning, or null if brand new device
+  const [guestId, setGuestId] = useState(() => getPlayerId() || null);
+  const [orbNumber, setOrbNumber] = useState(() => {
+    const existing = getPlayerId();
+    return existing ? getOrbNumber(existing) : null;
+  });
 
   // Restore draft username from cache immediately on mount or refresh
   const [playerName, setPlayerName] = useState(() => {
@@ -47,8 +51,10 @@ export const LoginView = ({ onEnterArena }) => {
       try {
         setIsLoading(true);
         const res = await claimOrRegisterGuest();
-        if (isMounted && res.success && res.data) {
-          const assignedGuestId = res.data.guest_id || 'Guest001';
+        if (!isMounted) return;
+
+        if (res.success && res.data) {
+          const assignedGuestId = res.data.guest_id;
           const assignedOrb = res.data.orb_number || getOrbNumber(assignedGuestId);
           setGuestId(assignedGuestId);
           setOrbNumber(assignedOrb);
@@ -91,9 +97,14 @@ export const LoginView = ({ onEnterArena }) => {
           }
 
           if (res.data.team) setSelectedTeam(res.data.team);
+        } else {
+          setErrorMessage('Unable to connect to local Arena server. Please check Wi-Fi.');
         }
       } catch (err) {
-        console.warn('[Onboarding] Fallback to local guest ID:', err);
+        console.warn('[Onboarding] Error claiming player ID:', err);
+        if (isMounted) {
+          setErrorMessage('Unable to connect to local Arena server. Please check Wi-Fi.');
+        }
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -139,8 +150,10 @@ export const LoginView = ({ onEnterArena }) => {
       setIsEntering(true);
       setErrorMessage('');
 
+      const activeGuestId = guestId || 'Guest001';
+
       // 1. Strict Input Normalization & Validation Check
-      const validation = validatePlayerHandle(playerName, guestId);
+      const validation = validatePlayerHandle(playerName, activeGuestId);
       if (!validation.isValid) {
         setErrorMessage(validation.error);
         setIsEntering(false);
@@ -163,8 +176,8 @@ export const LoginView = ({ onEnterArena }) => {
       });
 
       const finalPlayer = res.success && res.data ? res.data : {
-        guest_id: guestId,
-        orb_number: orbNumber,
+        guest_id: activeGuestId,
+        orb_number: orbNumber || 1,
         name: displayName,
         avatar: selectedAvatar,
         team: selectedTeam,
@@ -194,17 +207,28 @@ export const LoginView = ({ onEnterArena }) => {
 
         {/* Neumorphic Main Onboarding Card */}
         <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-7 sm:p-9 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
-          {isLoading ? (
+          {isLoading && !guestId ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
-              <CircleNotch size={32} className="animate-spin text-emerald-600" />
+              <CircleNotch size={32} className="animate-spin text-slate-500" />
               <p className="text-xs font-semibold text-zinc-600">Assigning Player Orb...</p>
+            </div>
+          ) : errorMessage && !guestId ? (
+            <div className="py-12 flex flex-col items-center justify-center gap-4 text-center px-4">
+              <p className="text-xs font-semibold text-rose-600">{errorMessage}</p>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="px-5 py-2.5 bg-zinc-900 text-white text-xs font-bold rounded-full shadow hover:bg-zinc-800 transition cursor-pointer"
+              >
+                Retry Connection
+              </button>
             </div>
           ) : (
             <form onSubmit={handleEnterArena} className="space-y-6">
               {/* The Ethereal ChatGPT-Style Player Orb */}
               <div className="flex flex-col items-center justify-center pt-2">
                 <ChatGPTOrb
-                  orbNumber={orbNumber}
+                  orbNumber={orbNumber || 1}
                   avatar={selectedAvatar}
                   size="w-32 h-32"
                 />
@@ -214,7 +238,7 @@ export const LoginView = ({ onEnterArena }) => {
                     className="font-arena inline-block px-3.5 py-1 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[13.5px] tracking-wider shadow-sm"
                     style={{ WebkitTextStroke: '0.5px' }}
                   >
-                    {guestId}
+                    {guestId || 'Guest...'}
                   </span>
                   <p className="text-[12px] text-zinc-500/80 mt-1">
                     Your assigned player identity on venue network
@@ -233,7 +257,7 @@ export const LoginView = ({ onEnterArena }) => {
                     type="text"
                     value={playerName}
                     onChange={handleNameChange}
-                    placeholder={guestId}
+                    placeholder={guestId || 'Player Name'}
                     maxLength={16}
                     autoComplete="off"
                     spellCheck="false"
@@ -284,7 +308,7 @@ export const LoginView = ({ onEnterArena }) => {
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={isEntering}
+                  disabled={isEntering || !guestId}
                   className="w-full py-3.5 px-6 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none text-white font-bold text-base rounded-full transition-[box-shadow] duration-200 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),3px_3px_8px_#c5ccd6,-3px_-3px_8px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] cursor-pointer border border-zinc-800/80 group"
                 >
                   {isEntering ? (

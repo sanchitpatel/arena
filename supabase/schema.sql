@@ -112,7 +112,11 @@ DECLARE
     v_clean_avatar TEXT;
     v_display_name TEXT;
 BEGIN
-    -- 0. Server-side sanitization: enforce alphanumeric, space, hyphen, underscore (max 16 chars)
+    -- 0. Critical Advisory Lock: Serializes concurrent requests for the same device UUID.
+    -- Prevents double-execution in React dev/StrictMode, double-clicks, and sequence gaps.
+    PERFORM pg_advisory_xact_lock(hashtext(p_device_id));
+
+    -- Server-side sanitization: enforce alphanumeric, space, hyphen, underscore (max 16 chars)
     v_clean_name := SUBSTRING(REGEXP_REPLACE(TRIM(COALESCE(p_name, '')), '[^a-zA-Z0-9 _-]', '', 'g'), 1, 16);
     
     -- Normalize avatar to 1..30
@@ -161,7 +165,7 @@ BEGIN
     v_guest_id := 'Guest' || LPAD(v_seq_val::TEXT, 3, '0');
     v_display_name := CASE WHEN v_clean_name <> '' THEN v_clean_name ELSE v_guest_id END;
 
-    -- 3. Insert new player row
+    -- 3. Insert new player row with ON CONFLICT safety
     INSERT INTO public.players (
         orb_number,
         guest_id,
@@ -182,6 +186,8 @@ BEGIN
         0,
         NOW()
     )
+    ON CONFLICT (device_id) DO UPDATE
+        SET last_seen_at = NOW()
     RETURNING * INTO v_player;
 
     RETURN jsonb_build_object(

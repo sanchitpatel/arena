@@ -102,33 +102,53 @@ export async function fetchActiveGameState() {
   }
 }
 
+// In-flight singleton promise to guarantee only 1 network request per device mount
+let activeClaimPromise = null;
+
 /**
  * Atomically claims or reconnects a guest player using PostgreSQL sequence + device token.
  * Prevents any ID collision and recovers existing session across mobile refreshes.
  */
 export async function claimOrRegisterGuest({ name = null, avatar = '1', team = 'unassigned' } = {}) {
-  try {
-    const deviceId = getDeviceId();
-
-    // Call atomic PostgreSQL function
-    const { data, error } = await supabase.rpc('claim_guest_player', {
-      p_device_id: deviceId,
-      p_name: name,
-      p_avatar: avatar,
-      p_team: team,
-    });
-
-    if (error) throw error;
-
-    if (data) {
-      savePlayerRecord(data);
-    }
-
-    return { success: true, data };
-  } catch (err) {
-    console.error('[Arena Service] claimOrRegisterGuest error:', err);
-    return { success: false, data: null, error: err.message };
+  // If an initial claim is already pending for this device without a name update, reuse in-flight promise
+  if (!name && activeClaimPromise) {
+    return activeClaimPromise;
   }
+
+  const claimOperation = (async () => {
+    try {
+      const deviceId = getDeviceId();
+
+      // Call atomic PostgreSQL function
+      const { data, error } = await supabase.rpc('claim_guest_player', {
+        p_device_id: deviceId,
+        p_name: name,
+        p_avatar: avatar,
+        p_team: team,
+      });
+
+      if (error) throw error;
+
+      if (data) {
+        savePlayerRecord(data);
+      }
+
+      return { success: true, data };
+    } catch (err) {
+      console.error('[Arena Service] claimOrRegisterGuest error:', err);
+      return { success: false, data: null, error: err.message };
+    } finally {
+      if (!name) {
+        activeClaimPromise = null;
+      }
+    }
+  })();
+
+  if (!name) {
+    activeClaimPromise = claimOperation;
+  }
+
+  return claimOperation;
 }
 
 // Aliased for convenience
