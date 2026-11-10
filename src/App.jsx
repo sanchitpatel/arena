@@ -56,7 +56,7 @@ export default function App() {
   };
 
   return (
-    <div className="app-container min-h-screen bg-[#09090B] text-[#FAFAFA]">
+    <div className={`app-container min-h-screen ${route === 'app' ? 'bg-[#f0f2f5]' : 'bg-[#09090B]'} text-[#FAFAFA]`}>
       {route === 'terms' && <TermsPage onBack={navigateToApp} />}
       {route === 'privacy' && <PrivacyPolicyPage onBack={navigateToApp} />}
       {route === '404' && <NotFoundPage onGoHome={navigateToApp} />}
