@@ -117,10 +117,10 @@ export const LoginView = ({ onEnterArena }) => {
                 />
 
                 <div className="mt-4 text-center">
-                  <span className="font-arena inline-block px-3.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-900 text-[13px] tracking-wider">
+                  <span className="font-arena inline-block px-3.5 py-1 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-800 font-bold text-[13px] tracking-wider shadow-sm">
                     {guestId}
                   </span>
-                  <p className="text-[11px] text-zinc-500 mt-1">
+                  <p className="text-[12px] text-zinc-500/80 mt-1">
                     Your assigned player identity on venue network
                   </p>
                 </div>
