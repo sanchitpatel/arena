@@ -164,25 +164,32 @@ export default function ChatGPTOrb({ orbNumber = 1, avatar = '1', size = 'w-24 h
       <div className="pointer-events-none absolute inset-2 -z-10 rounded-full bg-sky-400/40 blur-2xl" />
 
       <div
-        className={`relative ${size} overflow-hidden rounded-full shadow-[0_16px_40px_rgba(2,110,220,0.35),0_4px_12px_rgba(0,0,0,0.1)]`}
+        className={`relative ${size} rounded-full`}
         style={{
-          background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #bde8ff 22%, #38bdf8 52%, #1d4ed8 82%, #0b2d64 100%)',
+          boxShadow: '0 14px 36px rgba(2,110,220,0.30)',
         }}
       >
-        {/* 3D Volumetric Depth & Rim Shading */}
-        <div className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_-12px_-12px_24px_rgba(5,35,100,0.65),inset_6px_6px_14px_rgba(255,255,255,0.75)]" />
+        {/* 3D Fallback Orb (visible on refresh / load, fades out cleanly once WebGL renders) */}
+        <div
+          className={`absolute inset-0 overflow-hidden rounded-full transition-opacity duration-500 ease-out ${
+            isGlReady ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+          style={{
+            background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #bde8ff 25%, #38bdf8 55%, #1c86ff 85%, #0284c7 100%)',
+          }}
+        >
+          {/* Volumetric Soft Depth (no harsh border) */}
+          <div className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_-8px_-8px_16px_rgba(2,110,220,0.30),inset_6px_6px_12px_rgba(255,255,255,0.6)]" />
 
-        {/* Organic Azure Fluid Mass (Bottom) */}
-        <div className="pointer-events-none absolute -bottom-[15%] -left-[10%] h-[75%] w-[120%] rounded-full bg-gradient-to-tr from-blue-700 via-sky-500 to-transparent blur-lg opacity-85" />
+          {/* Organic Azure Fluid Mass (Bottom) */}
+          <div className="pointer-events-none absolute -bottom-[15%] -left-[10%] h-[75%] w-[120%] rounded-full bg-gradient-to-tr from-blue-600 via-sky-500 to-transparent blur-lg opacity-80" />
 
-        {/* Luminous Silky Cloud Mass (Top-Right) */}
-        <div className="pointer-events-none absolute -top-[12%] -right-[8%] h-[65%] w-[75%] rounded-full bg-gradient-to-b from-white via-sky-100 to-transparent blur-md opacity-80" />
+          {/* Luminous Silky Cloud Mass (Top-Right) */}
+          <div className="pointer-events-none absolute -top-[12%] -right-[8%] h-[65%] w-[75%] rounded-full bg-gradient-to-b from-white via-sky-100 to-transparent blur-md opacity-80" />
 
-        {/* 3D Specular Curvature Glint (Top-Left) */}
-        <div className="pointer-events-none absolute top-[12%] left-[16%] h-[32%] w-[42%] rounded-full bg-gradient-to-br from-white/90 via-white/20 to-transparent blur-[2px] -rotate-12" />
-
-        {/* Ambient Rim Fresnel Glow */}
-        <div className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_0_16px_rgba(56,189,248,0.5)]" />
+          {/* 3D Specular Curvature Glint (Top-Left) */}
+          <div className="pointer-events-none absolute top-[12%] left-[16%] h-[32%] w-[42%] rounded-full bg-gradient-to-br from-white/90 via-white/20 to-transparent blur-[2px] -rotate-12" />
+        </div>
 
         {/* Main WebGL Celestial Orb (fades in seamlessly once compiled and rendering first frame) */}
         <canvas
