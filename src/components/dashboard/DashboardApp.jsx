@@ -55,11 +55,17 @@ export default function DashboardApp() {
   const [player, setPlayer] = useState(() => {
     const gId = getPlayerId() || 'Guest001';
     const orb = getOrbNumber(gId) || 1;
+    let storedName = '';
+    let storedAvatar = '1';
+    try {
+      storedName = window.localStorage.getItem('arena_draft_username') || '';
+      storedAvatar = window.localStorage.getItem('arena_draft_avatar') || '1';
+    } catch {}
     return {
       guest_id: gId,
       orb_number: orb,
-      name: gId,
-      avatar: '1',
+      name: storedName || gId,
+      avatar: storedAvatar || '1',
     };
   });
 

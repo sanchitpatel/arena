@@ -32,6 +32,8 @@ export function clearLocalPlayerData() {
     window.localStorage.removeItem(STORAGE_KEY_GUEST);
     window.localStorage.removeItem(STORAGE_KEY_DEVICE);
     window.localStorage.removeItem(STORAGE_KEY_EXPIRES);
+    window.localStorage.removeItem('arena_draft_username');
+    window.localStorage.removeItem('arena_draft_avatar');
 
     // Expire cookies immediately
     setCookie(STORAGE_KEY_GUEST, '', 0);

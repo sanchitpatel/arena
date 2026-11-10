@@ -7,11 +7,33 @@ import Logo from '../Logo';
 import ChatGPTOrb from './ChatGPTOrb';
 import ArenaAvatar, { CURATED_AVATARS } from '../avatars/ArenaAvatar';
 
+const STORAGE_KEY_DRAFT_NAME = 'arena_draft_username';
+const STORAGE_KEY_DRAFT_AVATAR = 'arena_draft_avatar';
+
 export const LoginView = ({ onEnterArena }) => {
   const [guestId, setGuestId] = useState(() => getPlayerId() || 'Guest001');
   const [orbNumber, setOrbNumber] = useState(() => getOrbNumber(guestId) || 1);
-  const [playerName, setPlayerName] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState('1');
+
+  // Restore draft username from cache immediately on mount or refresh
+  const [playerName, setPlayerName] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      return window.localStorage.getItem(STORAGE_KEY_DRAFT_NAME) || '';
+    } catch {
+      return '';
+    }
+  });
+
+  // Restore draft avatar from cache immediately on mount or refresh
+  const [selectedAvatar, setSelectedAvatar] = useState(() => {
+    if (typeof window === 'undefined') return '1';
+    try {
+      return window.localStorage.getItem(STORAGE_KEY_DRAFT_AVATAR) || '1';
+    } catch {
+      return '1';
+    }
+  });
+
   const [selectedTeam, setSelectedTeam] = useState('Alpha');
   const [isLoading, setIsLoading] = useState(true);
   const [isEntering, setIsEntering] = useState(false);
@@ -30,11 +52,44 @@ export const LoginView = ({ onEnterArena }) => {
           const assignedOrb = res.data.orb_number || getOrbNumber(assignedGuestId);
           setGuestId(assignedGuestId);
           setOrbNumber(assignedOrb);
-          setPlayerName(res.data.name !== assignedGuestId ? res.data.name : '');
-          if (res.data.avatar) {
-            const num = parseInt(String(res.data.avatar).replace(/\D/g, ''), 10);
-            setSelectedAvatar(num >= 1 && num <= 30 ? String(num) : '1');
+
+          // Priority for username restoration:
+          // 1. Locally typed/cached draft (protects accidental refresh while typing)
+          // 2. Already registered handle in DB (if previously customized)
+          // 3. Fallback to empty (placeholder will display assigned Guest ID)
+          let cachedDraft = '';
+          try {
+            cachedDraft = window.localStorage.getItem(STORAGE_KEY_DRAFT_NAME) || '';
+          } catch {}
+
+          if (cachedDraft) {
+            setPlayerName(cachedDraft);
+          } else if (res.data.name && res.data.name !== assignedGuestId) {
+            setPlayerName(res.data.name);
+            try {
+              window.localStorage.setItem(STORAGE_KEY_DRAFT_NAME, res.data.name);
+            } catch {}
+          } else {
+            setPlayerName('');
           }
+
+          // Same smart caching for avatar selection
+          let cachedAvatar = '';
+          try {
+            cachedAvatar = window.localStorage.getItem(STORAGE_KEY_DRAFT_AVATAR) || '';
+          } catch {}
+
+          if (cachedAvatar) {
+            setSelectedAvatar(cachedAvatar);
+          } else if (res.data.avatar) {
+            const num = parseInt(String(res.data.avatar).replace(/\D/g, ''), 10);
+            const validNum = num >= 1 && num <= 30 ? String(num) : '1';
+            setSelectedAvatar(validNum);
+            try {
+              window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, validNum);
+            } catch {}
+          }
+
           if (res.data.team) setSelectedTeam(res.data.team);
         }
       } catch (err) {
@@ -50,10 +105,30 @@ export const LoginView = ({ onEnterArena }) => {
     };
   }, []);
 
+  // Instant real-time draft caching on every keystroke
   const handleNameChange = (e) => {
     const clean = normalizePlayerInput(e.target.value);
     setPlayerName(clean);
     if (errorMessage) setErrorMessage('');
+
+    try {
+      if (clean) {
+        window.localStorage.setItem(STORAGE_KEY_DRAFT_NAME, clean);
+      } else {
+        window.localStorage.removeItem(STORAGE_KEY_DRAFT_NAME);
+      }
+    } catch (err) {
+      console.warn('[Onboarding] Error caching draft username:', err);
+    }
+  };
+
+  const handleAvatarSelect = (avatarId) => {
+    setSelectedAvatar(avatarId);
+    try {
+      window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, String(avatarId));
+    } catch (err) {
+      console.warn('[Onboarding] Error caching draft avatar:', err);
+    }
   };
 
   const handleEnterArena = async (e) => {
@@ -73,6 +148,12 @@ export const LoginView = ({ onEnterArena }) => {
       }
 
       const displayName = validation.value;
+
+      // Keep cached draft synced with validated final handle
+      try {
+        window.localStorage.setItem(STORAGE_KEY_DRAFT_NAME, displayName);
+        window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, String(selectedAvatar));
+      } catch {}
 
       // 2. Submit normalized name & avatar to PostgreSQL
       const res = await claimOrRegisterGuest({
@@ -184,7 +265,7 @@ export const LoginView = ({ onEnterArena }) => {
                         <button
                           key={av.id}
                           type="button"
-                          onClick={() => setSelectedAvatar(av.id)}
+                          onClick={() => handleAvatarSelect(av.id)}
                           className={`relative flex items-center justify-center p-0.5 rounded-full transition-all duration-150 cursor-pointer ${
                             isSelected
                               ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-[#F2F7FC] scale-105 shadow-md z-10'
