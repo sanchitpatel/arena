@@ -266,7 +266,7 @@ export const LoginView = ({ onEnterArena }) => {
               </div>
 
               {/* Curated Lorelei Avatar Selector */}
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between pl-1">
                   <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5 -mt-2">
                     <UserCircle size={17} weight="bold" className="text-zinc-500/80 " />
@@ -274,7 +274,7 @@ export const LoginView = ({ onEnterArena }) => {
                   </label>
                 </div>
 
-                <div className="p-3 bg-[#F2F7FC] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
+                <div className="p-2 bg-[#F2F7FC] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
                   <div className="grid grid-cols-5 gap-2.5 sm:gap-3 max-h-[185px] overflow-y-auto p-1.5 pr-1.5 avatar-scroll">
                     {CURATED_AVATARS.map((av) => {
                       const isSelected = String(selectedAvatar) === String(av.id) || String(selectedAvatar) === String(av.num);
@@ -288,7 +288,7 @@ export const LoginView = ({ onEnterArena }) => {
                             : 'opacity-85 hover:opacity-100 hover:scale-105 active:scale-95'
                             }`}
                         >
-                          <ArenaAvatar id={av.id} size="md" className="w-12 h-12 sm:w-[50px] sm:h-[50px] shadow-sm" />
+                          <ArenaAvatar id={av.id} size="md" className="w-11 h-11 sm:w-[50px] sm:h-[50px] shadow-sm" />
                         </button>
                       );
                     })}
@@ -297,11 +297,11 @@ export const LoginView = ({ onEnterArena }) => {
               </div>
 
               {/* Enter Arena CTA Button */}
-              <div className="pt-2">
+              <div className="pt-0.5">
                 <button
                   type="submit"
                   disabled={isEntering || !guestId}
-                  className="w-full py-3.5 px-6 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none text-white font-bold text-base rounded-full transition-[box-shadow] duration-200 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),3px_3px_8px_#c5ccd6,-3px_-3px_8px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] cursor-pointer border border-zinc-800/80 group"
+                  className="w-full py-3.5 px-6 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none text-white font-bold -mt-2 text-base rounded-full transition-[box-shadow] duration-200 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),3px_3px_8px_#c5ccd6,-3px_-3px_8px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] cursor-pointer border border-zinc-800/80 group"
                 >
                   {isEntering ? (
                     <>
