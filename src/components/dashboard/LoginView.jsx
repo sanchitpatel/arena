@@ -89,8 +89,8 @@ export const LoginView = ({ onEnterArena }) => {
     <div className="min-h-screen w-full bg-[#f0f2f5] text-zinc-800 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans select-none">
       <div className="w-full max-w-[430px] relative z-10">
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-6">
-          <Logo className="w-20 h-20 sm:w-20 sm:h-20 mb-3" />
+        <div className="flex flex-col items-center text-center mb-5">
+          <Logo className="w-20 h-20 sm:w-20 sm:h-20 mb-2" />
           <h1 className="font-arena text-[36px] sm:text-[40px] font-black tracking-wider text-zinc-900">
             ARENA
           </h1>
@@ -128,7 +128,7 @@ export const LoginView = ({ onEnterArena }) => {
 
               {/* Player Handle Input */}
               <div className="space-y-1.5">
-                <label className="text-[14px] font-bold tracking-wider text-zinc-500 pl-1 flex items-center gap-1.5">
+                <label className="text-[14px] font-bold tracking-wider text-zinc-500 pl-1 flex items-center gap-1.5 -mt-0.5">
                   <User size={17} weight="bold" className="text-zinc-500" />
                   Username
                 </label>
@@ -148,14 +148,14 @@ export const LoginView = ({ onEnterArena }) => {
               {/* Curated Lorelei Avatar Selector */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between pl-1">
-                  <label className="text-[14px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5">
+                  <label className="text-[14px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5 -mt-1.5">
                     <UserCircle size={20} weight="bold" className="text-zinc-500/80 " />
                     Choose Avatar
                   </label>
                 </div>
 
                 <div className="p-3 bg-[#F2F7FC] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
-                  <div className="grid grid-cols-5 gap-2.5 sm:gap-3 max-h-[185px] overflow-y-auto p-1.5 pr-1 scrollbar-thin">
+                  <div className="grid grid-cols-5 gap-2.5 sm:gap-3 max-h-[185px] overflow-y-auto p-1.5 pr-1.5 avatar-scroll">
                     {CURATED_AVATARS.map((av) => {
                       const isSelected = String(selectedAvatar) === String(av.id) || String(selectedAvatar) === String(av.num);
                       return (
