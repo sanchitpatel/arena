@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 
 const VERT = `attribute vec2 a; void main(){ gl_Position = vec4(a, 0., 1.); }`;
@@ -80,7 +80,10 @@ void main(){
 }
 `;
 
-function useOrbGL(canvasRef, speed) {
+function useOrbGL(canvasRef, speed, onReady) {
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -131,9 +134,14 @@ function useOrbGL(canvasRef, speed) {
 
     const start = performance.now() + Math.random() * 20000; // each orb gets a unique pattern
     let raf;
+    let isFirstFrame = true;
     const loop = (now) => {
       gl.uniform1f(uT, ((now - start) / 1000) * speed);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (isFirstFrame) {
+        isFirstFrame = false;
+        if (onReadyRef.current) onReadyRef.current();
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -148,20 +156,41 @@ function useOrbGL(canvasRef, speed) {
 
 export default function ChatGPTOrb({ orbNumber = 1, avatar = '1', size = 'w-24 h-24 sm:w-28 sm:h-28', speed = 0.45 }) {
   const canvasRef = useRef(null);
-  useOrbGL(canvasRef, speed);
+  const [isGlReady, setIsGlReady] = useState(false);
+  useOrbGL(canvasRef, speed, () => setIsGlReady(true));
 
   return (
     <div className="relative flex flex-col items-center justify-center select-none">
       <div className="pointer-events-none absolute inset-2 -z-10 rounded-full bg-sky-400/40 blur-2xl" />
 
       <div
-        className={`relative ${size} overflow-hidden rounded-full`}
+        className={`relative ${size} overflow-hidden rounded-full shadow-[0_16px_40px_rgba(2,110,220,0.35),0_4px_12px_rgba(0,0,0,0.1)]`}
         style={{
-          boxShadow: '0 14px 36px rgba(2,110,220,0.30)',
-          background: 'linear-gradient(180deg,#e5f7ff,#5ec3ff 65%,#1c86ff)',
+          background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #bde8ff 22%, #38bdf8 52%, #1d4ed8 82%, #0b2d64 100%)',
         }}
       >
-        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full rounded-full" />
+        {/* 3D Volumetric Depth & Rim Shading */}
+        <div className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_-12px_-12px_24px_rgba(5,35,100,0.65),inset_6px_6px_14px_rgba(255,255,255,0.75)]" />
+
+        {/* Organic Azure Fluid Mass (Bottom) */}
+        <div className="pointer-events-none absolute -bottom-[15%] -left-[10%] h-[75%] w-[120%] rounded-full bg-gradient-to-tr from-blue-700 via-sky-500 to-transparent blur-lg opacity-85" />
+
+        {/* Luminous Silky Cloud Mass (Top-Right) */}
+        <div className="pointer-events-none absolute -top-[12%] -right-[8%] h-[65%] w-[75%] rounded-full bg-gradient-to-b from-white via-sky-100 to-transparent blur-md opacity-80" />
+
+        {/* 3D Specular Curvature Glint (Top-Left) */}
+        <div className="pointer-events-none absolute top-[12%] left-[16%] h-[32%] w-[42%] rounded-full bg-gradient-to-br from-white/90 via-white/20 to-transparent blur-[2px] -rotate-12" />
+
+        {/* Ambient Rim Fresnel Glow */}
+        <div className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_0_16px_rgba(56,189,248,0.5)]" />
+
+        {/* Main WebGL Celestial Orb (fades in seamlessly once compiled and rendering first frame) */}
+        <canvas
+          ref={canvasRef}
+          className={`absolute inset-0 h-full w-full rounded-full transition-opacity duration-500 ease-out ${
+            isGlReady ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
 
         <div className="relative z-10 flex h-full w-full flex-col items-center justify-center text-center pointer-events-none">
           <span className="font-sans text-[11px] sm:text-[12px] -mt-1 font-black uppercase tracking-widest text-sky-950/70">ORB</span>
