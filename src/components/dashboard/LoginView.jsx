@@ -156,7 +156,7 @@ export const LoginView = ({ onEnterArena }) => {
                     maxLength={16}
                     autoComplete="off"
                     spellCheck="false"
-                    className="w-full py-3 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-sm rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus-visible:outline-none focus-visible:ring-0 transition-colors duration-150 placeholder:text-zinc-400"
+                    className="w-full py-3 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-sm rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus-visible:outline-none focus-visible:ring-0 selection:bg-sky-200 selection:text-zinc-900 transition-colors duration-150 placeholder:text-zinc-400"
                     style={{ outline: 'none', WebkitTapHighlightColor: 'transparent' }}
                   />
                 </div>

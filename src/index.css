@@ -100,8 +100,14 @@ a {
 
 /* Text selection */
 ::selection {
-  background: rgba(255, 255, 255, 0.2);
-  color: #FFFFFF;
+  background: rgba(56, 189, 248, 0.25);
+  color: inherit;
+}
+
+input::selection,
+textarea::selection {
+  background: #bae6fd;
+  color: #09090b;
 }
 
 /* 3. Layout Shell */
