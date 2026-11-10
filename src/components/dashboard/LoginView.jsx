@@ -192,8 +192,8 @@ export const LoginView = ({ onEnterArena }) => {
       <div className="w-full max-w-[430px] relative z-10">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-5">
-          <Logo className="w-20 h-20 sm:w-20 sm:h-20 mb-2" />
-          <h1 className="font-arena text-[36px] sm:text-[40px] font-black tracking-wider text-zinc-900">
+          <Logo className="w-[68px] h-[68px] sm:w-20 sm:h-20 mb-2" />
+          <h1 className="font-arena text-[32px] sm:text-[36px] font-black tracking-wider text-zinc-900">
             ARENA
           </h1>
         </div>
@@ -211,7 +211,7 @@ export const LoginView = ({ onEnterArena }) => {
               <button
                 type="button"
                 onClick={initGuest}
-                className="px-5 py-2.5 bg-zinc-900 text-white text-xs font-bold rounded-full shadow hover:bg-zinc-800 transition cursor-pointer"
+                className="px-5 py-3 bg-zinc-900 text-white text-xs font-bold rounded-full shadow hover:bg-zinc-800 transition cursor-pointer"
               >
                 Retry Connection
               </button>
@@ -223,7 +223,7 @@ export const LoginView = ({ onEnterArena }) => {
                 <ChatGPTOrb
                   orbNumber={orbNumber || 1}
                   avatar={selectedAvatar}
-                  size="w-32 h-32"
+                  size="w-24 h-24 sm:w-28 sm:h-28"
                 />
 
                 <div className="mt-4 text-center">
@@ -241,8 +241,8 @@ export const LoginView = ({ onEnterArena }) => {
 
               {/* Player Handle Input */}
               <div className="space-y-1.5">
-                <label className="text-[14px] font-bold tracking-wider text-zinc-500 pl-1 flex items-center gap-1.5 -mt-0.5">
-                  <User size={17} weight="bold" className="text-zinc-500" />
+                <label className="text-[12px] font-bold tracking-wider text-zinc-500 pl-1 flex items-center gap-1.5 -mt-0.5">
+                  <User size={15} weight="bold" className="text-zinc-500" />
                   Username
                 </label>
                 <div className="relative">

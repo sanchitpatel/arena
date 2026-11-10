@@ -146,7 +146,7 @@ function useOrbGL(canvasRef, speed) {
   }, [canvasRef, speed]);
 }
 
-export default function ChatGPTOrb({ orbNumber = 1, avatar = '1', size = 'w-28 h-28', speed = 0.45 }) {
+export default function ChatGPTOrb({ orbNumber = 1, avatar = '1', size = 'w-24 h-24 sm:w-28 sm:h-28', speed = 0.45 }) {
   const canvasRef = useRef(null);
   useOrbGL(canvasRef, speed);
 
@@ -164,9 +164,9 @@ export default function ChatGPTOrb({ orbNumber = 1, avatar = '1', size = 'w-28 h
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full rounded-full" />
 
         <div className="relative z-10 flex h-full w-full flex-col items-center justify-center text-center pointer-events-none">
-          <span className="font-sans text-[12px] -mt-2 font-black uppercase tracking-widest text-sky-950/70">ORB</span>
+          <span className="font-sans text-[11px] sm:text-[12px] -mt-1 font-black uppercase tracking-widest text-sky-950/70">ORB</span>
           <span
-            className="font-arena mt-0.5 text-4xl font-black leading-none tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,40,160,0.6)] sm:text-[34px]"
+            className="font-arena mt-0.5 text-4xl sm:text-4xl font-black leading-none tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,40,160,0.6)]"
             style={{ WebkitTextStroke: '1px #a4a4a9ff', paintOrder: 'stroke fill' }}
           >
             {orbNumber}
@@ -175,7 +175,7 @@ export default function ChatGPTOrb({ orbNumber = 1, avatar = '1', size = 'w-28 h
       </div>
 
       {avatar && (
-        <div className="absolute -bottom-1 -right-3 z-20 flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white shadow-[0_4px_16px_rgba(0,0,0,0.25)] backdrop-blur-md overflow-hidden">
+        <div className="absolute -bottom-1 -right-2.5 sm:-right-2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border-2 border-white bg-white shadow-[0_4px_16px_rgba(0,0,0,0.25)] backdrop-blur-md overflow-hidden transition-all">
           <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
         </div>
       )}
