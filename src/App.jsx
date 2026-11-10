@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import DashboardApp from './components/dashboard/DashboardApp';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import TermsPage from './pages/TermsPage';
-import NotFoundPage from './pages/NotFoundPage';
+
+// Non-critical legal and error routes lazy-loaded on demand
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Whitelist of valid paths for the Arena application
 const VALID_APP_PATHS = new Set([
@@ -57,9 +59,11 @@ export default function App() {
 
   return (
     <div className={`app-container min-h-screen ${route === 'app' ? 'bg-[#f0f2f5]' : 'bg-[#09090B]'} text-[#FAFAFA]`}>
-      {route === 'terms' && <TermsPage onBack={navigateToApp} />}
-      {route === 'privacy' && <PrivacyPolicyPage onBack={navigateToApp} />}
-      {route === '404' && <NotFoundPage onGoHome={navigateToApp} />}
+      <Suspense fallback={<div className="min-h-screen bg-[#09090B]" />}>
+        {route === 'terms' && <TermsPage onBack={navigateToApp} />}
+        {route === 'privacy' && <PrivacyPolicyPage onBack={navigateToApp} />}
+        {route === '404' && <NotFoundPage onGoHome={navigateToApp} />}
+      </Suspense>
       {route === 'app' && <DashboardApp />}
     </div>
   );

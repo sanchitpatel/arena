@@ -1,11 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { LoginView } from './LoginView';
-import { DashboardShell } from './DashboardShell';
-import { NewPatientView } from './NewPatientView';
-import { ExistingPatientView } from './ExistingPatientView';
-import { DoctorDashboardView } from './DoctorDashboardView';
-import { NotificationView } from './NotificationView';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+
+// Lazy-load heavy dashboard views to enable sub-second initial onboarding paint
+const DashboardShell = lazy(() => import('./DashboardShell').then(m => ({ default: m.DashboardShell })));
+const NewPatientView = lazy(() => import('./NewPatientView').then(m => ({ default: m.NewPatientView })));
+const ExistingPatientView = lazy(() => import('./ExistingPatientView').then(m => ({ default: m.ExistingPatientView })));
+const DoctorDashboardView = lazy(() => import('./DoctorDashboardView').then(m => ({ default: m.DoctorDashboardView })));
+const NotificationView = lazy(() => import('./NotificationView').then(m => ({ default: m.NotificationView })));
+
+// Eagerly prefetch dashboard views in background during browser idle time
+const prefetchDashboard = () => {
+  if (typeof window === 'undefined') return;
+  const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 800));
+  idle(() => {
+    import('./DashboardShell');
+    import('./NewPatientView');
+    import('./ExistingPatientView');
+    import('./DoctorDashboardView');
+    import('./NotificationView');
+  });
+};
 
 /**
  * Route Mappings for Clean Native Mobile URLs (Zero '#' in URLs)
@@ -71,6 +86,13 @@ export default function DashboardApp() {
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(null);
+
+  // Silently warm up dashboard chunks while player types nickname/chooses avatar
+  useEffect(() => {
+    if (!isEntered) {
+      prefetchDashboard();
+    }
+  }, [isEntered]);
 
   /**
    * Native Mobile Back-Button Behavior:
@@ -174,30 +196,36 @@ export default function DashboardApp() {
 
   // 2. Main Arena Dashboard Shell & Responsive Views (Root /arena shows first)
   return (
-    <DashboardShell
-      activeTab={activeTab}
-      onTabChange={handleTabChange}
-      player={player}
-      onSignOut={handleSignOut}
-    >
-      <div className={activeTab === 'new-patient' ? 'block' : 'hidden'}>
-        <NewPatientView onNavigate={handleTabChange} />
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-zinc-300 border-t-zinc-800 rounded-full animate-spin" />
       </div>
-      <div className={activeTab === 'existing-patient' ? 'block' : 'hidden'}>
-        <ExistingPatientView
-          selectedMonth={selectedMonth}
-          onSelectMonth={handleSelectMonth}
-        />
-      </div>
-      <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
-        <DoctorDashboardView
-          selectedDate={selectedDate}
-          onSelectDate={handleSelectDate}
-        />
-      </div>
-      <div className={activeTab === 'notifications' ? 'block' : 'hidden'}>
-        <NotificationView />
-      </div>
-    </DashboardShell>
+    }>
+      <DashboardShell
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        player={player}
+        onSignOut={handleSignOut}
+      >
+        <div className={activeTab === 'new-patient' ? 'block' : 'hidden'}>
+          <NewPatientView onNavigate={handleTabChange} />
+        </div>
+        <div className={activeTab === 'existing-patient' ? 'block' : 'hidden'}>
+          <ExistingPatientView
+            selectedMonth={selectedMonth}
+            onSelectMonth={handleSelectMonth}
+          />
+        </div>
+        <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
+          <DoctorDashboardView
+            selectedDate={selectedDate}
+            onSelectDate={handleSelectDate}
+          />
+        </div>
+        <div className={activeTab === 'notifications' ? 'block' : 'hidden'}>
+          <NotificationView />
+        </div>
+      </DashboardShell>
+    </Suspense>
   );
 }

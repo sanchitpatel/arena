@@ -1,4 +1,4 @@
-import { GameController } from './icons';
+import { GameController } from '@phosphor-icons/react/dist/icons/GameController';
 
 // Arena brand logo mark — Premium Gaming Monochrome
 export default function Logo({ className = 'w-12 h-12', dark = false }) {
