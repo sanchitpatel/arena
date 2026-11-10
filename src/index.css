@@ -2,7 +2,8 @@
 
 @font-face {
   font-family: 'Aquire';
-  src: url('./assets/fonts/aquire.woff2') format('woff2'),
+  src: url('/fonts/aquire.woff2') format('woff2'),
+       url('./assets/fonts/aquire.woff2') format('woff2'),
        url('./assets/fonts/aquire.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
