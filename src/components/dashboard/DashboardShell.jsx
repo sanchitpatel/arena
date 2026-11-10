@@ -113,7 +113,7 @@ export const DashboardShell = ({
         {/* Arena Brand Header */}
         <div className="p-4 border-b border-zinc-300/50 flex items-center gap-2.5">
           <div className="w-12 h-12 rounded-2xl bg-[#ebedf2] shadow-[3px_3px_6px_#c2c9d4,-3px_-3px_6px_#ffffff] border border-white/60 flex items-center justify-center overflow-hidden shrink-0">
-            <Logo className="w-8 h-8" />
+            <Logo className="w-12 h-12" />
           </div>
           <div className="overflow-hidden">
             <h1 className="text-base font-black tracking-wider text-zinc-900 truncate font-arena">
@@ -181,10 +181,13 @@ export const DashboardShell = ({
               <div className="text-xs font-bold text-zinc-900 truncate">
                 {displayName}
               </div>
-              <div className="text-[10px] font-semibold text-zinc-600 font-mono tracking-tight flex items-center gap-1.5 mt-0.5">
+              <div
+                className="text-[10.5px] font-arena font-normal text-zinc-600 tracking-tight flex items-center gap-1.5 mt-0.5"
+                style={{ WebkitTextStroke: '0.5px', fontWeight: 400 }}
+              >
                 <span>{guestId}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                <span className="text-zinc-600">Orb #{orbNumber}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-900/50" />
+                <span className="text-zinc-600">Orb @{orbNumber}</span>
               </div>
             </div>
             <div className="text-zinc-400 group-hover:text-zinc-600">
@@ -228,13 +231,13 @@ export const DashboardShell = ({
               <div className="text-xs font-bold text-zinc-900 truncate">
                 {displayName}
               </div>
-              <div className="text-[10px] font-semibold text-zinc-600 font-mono tracking-tight flex items-center gap-1.5 mt-0.5">
+              <div
+                className="text-[10.5px] font-arena font-normal text-zinc-600 tracking-tight flex items-center gap-1.5 mt-0.5"
+                style={{ WebkitTextStroke: '0.5px', fontWeight: 400 }}
+              >
                 <span>{guestId}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                <span className="text-zinc-600">Orb #{orbNumber}</span>
-              </div>
-              <div className="text-[9px] text-sky-700 font-bold uppercase tracking-wider mt-0.5">
-                Active Live Session
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-900/50" />
+                <span className="text-zinc-600">Orb @{orbNumber}</span>
               </div>
             </div>
           </div>
