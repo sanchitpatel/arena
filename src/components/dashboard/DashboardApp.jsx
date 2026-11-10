@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { LoginView } from './LoginView';
+import { CircleNotch } from '@phosphor-icons/react/dist/icons/CircleNotch';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 
 // Lazy-load heavy dashboard views to enable sub-second initial onboarding paint
@@ -9,7 +10,7 @@ const ExistingPatientView = lazy(() => import('./ExistingPatientView').then(m =>
 const DoctorDashboardView = lazy(() => import('./DoctorDashboardView').then(m => ({ default: m.DoctorDashboardView })));
 const NotificationView = lazy(() => import('./NotificationView').then(m => ({ default: m.NotificationView })));
 
-// Eagerly prefetch dashboard views in background during browser idle time
+// Pre-fetch dashboard views in background after onboarding page has loaded
 const prefetchDashboard = () => {
   if (typeof window === 'undefined') return;
   const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 800));
@@ -21,6 +22,17 @@ const prefetchDashboard = () => {
     import('./NotificationView');
   });
 };
+
+/**
+ * Minimal Loading Screen: Simple slate-400 spinner in the center
+ */
+function ArenaLoadingScreen() {
+  return (
+    <div className="min-h-[100dvh] w-full bg-[#f0f2f5] flex items-center justify-center select-none">
+      <CircleNotch size={32} className="animate-spin text-slate-400" />
+    </div>
+  );
+}
 
 /**
  * Route Mappings for Clean Native Mobile URLs (Zero '#' in URLs)
@@ -196,11 +208,7 @@ export default function DashboardApp() {
 
   // 2. Main Arena Dashboard Shell & Responsive Views (Root /arena shows first)
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center">
-        <div className="w-8 h-8 border-3 border-zinc-300 border-t-zinc-800 rounded-full animate-spin" />
-      </div>
-    }>
+    <Suspense fallback={<ArenaLoadingScreen />}>
       <DashboardShell
         activeTab={activeTab}
         onTabChange={handleTabChange}
