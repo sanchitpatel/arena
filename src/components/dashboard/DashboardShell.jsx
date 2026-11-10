@@ -317,9 +317,9 @@ export const DashboardShell = ({
       {/* ========================================================
           3. MAIN CONTENT WORKSPACE
           ======================================================== */}
-      <main className="flex-1 flex flex-col min-w-0 h-full bg-[#d9e2ec]/30 overflow-y-scroll [scrollbar-gutter:stable] pb-20 md:pb-0">
+      <main className="flex-1 flex flex-col min-w-0 h-full bg-[#f0f2f5] overflow-y-scroll [scrollbar-gutter:stable] pb-20 md:pb-0">
         {/* Top Header info bar (Desktop only) */}
-        <div className="hidden md:flex items-center justify-between px-8 py-3.5 border-b border-zinc-300/50 bg-[#d9e2ec]/30 backdrop-blur-md">
+        <div className="hidden md:flex items-center justify-between px-8 py-3.5 border-b border-slate-300/60 bg-[#f0f2f5]/90 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
               {navItems.find(i => i.id === activeTab)?.label}
@@ -331,7 +331,7 @@ export const DashboardShell = ({
           </div>
 
           <div className="flex items-center gap-3 text-xs">
-            <div className="flex items-center gap-1.5 text-zinc-700 font-medium px-3.5 py-1.5 rounded-full bg-[#e6ebf2] shadow-[inset_2px_2px_4px_#c2c9d4,inset_-2px_-2px_4px_#ffffff] border border-white/40">
+            <div className="flex items-center gap-1.5 text-zinc-700 font-medium px-3.5 py-1.5 rounded-full bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c2c9d4,inset_-2px_-2px_4px_#ffffff] border border-white/40">
               <CalendarCheck size={18} className="text-zinc-700" weight="bold" />
               <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
             </div>
