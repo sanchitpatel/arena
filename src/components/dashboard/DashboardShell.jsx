@@ -138,12 +138,12 @@ export const DashboardShell = ({
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left text-sm transition-all duration-200 group cursor-pointer ${isActive
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left text-sm group cursor-pointer transition-colors duration-100 active:scale-[0.98] ${isActive
                   ? 'bg-[#ebedf2] text-zinc-900 shadow-[3px_3px_8px_#c6ced9,-3px_-3px_8px_#ffffff] border border-white font-bold'
                   : 'text-zinc-600 hover:text-zinc-900 hover:shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] font-medium border border-transparent'
                   }`}
               >
-                <div className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all shrink-0 ${isActive
+                <div className={`w-9 h-9 flex items-center justify-center rounded-xl shrink-0 ${isActive
                   ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
                   : 'bg-[#ebedf2] text-zinc-500 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] group-hover:text-zinc-900'
                   }`}>
@@ -262,14 +262,14 @@ export const DashboardShell = ({
                   onTabChange(item.id);
                   setMobileProfileOpen(false);
                 }}
-                className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all duration-200 cursor-pointer ${isActive
+                className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl active:scale-90 transition-transform duration-100 ease-out cursor-pointer ${isActive
                     ? 'text-zinc-900 font-bold'
                     : 'text-zinc-500 font-medium hover:text-zinc-800'
                   }`}
               >
                 <div className="relative">
                   <div
-                    className={`p-1.5 rounded-xl transition-all duration-200 mb-0.5 ${isActive
+                    className={`p-1.5 rounded-xl mb-0.5 ${isActive
                         ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
                         : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] text-zinc-500 hover:text-zinc-900'
                       }`}
@@ -293,13 +293,13 @@ export const DashboardShell = ({
             type="button"
             onClick={() => setMobileProfileOpen((prev) => !prev)}
             title="Profile"
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all duration-200 cursor-pointer ${mobileProfileOpen
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl active:scale-90 transition-transform duration-100 ease-out cursor-pointer ${mobileProfileOpen
                 ? 'text-zinc-900 font-bold'
                 : 'text-zinc-500 font-medium hover:text-zinc-800'
               }`}
           >
             <div
-              className={`p-1.5 rounded-xl transition-all duration-200 mb-0.5 ${mobileProfileOpen
+              className={`p-1.5 rounded-xl mb-0.5 ${mobileProfileOpen
                   ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
                   : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] text-zinc-500 hover:text-zinc-900'
                 }`}

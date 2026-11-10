@@ -299,7 +299,27 @@ GRANT EXECUTE ON FUNCTION public.claim_guest_player TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.submit_player_answer TO anon, authenticated;
 
 -- ==========================================================================
--- 8. REALTIME REPLICATION (Instant Live Scoreboard Sync)
+-- 8. REALTIME REPLICATION (Instant Live Scoreboard Sync & Presence)
 -- ==========================================================================
-ALTER PUBLICATION supabase_realtime ADD TABLE public.players;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.game_state;
+DO $$
+BEGIN
+    -- Add public.players to supabase_realtime if not already member
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'players'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.players;
+    END IF;
+
+    -- Add public.game_state to supabase_realtime if not already member
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'game_state'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.game_state;
+    END IF;
+END $$;
+
+-- Set REPLICA IDENTITY FULL so UPDATE events send both previous and updated row data
+ALTER TABLE public.players REPLICA IDENTITY FULL;
+ALTER TABLE public.game_state REPLICA IDENTITY FULL;
