@@ -100,6 +100,12 @@ export const DashboardShell = ({
       description: 'WhatsApp reminders',
       badge: pendingCount,
     },
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: UserCircle,
+      description: 'Player identity & avatar',
+    },
   ];
 
   return (
@@ -289,28 +295,6 @@ export const DashboardShell = ({
               </button>
             );
           })}
-
-          {/* Profile Trigger Button on mobile */}
-          <button
-            ref={mobileProfileBtnRef}
-            type="button"
-            onClick={() => setMobileProfileOpen((prev) => !prev)}
-            title="Profile"
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl active:scale-90 transition-transform duration-100 ease-out cursor-pointer ${mobileProfileOpen
-                ? 'text-zinc-900 font-bold'
-                : 'text-zinc-500 font-medium hover:text-zinc-800'
-              }`}
-          >
-            <div
-              className={`p-1.5 rounded-xl mb-0.5 ${mobileProfileOpen
-                  ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
-                  : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] text-zinc-500 hover:text-zinc-900'
-                }`}
-            >
-              <UserCircle size={22} weight={mobileProfileOpen ? 'bold' : 'duotone'} />
-            </div>
-            <span className="text-[10px] tracking-tight">Profile</span>
-          </button>
         </div>
       </nav>
 

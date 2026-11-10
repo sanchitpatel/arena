@@ -16,6 +16,7 @@ const VALID_APP_PATHS = new Set([
   '/live',
   '/notifications',
   '/records',
+  '/profile',
 ]);
 
 function resolveRoute() {

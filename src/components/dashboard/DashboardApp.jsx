@@ -9,6 +9,7 @@ const NewPatientView = lazy(() => import('./NewPatientView').then(m => ({ defaul
 const ExistingPatientView = lazy(() => import('./ExistingPatientView').then(m => ({ default: m.ExistingPatientView })));
 const DoctorDashboardView = lazy(() => import('./DoctorDashboardView').then(m => ({ default: m.DoctorDashboardView })));
 const NotificationView = lazy(() => import('./NotificationView').then(m => ({ default: m.NotificationView })));
+const ProfileView = lazy(() => import('./ProfileView').then(m => ({ default: m.ProfileView })));
 
 // Pre-fetch dashboard views in background after onboarding page has loaded
 const prefetchDashboard = () => {
@@ -20,6 +21,7 @@ const prefetchDashboard = () => {
     import('./ExistingPatientView');
     import('./DoctorDashboardView');
     import('./NotificationView');
+    import('./ProfileView');
   }, { timeout: 1000 });
 };
 
@@ -50,6 +52,7 @@ const TAB_TO_PATH = {
   'existing-patient': '/leaderboard',
   'dashboard': '/live',
   'notifications': '/notifications',
+  'profile': '/profile',
 };
 
 const PATH_TO_TAB = {
@@ -58,6 +61,7 @@ const PATH_TO_TAB = {
   '/live': 'dashboard',
   '/notifications': 'notifications',
   '/records': 'existing-patient',
+  '/profile': 'profile',
   '/': 'new-patient',
 };
 
@@ -237,6 +241,13 @@ export default function DashboardApp() {
         </div>
         <div className={activeTab === 'notifications' ? 'block' : 'hidden'}>
           <NotificationView />
+        </div>
+        <div className={activeTab === 'profile' ? 'block' : 'hidden'}>
+          <ProfileView
+            player={player}
+            onUpdatePlayer={(updated) => setPlayer((prev) => ({ ...prev, ...updated }))}
+            onSignOut={handleSignOut}
+          />
         </div>
       </DashboardShell>
     </Suspense>
