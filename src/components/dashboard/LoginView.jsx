@@ -117,7 +117,10 @@ export const LoginView = ({ onEnterArena }) => {
                 />
 
                 <div className="mt-4 text-center">
-                  <span className="font-arena inline-block px-3.5 py-1 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-800 font-bold text-[13px] tracking-wider shadow-sm">
+                  <span
+                    className="font-arena inline-block px-3.5 py-1 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[13.5px] tracking-wider shadow-sm"
+                    style={{ WebkitTextStroke: '0.5px' }}
+                  >
                     {guestId}
                   </span>
                   <p className="text-[12px] text-zinc-500/80 mt-1">
