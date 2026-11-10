@@ -164,15 +164,15 @@ export default function ChatGPTOrb({ orbNumber = 1, avatar = '⚡', size = 'w-28
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full rounded-full" />
 
         <div className="relative z-10 flex h-full w-full flex-col items-center justify-center text-center pointer-events-none">
-          <span className="font-arena text-[10px] font-black uppercase tracking-widest text-sky-950/70">ORB</span>
-          <span className="font-arena mt-0.5 text-3xl font-black leading-none tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,40,160,0.6)] sm:text-[34px]">
+          <span className="font-sans text-[12px] -mt-2 font-black uppercase tracking-widest text-sky-950/70">ORB</span>
+          <span className="font-arena mt-0.5 text-4xl font-black leading-none tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,40,160,0.6)] sm:text-[34px]">
             {orbNumber}
           </span>
         </div>
       </div>
 
       {avatar && (
-        <div className="absolute -bottom-1 -right-1 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-white shadow-[0_4px_14px_rgba(0,0,0,0.22)] backdrop-blur-md overflow-hidden">
+        <div className="absolute -bottom-1 -right-3 z-20 flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white shadow-[0_4px_16px_rgba(0,0,0,0.25)] backdrop-blur-md overflow-hidden">
           <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
         </div>
       )}

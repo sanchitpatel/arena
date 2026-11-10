@@ -10,7 +10,7 @@ export const CURATED_AVATARS = Array.from({ length: 30 }, (_, i) => ({
 }));
 
 const sizeClasses = {
-  badge: 'w-7 h-7',
+  badge: 'w-full h-full',
   sm: 'w-10 h-10',
   md: 'w-12 h-12',
   lg: 'w-16 h-16',
