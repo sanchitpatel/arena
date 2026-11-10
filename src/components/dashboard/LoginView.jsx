@@ -97,7 +97,7 @@ export const LoginView = ({ onEnterArena }) => {
         </div>
 
         {/* Neumorphic Main Onboarding Card */}
-        <div className="bg-[#e6ebf2] border border-slate-300/40 rounded-[2.5rem] p-7 sm:p-9 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
+        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-7 sm:p-9 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
           {isLoading ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
               <CircleNotch size={32} className="animate-spin text-emerald-600" />
@@ -139,7 +139,7 @@ export const LoginView = ({ onEnterArena }) => {
                     onChange={(e) => setPlayerName(e.target.value)}
                     placeholder={guestId}
                     maxLength={20}
-                    className="w-full py-3.5 px-4 bg-[#e6ebf2] text-zinc-900 font-semibold text-sm rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:border-emerald-600/50 transition-all placeholder:text-zinc-400"
+                    className="w-full py-3.5 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-sm rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] focus:outline-none focus:border-emerald-600/50 transition-all placeholder:text-zinc-400"
                   />
                 </div>
               </div>
@@ -165,11 +165,10 @@ export const LoginView = ({ onEnterArena }) => {
                           key={av.id}
                           type="button"
                           onClick={() => setSelectedAvatar(av.id)}
-                          className={`relative flex items-center justify-center p-0.5 rounded-full transition-all duration-150 cursor-pointer ${
-                            isSelected
+                          className={`relative flex items-center justify-center p-0.5 rounded-full transition-all duration-150 cursor-pointer ${isSelected
                               ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-[#e6ebf2] scale-110 shadow-md z-10'
                               : 'opacity-80 hover:opacity-100 hover:scale-105 active:scale-95'
-                          }`}
+                            }`}
                         >
                           <ArenaAvatar id={av.id} size="sm" className="w-10 h-10 shadow-sm" />
                         </button>
@@ -186,27 +185,26 @@ export const LoginView = ({ onEnterArena }) => {
               )}
 
               {/* Enter Arena CTA Button */}
-              <button
-                type="submit"
-                disabled={isEntering}
-                className="w-full py-4 px-6 bg-gradient-to-r from-zinc-900 to-black hover:from-black hover:to-zinc-950 text-white font-bold text-sm tracking-wide uppercase rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.35)] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border border-zinc-700/50 group"
-              >
-                {isEntering ? (
-                  <>
-                    <CircleNotch size={18} className="animate-spin" />
-                    <span>Entering Arena...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Enter Arena</span>
-                    <ArrowRight size={16} weight="bold" className="transition-transform group-hover:translate-x-1" />
-                  </>
-                )}
-              </button>
-
-              <div className="flex items-center justify-center gap-1.5 text-[11px] text-zinc-500 pt-1">
-                <ShieldCheck size={14} className="text-emerald-700" />
-                <span>Instant Wi-Fi Guest Onboarding — Zero Password Required</span>
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isEntering}
+                  className="w-full py-3.5 px-6 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none text-white font-bold text-base rounded-full transition-[box-shadow] duration-200 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),3px_3px_8px_#c5ccd6,-3px_-3px_8px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] cursor-pointer border border-zinc-800/80 group"
+                >
+                  {isEntering ? (
+                    <>
+                      <CircleNotch size={18} className="animate-spin text-zinc-300" />
+                      <span>Entering Arena...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Enter Arena</span>
+                      <div className="w-5 h-5 flex items-center justify-center pointer-events-none transition-transform duration-200 ease-out group-hover:translate-x-1.5">
+                        <ArrowRight size={18} weight="bold" />
+                      </div>
+                    </>
+                  )}
+                </button>
               </div>
             </form>
           )}
