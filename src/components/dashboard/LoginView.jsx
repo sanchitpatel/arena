@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { claimOrRegisterGuest } from '../../services/arenaService';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
-import { CircleNotch, ArrowRight, Sparkle, User, ShieldCheck } from '../icons';
+import { CircleNotch, ArrowRight, UserCircle, User, ShieldCheck } from '../icons';
 import Logo from '../Logo';
 import ChatGPTOrb from './ChatGPTOrb';
 import ArenaAvatar, { CURATED_AVATARS } from '../avatars/ArenaAvatar';
@@ -129,7 +129,7 @@ export const LoginView = ({ onEnterArena }) => {
               {/* Player Handle Input */}
               <div className="space-y-1.5">
                 <label className="text-[14px] font-bold tracking-wider text-zinc-500 pl-1 flex items-center gap-1.5">
-                  <User size={15} weight="bold" className="text-zinc-500" />
+                  <User size={17} weight="bold" className="text-zinc-500" />
                   Username
                 </label>
                 <div className="relative">
@@ -139,7 +139,7 @@ export const LoginView = ({ onEnterArena }) => {
                     onChange={(e) => setPlayerName(e.target.value)}
                     placeholder={guestId}
                     maxLength={20}
-                    className="w-full py-3.5 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-sm rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus-visible:outline-none focus-visible:ring-0 transition-colors duration-150 placeholder:text-zinc-400"
+                    className="w-full py-3 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-sm rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus-visible:outline-none focus-visible:ring-0 transition-colors duration-150 placeholder:text-zinc-400"
                     style={{ outline: 'none', WebkitTapHighlightColor: 'transparent' }}
                   />
                 </div>
@@ -149,16 +149,13 @@ export const LoginView = ({ onEnterArena }) => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between pl-1">
                   <label className="text-[14px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5">
-                    <Sparkle size={15} weight="bold" className="text-zinc-500" />
+                    <UserCircle size={20} weight="bold" className="text-zinc-500/80 " />
                     Choose Avatar
                   </label>
-                  <span className="text-[11px] font-semibold text-zinc-500 font-mono">
-                    {CURATED_AVATARS.length} Curated
-                  </span>
                 </div>
 
-                <div className="p-2.5 bg-[#F2F7FC] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
-                  <div className="grid grid-cols-6 gap-2 max-h-[160px] overflow-y-auto p-1 pr-1.5 scrollbar-thin">
+                <div className="p-3 bg-[#F2F7FC] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
+                  <div className="grid grid-cols-6 gap-2 max-h-[160px] overflow-y-auto p-2 pr-1.5 scrollbar-thin">
                     {CURATED_AVATARS.map((av) => {
                       const isSelected = String(selectedAvatar) === String(av.id) || String(selectedAvatar) === String(av.num);
                       return (
