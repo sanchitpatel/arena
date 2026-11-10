@@ -59,7 +59,7 @@ export default function DashboardApp() {
       guest_id: gId,
       orb_number: orb,
       name: gId,
-      avatar: '⚡',
+      avatar: '1',
     };
   });
 

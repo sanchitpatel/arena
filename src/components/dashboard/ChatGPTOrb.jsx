@@ -146,7 +146,7 @@ function useOrbGL(canvasRef, speed) {
   }, [canvasRef, speed]);
 }
 
-export default function ChatGPTOrb({ orbNumber = 1, avatar = '⚡', size = 'w-28 h-28', speed = 0.45 }) {
+export default function ChatGPTOrb({ orbNumber = 1, avatar = '1', size = 'w-28 h-28', speed = 0.45 }) {
   const canvasRef = useRef(null);
   useOrbGL(canvasRef, speed);
 

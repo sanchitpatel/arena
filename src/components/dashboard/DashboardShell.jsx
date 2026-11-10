@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell } from '../icons';
 import Logo from '../Logo';
+import ArenaAvatar from '../avatars/ArenaAvatar';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import {
   getPendingNotificationCount,
@@ -25,7 +26,7 @@ export const DashboardShell = ({
   const guestId = player?.guest_id || getPlayerId() || 'Guest001';
   const orbNumber = player?.orb_number || getOrbNumber(guestId) || 1;
   const displayName = player?.name || guestId;
-  const avatar = player?.avatar || '⚡';
+  const avatar = player?.avatar || '1';
 
   useEffect(() => {
     let isMounted = true;
@@ -173,8 +174,8 @@ export const DashboardShell = ({
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
             className="w-full flex items-center gap-2.5 text-left cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-[inset_1px_1px_2px_rgba(255,255,255,0.4),2px_2px_5px_#c2c9d4] border border-white/40 flex items-center justify-center text-sm font-bold shrink-0">
-              {avatar}
+            <div className="w-9 h-9 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] border-2 border-white flex items-center justify-center overflow-hidden shrink-0">
+              <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-bold text-zinc-900 truncate">
@@ -220,8 +221,8 @@ export const DashboardShell = ({
           className="md:hidden fixed bottom-20 right-3 z-50 w-64 bg-[#e6ebf2] border border-white/90 rounded-2xl p-4 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6,0_8px_20px_rgba(0,0,0,0.12)] transition-all duration-200 ease-out"
         >
           <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-zinc-300/60">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-[inset_1px_1px_2px_rgba(255,255,255,0.4),2px_2px_5px_#c2c9d4] border border-white/40 flex items-center justify-center text-base font-bold shrink-0">
-              {avatar}
+            <div className="w-10 h-10 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] border-2 border-white flex items-center justify-center overflow-hidden shrink-0">
+              <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-bold text-zinc-900 truncate">

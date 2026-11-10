@@ -30,7 +30,10 @@ export const LoginView = ({ onEnterArena }) => {
           setGuestId(assignedGuestId);
           setOrbNumber(assignedOrb);
           setPlayerName(res.data.name !== assignedGuestId ? res.data.name : '');
-          if (res.data.avatar) setSelectedAvatar(res.data.avatar);
+          if (res.data.avatar) {
+            const num = parseInt(String(res.data.avatar).replace(/\D/g, ''), 10);
+            setSelectedAvatar(num >= 1 && num <= 30 ? String(num) : '1');
+          }
           if (res.data.team) setSelectedTeam(res.data.team);
         }
       } catch (err) {

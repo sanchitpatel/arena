@@ -106,7 +106,7 @@ export async function fetchActiveGameState() {
  * Atomically claims or reconnects a guest player using PostgreSQL sequence + device token.
  * Prevents any ID collision and recovers existing session across mobile refreshes.
  */
-export async function claimOrRegisterGuest({ name = null, avatar = '⚡', team = 'unassigned' } = {}) {
+export async function claimOrRegisterGuest({ name = null, avatar = '1', team = 'unassigned' } = {}) {
   try {
     const deviceId = getDeviceId();
 
