@@ -6,6 +6,179 @@ import { getDeviceId, savePlayerRecord } from '../utils/playerId';
  * Tailored for 200+ concurrent mobile players over local Wi-Fi / self-hosted Supabase.
  */
 
+// Active singleton channel for broadcast/presence reuse
+let arenaBroadcastChannel = null;
+
+function getOrCreateBroadcastChannel() {
+  if (!arenaBroadcastChannel) {
+    arenaBroadcastChannel = supabase.channel('arena_live_room', {
+      config: { broadcast: { self: true } }
+    });
+    arenaBroadcastChannel.subscribe();
+  }
+  return arenaBroadcastChannel;
+}
+
+/**
+ * Fires an instantaneous broadcast command to all connected phones in < 15ms.
+ * (e.g. action: 'start_round', 'freeze_leaderboard', 'show_question', 'reveal_answer')
+ */
+export async function broadcastGameCommand(action, payload = {}) {
+  try {
+    const channel = getOrCreateBroadcastChannel();
+    await channel.send({
+      type: 'broadcast',
+      event: 'arena_command',
+      payload: { action, ...payload, timestamp: Date.now() },
+    });
+    return { success: true };
+  } catch (err) {
+    console.error('[Arena Realtime] broadcastGameCommand error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Ephemeral score burst broadcast for instant visual/sound feedback on Admin screen
+ */
+export async function broadcastScoreBurst({ playerId, guestId, orbNumber, pointsAdded, newTotal }) {
+  try {
+    const channel = getOrCreateBroadcastChannel();
+    await channel.send({
+      type: 'broadcast',
+      event: 'score_burst',
+      payload: { playerId, guestId, orbNumber, pointsAdded, newTotal, timestamp: Date.now() },
+    });
+    return { success: true };
+  } catch (err) {
+    console.warn('[Arena Realtime] broadcastScoreBurst error:', err);
+    return { success: false };
+  }
+}
+
+/**
+ * Master Realtime Multi-Channel Subscription:
+ * Integrates Postgres CDC (players, game_state), Broadcast commands, and Presence in one connection.
+ */
+export function subscribeToLiveArena({
+  onScoreUpdate,
+  onGameStateChange,
+  onCommand,
+  onScoreBurst,
+  onPresenceSync,
+  onStatusChange,
+  presenceData = null,
+} = {}) {
+  try {
+    const channel = supabase.channel('arena_live_room', {
+      config: {
+        broadcast: { self: false },
+        presence: { key: presenceData?.guest_id || 'guest_device' },
+      },
+    });
+
+    // 1. Database CDC: Listen for live player score changes & registrations
+    if (onScoreUpdate) {
+      channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'players' },
+        (payload) => onScoreUpdate(payload)
+      );
+    }
+
+    // 2. Database CDC: Listen for master game state changes
+    if (onGameStateChange) {
+      channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'game_state' },
+        (payload) => onGameStateChange(payload)
+      );
+    }
+
+    // 3. Ephemeral Broadcast: Admin game control commands (< 15ms latency)
+    if (onCommand) {
+      channel.on('broadcast', { event: 'arena_command' }, ({ payload }) => {
+        onCommand(payload);
+      });
+    }
+
+    // 4. Ephemeral Broadcast: Instant score burst animations
+    if (onScoreBurst) {
+      channel.on('broadcast', { event: 'score_burst' }, ({ payload }) => {
+        onScoreBurst(payload);
+      });
+    }
+
+    // 5. Presence: Track live attendee online count
+    if (onPresenceSync) {
+      channel.on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        onPresenceSync(state);
+      });
+    }
+
+    // Connect WebSocket
+    channel.subscribe(async (status) => {
+      onStatusChange?.(status);
+      if (status === 'SUBSCRIBED') {
+        console.log('[Arena Realtime] Connected to live event room');
+        if (presenceData) {
+          try {
+            await channel.track(presenceData);
+          } catch (e) {
+            console.warn('[Arena Realtime] Presence track error:', e);
+          }
+        }
+      }
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  } catch (err) {
+    console.error('[Arena Realtime] subscribeToLiveArena error:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Throttled Leaderboard Subscriber:
+ * Prevents React rendering churn when 200+ players submit points within 2 seconds.
+ * Accumulates individual player score updates into an in-memory buffer,
+ * flushing them as a single batch update every `throttleMs` (default 200ms).
+ */
+export function createThrottledLeaderboardSubscriber(onBatchUpdate, throttleMs = 200) {
+  let pendingUpdates = new Map();
+  let flushTimer = null;
+
+  const flush = () => {
+    if (pendingUpdates.size > 0) {
+      const batch = Array.from(pendingUpdates.values());
+      pendingUpdates.clear();
+      onBatchUpdate(batch);
+    }
+    flushTimer = null;
+  };
+
+  const handleScoreEvent = (payload) => {
+    const updated = payload.new;
+    if (updated && updated.id) {
+      pendingUpdates.set(updated.id, updated);
+      if (!flushTimer) {
+        flushTimer = setTimeout(flush, throttleMs);
+      }
+    }
+  };
+
+  const unsubscribe = subscribeToLeaderboard(handleScoreEvent);
+
+  return () => {
+    if (flushTimer) clearTimeout(flushTimer);
+    pendingUpdates.clear();
+    unsubscribe();
+  };
+}
+
 /**
  * Subscribes to live leaderboard score updates via Supabase Realtime WebSocket.
  * Listens for any UPDATE or INSERT on the `players` table.
@@ -194,4 +367,41 @@ export async function submitRoundScore({
     console.error('[Arena Service] submitRoundScore error:', err);
     return { success: false, error: err.message };
   }
+}
+
+/**
+ * Submits answer atomically to Postgres, and fires an instant broadcast score burst
+ * so the Admin projector and leaderboard display the player's points with zero delay.
+ */
+export async function submitAnswerAndNotify({
+  playerId,
+  guestId,
+  orbNumber,
+  roundNumber,
+  selectedOption,
+  isCorrect = false,
+  points = 0,
+  responseTimeMs = 0,
+}) {
+  const result = await submitRoundScore({
+    playerId,
+    roundNumber,
+    selectedOption,
+    isCorrect,
+    points,
+    responseTimeMs,
+  });
+
+  if (result.success && points > 0) {
+    // Non-blocking broadcast for instant visual feedback on host/admin screen
+    broadcastScoreBurst({
+      playerId,
+      guestId,
+      orbNumber,
+      pointsAdded: points,
+      newTotal: result.data?.total_score,
+    });
+  }
+
+  return result;
 }

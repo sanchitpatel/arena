@@ -35,5 +35,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storageKey: 'arena_auth_token'
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 40 // Raised for high-density live event scoreboard sync
+    }
   }
 });
