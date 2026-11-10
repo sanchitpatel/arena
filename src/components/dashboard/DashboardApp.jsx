@@ -13,22 +13,23 @@ const NotificationView = lazy(() => import('./NotificationView').then(m => ({ de
 // Pre-fetch dashboard views in background after onboarding page has loaded
 const prefetchDashboard = () => {
   if (typeof window === 'undefined') return;
-  const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 800));
+  const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 200));
   idle(() => {
     import('./DashboardShell');
     import('./NewPatientView');
     import('./ExistingPatientView');
     import('./DoctorDashboardView');
     import('./NotificationView');
-  });
+  }, { timeout: 1000 });
 };
 
 /**
- * Minimal Loading Screen: Simple slate-400 spinner in the center
+ * Minimal Loading Screen: Simple slate-400 spinner in the center.
+ * Uses fixed inset-0 to perfectly cover the entire mobile viewport with zero gaps or black peeks.
  */
 function ArenaLoadingScreen() {
   return (
-    <div className="min-h-[100dvh] w-full bg-[#f0f2f5] flex items-center justify-center select-none">
+    <div className="fixed inset-0 z-50 w-full h-full bg-[#f0f2f5] flex items-center justify-center select-none">
       <CircleNotch size={32} className="animate-spin text-slate-400" />
     </div>
   );
@@ -168,6 +169,10 @@ export default function DashboardApp() {
 
     if (playerData) {
       setPlayer(playerData);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
     }
 
     setIsEntered(true);

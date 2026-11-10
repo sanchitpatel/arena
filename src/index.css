@@ -110,12 +110,13 @@
 
 html {
   scroll-behavior: auto;
+  background-color: #f0f2f5;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--ink);
-  color: var(--chalk);
+  background-color: #f0f2f5;
+  color: #18181B;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
