@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { claimOrRegisterGuest } from '../../services/arenaService';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+import { normalizePlayerInput, validatePlayerHandle } from '../../utils/sanitize';
 import { CircleNotch, ArrowRight, UserCircle, User, ShieldCheck } from '../icons';
 import Logo from '../Logo';
 import ChatGPTOrb from './ChatGPTOrb';
@@ -49,6 +50,12 @@ export const LoginView = ({ onEnterArena }) => {
     };
   }, []);
 
+  const handleNameChange = (e) => {
+    const clean = normalizePlayerInput(e.target.value);
+    setPlayerName(clean);
+    if (errorMessage) setErrorMessage('');
+  };
+
   const handleEnterArena = async (e) => {
     if (e) e.preventDefault();
     if (isEntering) return;
@@ -57,9 +64,17 @@ export const LoginView = ({ onEnterArena }) => {
       setIsEntering(true);
       setErrorMessage('');
 
-      const displayName = playerName.trim() || guestId;
+      // 1. Strict Input Normalization & Validation Check
+      const validation = validatePlayerHandle(playerName, guestId);
+      if (!validation.isValid) {
+        setErrorMessage(validation.error);
+        setIsEntering(false);
+        return;
+      }
 
-      // Update name and avatar in PostgreSQL
+      const displayName = validation.value;
+
+      // 2. Submit normalized name & avatar to PostgreSQL
       const res = await claimOrRegisterGuest({
         name: displayName,
         avatar: selectedAvatar,
@@ -136,13 +151,20 @@ export const LoginView = ({ onEnterArena }) => {
                   <input
                     type="text"
                     value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value)}
+                    onChange={handleNameChange}
                     placeholder={guestId}
-                    maxLength={20}
+                    maxLength={16}
+                    autoComplete="off"
+                    spellCheck="false"
                     className="w-full py-3 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-sm rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus-visible:outline-none focus-visible:ring-0 transition-colors duration-150 placeholder:text-zinc-400"
                     style={{ outline: 'none', WebkitTapHighlightColor: 'transparent' }}
                   />
                 </div>
+                {errorMessage && (
+                  <p className="text-[11px] font-medium text-rose-500 pl-2 pt-0.5">
+                    {errorMessage}
+                  </p>
+                )}
               </div>
 
               {/* Curated Lorelei Avatar Selector */}
@@ -176,12 +198,6 @@ export const LoginView = ({ onEnterArena }) => {
                   </div>
                 </div>
               </div>
-
-              {errorMessage && (
-                <p className="text-xs font-medium text-rose-600 text-center bg-rose-50 border border-rose-200 p-2.5 rounded-xl">
-                  {errorMessage}
-                </p>
-              )}
 
               {/* Enter Arena CTA Button */}
               <div className="pt-2">

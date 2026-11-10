@@ -96,7 +96,7 @@ CREATE INDEX IF NOT EXISTS idx_answers_round ON public.player_answers (round_num
 CREATE OR REPLACE FUNCTION public.claim_guest_player(
     p_device_id TEXT,
     p_name TEXT DEFAULT NULL,
-    p_avatar TEXT DEFAULT '⚡',
+    p_avatar TEXT DEFAULT '1',
     p_team TEXT DEFAULT 'unassigned'
 )
 RETURNS JSONB
@@ -108,20 +108,41 @@ DECLARE
     v_player public.players%ROWTYPE;
     v_seq_val BIGINT;
     v_guest_id TEXT;
+    v_clean_name TEXT;
+    v_clean_avatar TEXT;
     v_display_name TEXT;
 BEGIN
-    -- 1. Check if device already claimed a guest ID (reconnect after reload)
+    -- 0. Server-side sanitization: enforce alphanumeric, space, hyphen, underscore (max 16 chars)
+    v_clean_name := SUBSTRING(REGEXP_REPLACE(TRIM(COALESCE(p_name, '')), '[^a-zA-Z0-9 _-]', '', 'g'), 1, 16);
+    
+    -- Normalize avatar to 1..30
+    v_clean_avatar := SUBSTRING(REGEXP_REPLACE(TRIM(COALESCE(p_avatar, '1')), '[^0-9]', '', 'g'), 1, 2);
+    IF v_clean_avatar = '' OR v_clean_avatar::INT < 1 OR v_clean_avatar::INT > 30 THEN
+        v_clean_avatar := '1';
+    END IF;
+
+    -- 1. Check if device already claimed a guest ID (reconnect after reload or profile update)
     SELECT * INTO v_player 
     FROM public.players 
     WHERE device_id = p_device_id 
     LIMIT 1;
 
     IF FOUND THEN
-        -- Update last seen heartbeat
+        -- If player submitted a non-empty name, update it; otherwise preserve existing name
+        IF v_clean_name <> '' THEN
+            v_display_name := v_clean_name;
+        ELSE
+            v_display_name := v_player.name;
+        END IF;
+
         UPDATE public.players 
         SET last_seen_at = NOW(),
-            is_active = TRUE
-        WHERE id = v_player.id;
+            is_active = TRUE,
+            name = v_display_name,
+            avatar = v_clean_avatar,
+            team = COALESCE(NULLIF(TRIM(p_team), ''), v_player.team)
+        WHERE id = v_player.id
+        RETURNING * INTO v_player;
 
         RETURN jsonb_build_object(
             'player_id', v_player.id,
@@ -138,7 +159,7 @@ BEGIN
     -- 2. New device: Atomically increment sequence for guaranteed collision-free Guest ID & Orb number
     v_seq_val := nextval('public.guest_id_seq');
     v_guest_id := 'Guest' || LPAD(v_seq_val::TEXT, 3, '0');
-    v_display_name := COALESCE(NULLIF(TRIM(p_name), ''), v_guest_id);
+    v_display_name := CASE WHEN v_clean_name <> '' THEN v_clean_name ELSE v_guest_id END;
 
     -- 3. Insert new player row
     INSERT INTO public.players (
@@ -156,8 +177,8 @@ BEGIN
         v_guest_id,
         p_device_id,
         v_display_name,
-        COALESCE(p_avatar, '⚡'),
-        COALESCE(p_team, 'unassigned'),
+        v_clean_avatar,
+        COALESCE(NULLIF(TRIM(p_team), ''), 'unassigned'),
         0,
         NOW()
     )
