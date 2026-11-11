@@ -306,23 +306,27 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           ======================================================== */}
       {qrModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="relative w-full max-w-sm bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
-            <button
-              type="button"
-              onClick={() => setQrModalOpen(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_4px_#c5ccd6,-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-500 hover:text-zinc-900 border border-white/60 transition-all cursor-pointer z-10 active:scale-90"
-              title="Close QR Badge"
-            >
-              <X size={16} weight="bold" />
-            </button>
-            <PlayerQRBadge
-              player={{
-                guest_id: guestId,
-                orb_number: orbNumber,
-                name: playerName || player?.name || guestId,
-                avatar: selectedAvatar,
-              }}
-            />
+          <div
+            className="relative w-full max-w-[420px] bg-[#ebedf2] rounded-[36px] p-3 border-4 border-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.4),10px_10px_28px_#c2c9d6,-10px_-10px_28px_#ffffff] animate-in zoom-in-95 duration-150"
+          >
+            <div className="relative bg-[#f0f2f5] rounded-[26px] p-4 sm:p-5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
+              <button
+                type="button"
+                onClick={() => setQrModalOpen(false)}
+                className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_4px_#c5ccd6,-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-500 hover:text-zinc-900 border border-white/60 transition-all cursor-pointer z-10 active:scale-90"
+                title="Close QR Badge"
+              >
+                <X size={16} weight="bold" />
+              </button>
+              <PlayerQRBadge
+                player={{
+                  guest_id: guestId,
+                  orb_number: orbNumber,
+                  name: playerName || player?.name || guestId,
+                  avatar: selectedAvatar,
+                }}
+              />
+            </div>
           </div>
         </div>,
         document.body
