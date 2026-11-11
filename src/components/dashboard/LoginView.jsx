@@ -227,6 +227,7 @@ export const LoginView = ({ onEnterArena }) => {
                 <ChatGPTOrb
                   orbNumber={orbNumber || 1}
                   avatar={selectedAvatar}
+                  badge="avatar"
                   size="w-24 h-24 sm:w-28 sm:h-28"
                 />
 

@@ -8,6 +8,7 @@ import {
   SignOut,
   ShieldCheck,
   QrCode,
+  BootstrapQrCode,
   Scan,
 } from '../icons';
 import ChatGPTOrb from './ChatGPTOrb';
@@ -146,7 +147,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
               : 'text-zinc-600 hover:text-zinc-900 font-semibold'
           }`}
         >
-          <QrCode size={15} weight={activeSection === 'qr' ? 'bold' : 'regular'} />
+          <BootstrapQrCode size={15} className="shrink-0" />
           <span>My QR</span>
         </button>
 

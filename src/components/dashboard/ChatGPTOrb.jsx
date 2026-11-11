@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { QrCode } from '../icons';
+import { BootstrapQrCode } from '../icons';
 
 const VERT = `attribute vec2 a; void main(){ gl_Position = vec4(a, 0., 1.); }`;
 
@@ -160,7 +160,7 @@ export default function ChatGPTOrb({
   avatar = '1',
   size = 'w-24 h-24 sm:w-28 sm:h-28',
   speed = 0.65,
-  badge = 'qr',
+  badge = 'avatar',
   onBadgeClick,
 }) {
   const canvasRef = useRef(null);
@@ -229,7 +229,7 @@ export default function ChatGPTOrb({
           title={badge === 'qr' ? 'My QR Code' : 'Player Avatar'}
         >
           {badge === 'qr' ? (
-            <QrCode size={22} weight="bold" className="text-zinc-900" />
+            <BootstrapQrCode size={28} className="text-zinc-900" />
           ) : avatar ? (
             <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
           ) : null}
