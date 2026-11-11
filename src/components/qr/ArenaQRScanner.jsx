@@ -89,11 +89,8 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
               navigator.vibrate([40, 60, 40]);
             }
 
-            if (scannerRef.current && isScanningRef.current) {
-              try {
-                scannerRef.current.pause(true);
-              } catch { }
-            }
+            // Power down camera immediately upon successful scan so green indicator turns off
+            stopCameraHardwareImmediately();
 
             if (typeof onScanSuccess === 'function') {
               onScanSuccess(parsed);
@@ -138,17 +135,23 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
           qrCodeErrorCallback
         );
       } catch (firstErr) {
-        // If desktop has no environment camera, retry with generic user camera
-        if (mode === 'environment') {
-          console.warn('[ArenaQRScanner] Environment camera unavailable, falling back to default webcam');
+        // If desktop has no environment camera, retry with user/webcam fallback
+        console.warn('[ArenaQRScanner] Environment camera unavailable, trying webcam fallback:', firstErr.message);
+        try {
           await html5QrCode.start(
             { facingMode: 'user' },
             config,
             qrCodeSuccessCallback,
             qrCodeErrorCallback
           );
-        } else {
-          throw firstErr;
+        } catch (secondErr) {
+          // Ultimate fallback to default camera without constraint
+          await html5QrCode.start(
+            true,
+            config,
+            qrCodeSuccessCallback,
+            qrCodeErrorCallback
+          );
         }
       }
 
@@ -190,19 +193,49 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
     return () => {
       isMountedRef.current = false;
-      if (scannerRef.current && isScanningRef.current) {
-        isScanningRef.current = false;
-        scannerRef.current
-          .stop()
-          .then(() => {
-            try {
-              scannerRef.current?.clear();
-            } catch { }
-          })
-          .catch(() => { });
-      }
+      stopCameraHardwareImmediately();
     };
   }, [facingMode]);
+
+  // Forcefully stop all camera tracks immediately on unmount or pause
+  const stopCameraHardwareImmediately = () => {
+    isScanningRef.current = false;
+
+    // 1. Direct hardware track termination on DOM video elements:
+    try {
+      const container = document.getElementById(containerId);
+      if (container) {
+        const videos = container.querySelectorAll('video');
+        videos.forEach((video) => {
+          if (video && video.srcObject) {
+            const stream = video.srcObject;
+            if (stream && typeof stream.getTracks === 'function') {
+              stream.getTracks().forEach((track) => {
+                try {
+                  track.stop();
+                } catch { }
+              });
+            }
+            video.srcObject = null;
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('[ArenaQRScanner] Video track stop error:', e);
+    }
+
+    // 2. Safe Html5Qrcode instance shutdown:
+    if (scannerRef.current) {
+      try {
+        const scanner = scannerRef.current;
+        scanner.stop().catch(() => {}).finally(() => {
+          try { scanner.clear(); } catch {}
+        });
+      } catch {
+        try { scannerRef.current.clear(); } catch {}
+      }
+    }
+  };
 
   // Re-enable camera directly inside the scanner box
   const handleEnableCameraInScanner = async () => {
@@ -220,15 +253,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
   const handleScanAgain = () => {
     setScannedPlayer(null);
     setScannerStatus('scanning');
-    if (scannerRef.current && isScanningRef.current) {
-      try {
-        scannerRef.current.resume();
-      } catch {
-        startCamera(facingMode);
-      }
-    } else {
-      startCamera(facingMode);
-    }
+    startCamera(facingMode);
   };
 
   return (

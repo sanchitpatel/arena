@@ -21,6 +21,26 @@ import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 const STORAGE_KEY_DRAFT_NAME = 'arena_draft_username';
 const STORAGE_KEY_DRAFT_AVATAR = 'arena_draft_avatar';
 
+// Forcefully kills any lingering camera/microphone media tracks in the browser document
+export const forceReleaseAllMediaTracks = () => {
+  if (typeof document === 'undefined') return;
+  try {
+    const videos = document.querySelectorAll('video');
+    videos.forEach((video) => {
+      if (video && video.srcObject && typeof video.srcObject.getTracks === 'function') {
+        video.srcObject.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch { }
+        });
+        video.srcObject = null;
+      }
+    });
+  } catch (err) {
+    console.warn('[Permissions] Media tracks release error:', err);
+  }
+};
+
 export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   const guestId = player?.guest_id || getPlayerId() || 'Guest001';
   const orbNumber = player?.orb_number || getOrbNumber(guestId) || 1;
@@ -51,6 +71,9 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   // Check and listen to client device permission states (localStorage preference takes priority over browser grant)
   useEffect(() => {
     let isMounted = true;
+
+    // Release any lingering media tracks from previous scanner mounts immediately
+    forceReleaseAllMediaTracks();
 
     const checkExistingPermissions = async () => {
       // 1. Camera permission check:
@@ -284,19 +307,23 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         // First-time grant request: trigger native prompt with desktop fallback
         let stream = null;
         try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
-          });
-        } catch (firstErr) {
-          // Desktop / laptop webcam fallback (prevents OverconstrainedError)
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: true
-          });
-        }
-
-        // Release hardware immediately so device privacy light turns off
-        if (stream) {
-          stream.getTracks().forEach((track) => track.stop());
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'environment' }
+            });
+          } catch (firstErr) {
+            // Desktop / laptop webcam fallback (prevents OverconstrainedError)
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: true
+            });
+          }
+        } finally {
+          // Release hardware immediately in finally block so camera light turns off
+          if (stream) {
+            stream.getTracks().forEach((track) => {
+              try { track.stop(); } catch { }
+            });
+          }
         }
 
         setCameraGranted(true);
@@ -357,13 +384,18 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         } catch { }
       } else {
         // First-time grant request
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true
-        });
-
-        // Release hardware immediately so device privacy indicator turns off
-        if (stream) {
-          stream.getTracks().forEach((track) => track.stop());
+        let stream = null;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: true
+          });
+        } finally {
+          // Release hardware immediately so device privacy indicator turns off
+          if (stream) {
+            stream.getTracks().forEach((track) => {
+              try { track.stop(); } catch { }
+            });
+          }
         }
 
         setMicGranted(true);
