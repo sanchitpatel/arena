@@ -308,21 +308,21 @@ export const DashboardShell = ({
         {/* ========================================================
             TOP TRANSPARENT APP BAR (Constant across all pages, no border)
             ======================================================== */}
-        <header className="sticky top-0 z-30 w-full bg-[#f0f2f5]/80 backdrop-blur-md border-none px-4 sm:px-6 py-3 flex items-center justify-between select-none">
+        <header className="sticky top-0 z-30 w-full bg-[#f0f2f5]/80 backdrop-blur-md border-none px-4 sm:px-6 py-2 flex items-center justify-between select-none">
           {/* Brand Name */}
-          <span className="font-arena text-base sm:text-lg font-black tracking-wider text-zinc-900">
+          <span className="font-arena text-lg -ml-1 sm:text-lg font-black tracking-wider text-zinc-900">
             ARENA
           </span>
 
-          {/* Scanner Option on the Rightmost Corner */}
+          {/* Scanner Option on the Rightmost Corner (Inward: White on Top, Black at Bottom) */}
           <button
             type="button"
             onClick={() => setQrModalOpen('scanner')}
             title="Scan QR Code"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ebedf2] shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] hover:shadow-[inset_0_-2px_4px_rgba(0,0,0,0.15),inset_0_1px_3px_rgba(255,255,255,0.4)] active:scale-95 transition-all text-xs font-bold text-zinc-700 hover:text-zinc-900 border border-white/60 cursor-pointer"
+            className="flex items-center -mr-1 gap-1.5 px-2 py-1 rounded-xl bg-[#ebedf2] shadow-[inset_0_2px_4px_#ffffff,inset_0_-2px_5px_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] active:scale-95 transition-all text-xs font-bold text-zinc-700 hover:text-zinc-900 border border-white cursor-pointer"
           >
-            <Scan size={16} weight="bold" className="text-zinc-800" />
-            <span className="text-xs font-bold text-zinc-800">Scan</span>
+            <Scan size={20} weight="bold" className="text-zinc-800" />
+            <span className="text-[13px] font-bold text-zinc-800">Scan</span>
           </button>
         </header>
 
