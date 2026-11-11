@@ -40,16 +40,24 @@ export default function PlayerQRBadge({ player, className = '' }) {
   const displayName = player?.name || guestId;
   const avatar = player?.avatar || '1';
 
-  // Memoize structured Arena Player Payload (CRITICAL: NEVER use Date.now() here to prevent infinite re-renders)
+  // Construct official URL format:
+  // - Enables native smartphone cameras (iOS Camera, Google Lens) to show a direct link to the Arena web app.
+  // - Allows our in-game Arena scanner to decode player profile parameters instantly.
   const qrPayload = useMemo(() => {
-    return JSON.stringify({
+    let baseOrigin = 'https://arena.bmiil.com';
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      baseOrigin = window.location.origin;
+    }
+
+    const params = new URLSearchParams({
       app: 'ARENA',
-      v: 1,
-      gid: guestId,
-      orb: orbNumber,
+      player: guestId,
+      orb: String(orbNumber),
       name: displayName,
-      avatar: avatar,
+      avatar: String(avatar),
     });
+
+    return `${baseOrigin}/arena?${params.toString()}`;
   }, [guestId, orbNumber, displayName, avatar]);
 
   useEffect(() => {
@@ -224,7 +232,7 @@ export default function PlayerQRBadge({ player, className = '' }) {
       </div>
 
       <p className="text-[10.5px] text-zinc-500/80 text-center mt-3 max-w-[260px] leading-relaxed">
-        Show this QR code to referees, booth organizers, or players to verify your ID and score.
+        Scan with Arena scanner or any smartphone camera to view profile and verify ID.
       </p>
     </div>
   );

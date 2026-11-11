@@ -52,15 +52,26 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
         try {
           let parsed = null;
+          // Case 1: JSON payload format
           if (decodedText.startsWith('{') && decodedText.endsWith('}')) {
             parsed = JSON.parse(decodedText);
-          } else if (decodedText.includes('player=')) {
-            const url = new URL(decodedText);
+          }
+          // Case 2: URL payload format (e.g., https://arena.bmiil.com/arena?player=GUEST006&orb=6&name=aman&avatar=1)
+          else if (decodedText.includes('player=') || decodedText.includes('gid=')) {
+            let searchParams;
+            try {
+              const url = new URL(decodedText);
+              searchParams = url.searchParams;
+            } catch {
+              searchParams = new URLSearchParams(decodedText.includes('?') ? decodedText.split('?')[1] : decodedText);
+            }
+
             parsed = {
-              app: 'ARENA',
-              gid: url.searchParams.get('player'),
-              orb: url.searchParams.get('orb'),
-              name: url.searchParams.get('name'),
+              app: searchParams.get('app') || 'ARENA',
+              gid: searchParams.get('player') || searchParams.get('gid'),
+              orb: searchParams.get('orb') ? parseInt(searchParams.get('orb'), 10) : 1,
+              name: searchParams.get('name') || searchParams.get('player'),
+              avatar: searchParams.get('avatar') || '1',
             };
           }
 
