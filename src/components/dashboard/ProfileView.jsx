@@ -129,6 +129,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
               avatar={selectedAvatar}
               badge="qr"
               onBadgeClick={() => setQrModalOpen(true)}
+              onOrbClick={() => setQrModalOpen(true)}
               size="w-24 h-24 sm:w-28 sm:h-28"
             />
 
