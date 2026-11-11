@@ -9,7 +9,7 @@ import {
   X,
   Camera,
   Microphone,
-  ShieldCheck,
+  SlidersHorizontal,
 } from '../icons';
 import ChatGPTOrb from './ChatGPTOrb';
 import ArenaAvatar, { CURATED_AVATARS } from '../avatars/ArenaAvatar';
@@ -454,14 +454,14 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       <div className="space-y-1.5">
         <div className="min-h-[20px] flex items-center justify-between pl-1 pr-1">
           <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5">
-            <ShieldCheck size={15} weight="bold" className="text-zinc-500" />
+            <SlidersHorizontal size={17} weight="bold" className="text-zinc-500" />
             Permissions
           </label>
           <span className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
             {cameraGranted && micGranted ? (
-              <span className="text-emerald-600 font-semibold">Configured</span>
+              <span className="text-sky-500 font-semibold">Configured</span>
             ) : cameraGranted || micGranted ? (
-              <span className="text-sky-600 font-semibold">Active</span>
+              <span className="text-sky-500 font-semibold">Active</span>
             ) : (
               <span>Not Configured</span>
             )}
@@ -480,7 +480,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                   <Camera
                     size={17}
                     weight="bold"
-                    className={cameraGranted ? 'text-emerald-600 transition-colors' : 'text-zinc-500 transition-colors'}
+                    className={cameraGranted ? 'text-sky-600/90 transition-colors' : 'text-zinc-500 transition-colors'}
                   />
                 </div>
                 <div className="truncate">
@@ -505,7 +505,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                 disabled={cameraLoading}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   cameraGranted
-                    ? 'bg-emerald-500 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.2)]'
+                    ? 'bg-sky-400 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.2)]'
                     : 'bg-[#cbd2de] shadow-[inset_2px_2px_4px_#b3bac6,inset_-2px_-2px_4px_#ffffff]'
                 }`}
               >
@@ -540,7 +540,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                   <Microphone
                     size={17}
                     weight="bold"
-                    className={micGranted ? 'text-emerald-600 transition-colors' : 'text-zinc-500 transition-colors'}
+                    className={micGranted ? 'text-sky-600/90 transition-colors' : 'text-zinc-500 transition-colors'}
                   />
                 </div>
                 <div className="truncate">
@@ -565,7 +565,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                 disabled={micLoading}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   micGranted
-                    ? 'bg-emerald-500 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.2)]'
+                    ? 'bg-sky-400 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.2)]'
                     : 'bg-[#cbd2de] shadow-[inset_2px_2px_4px_#b3bac6,inset_-2px_-2px_4px_#ffffff]'
                 }`}
               >

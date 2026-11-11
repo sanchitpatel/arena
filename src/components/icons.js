@@ -94,6 +94,7 @@ export { Scan } from '@phosphor-icons/react/dist/icons/Scan';
 export { ShieldCheck } from '@phosphor-icons/react/dist/icons/ShieldCheck';
 export { ShieldWarning } from '@phosphor-icons/react/dist/icons/ShieldWarning';
 export { SignOut } from '@phosphor-icons/react/dist/icons/SignOut';
+export { SlidersHorizontal } from '@phosphor-icons/react/dist/icons/SlidersHorizontal';
 export { Smiley } from '@phosphor-icons/react/dist/icons/Smiley';
 export { Snowflake } from '@phosphor-icons/react/dist/icons/Snowflake';
 export { Sparkle } from '@phosphor-icons/react/dist/icons/Sparkle';
