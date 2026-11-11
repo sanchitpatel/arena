@@ -3,6 +3,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash } from '../icons';
 import { Sword } from '@phosphor-icons/react/dist/icons/Sword';
+import { killAllMediaTracks } from '../../utils/mediaGuard';
 
 /**
  * ArenaQRScanner Component:
@@ -46,7 +47,6 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
       // Ensure the container element exists in DOM
       const elem = document.getElementById(containerId);
       if (!elem) {
-        console.warn('[ArenaQRScanner] DOM target not ready yet');
         return;
       }
 
@@ -90,16 +90,14 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
             }
 
             // Power down camera immediately upon successful scan so green indicator turns off
-            stopCameraHardwareImmediately();
+            stopCameraHardwareImmediately('Scan verified successfully');
 
             if (typeof onScanSuccess === 'function') {
               onScanSuccess(parsed);
             }
             return;
           }
-        } catch (e) {
-          console.warn('[ArenaQRScanner] Non-JSON QR payload:', e);
-        }
+        } catch (e) { }
 
         // Generic text/URL scan fallback
         setScannedPlayer({
@@ -136,7 +134,6 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         );
       } catch (firstErr) {
         // If desktop has no environment camera, retry with user/webcam fallback
-        console.warn('[ArenaQRScanner] Environment camera unavailable, trying webcam fallback:', firstErr.message);
         try {
           await html5QrCode.start(
             { facingMode: 'user' },
@@ -160,13 +157,9 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         setScannerStatus('scanning');
       } else {
         // Unmounted during start: shut down immediately
-        try {
-          await html5QrCode.stop();
-          html5QrCode.clear();
-        } catch { }
+        stopCameraHardwareImmediately('Unmounted during startup');
       }
     } catch (err) {
-      console.warn('[ArenaQRScanner] Camera start error:', err);
       if (isMountedRef.current) {
         setScannerStatus('error');
         setErrorMessage(
@@ -183,6 +176,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
     // Check if camera is paused in user preferences
     const pref = typeof window !== 'undefined' ? window.localStorage.getItem('arena_perm_camera') : null;
+
     if (pref === 'disabled') {
       setIsCameraDisabledInApp(true);
       setScannerStatus('disabled');
@@ -193,12 +187,12 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
     return () => {
       isMountedRef.current = false;
-      stopCameraHardwareImmediately();
+      stopCameraHardwareImmediately('ArenaQRScanner unmounted');
     };
   }, [facingMode]);
 
   // Forcefully stop all camera tracks immediately on unmount or pause
-  const stopCameraHardwareImmediately = () => {
+  const stopCameraHardwareImmediately = (reason = 'Manual stop') => {
     isScanningRef.current = false;
 
     // 1. Direct hardware track termination on DOM video elements:
@@ -220,9 +214,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
           }
         });
       }
-    } catch (e) {
-      console.warn('[ArenaQRScanner] Video track stop error:', e);
-    }
+    } catch { }
 
     // 2. Safe Html5Qrcode instance shutdown:
     if (scannerRef.current) {
@@ -235,6 +227,9 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         try { scannerRef.current.clear(); } catch {}
       }
     }
+
+    // 3. Global MediaGuard kill to guarantee NO orphaned stream remains in memory (camera video only, preserving audio/mic):
+    killAllMediaTracks(`Scanner stop: ${reason}`, 'video');
   };
 
   // Re-enable camera directly inside the scanner box

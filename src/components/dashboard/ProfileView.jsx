@@ -17,28 +17,14 @@ import PlayerQRBadge from '../qr/PlayerQRBadge';
 import { normalizePlayerInput, validatePlayerHandle } from '../../utils/sanitize';
 import { claimOrRegisterGuest } from '../../services/arenaService';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+import { killAllMediaTracks, queryPermissionStatus } from '../../utils/mediaGuard';
 
 const STORAGE_KEY_DRAFT_NAME = 'arena_draft_username';
 const STORAGE_KEY_DRAFT_AVATAR = 'arena_draft_avatar';
 
 // Forcefully kills any lingering camera/microphone media tracks in the browser document
 export const forceReleaseAllMediaTracks = () => {
-  if (typeof document === 'undefined') return;
-  try {
-    const videos = document.querySelectorAll('video');
-    videos.forEach((video) => {
-      if (video && video.srcObject && typeof video.srcObject.getTracks === 'function') {
-        video.srcObject.getTracks().forEach((track) => {
-          try {
-            track.stop();
-          } catch { }
-        });
-        video.srcObject = null;
-      }
-    });
-  } catch (err) {
-    console.warn('[Permissions] Media tracks release error:', err);
-  }
+  return killAllMediaTracks('forceReleaseAllMediaTracks called');
 };
 
 export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
@@ -72,56 +58,47 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   useEffect(() => {
     let isMounted = true;
 
-    // Release any lingering media tracks from previous scanner mounts immediately
-    forceReleaseAllMediaTracks();
+    // Release any lingering camera media tracks from previous scanner mounts immediately
+    killAllMediaTracks('ProfileView mount cleanup', 'video');
 
     const checkExistingPermissions = async () => {
       // 1. Camera permission check:
-      // Respect user's explicit in-app choice first
-      const camPref = typeof window !== 'undefined' ? window.localStorage.getItem('arena_perm_camera') : null;
-      if (camPref === 'disabled') {
-        if (isMounted) setCameraGranted(false);
-      } else if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+      try {
+        const cam = await queryPermissionStatus('camera');
+        if (isMounted) {
+          setCameraGranted(cam.isAllowed);
+        }
+      } catch { }
+
+      // 2. Microphone permission check:
+      try {
+        const mic = await queryPermissionStatus('microphone');
+        if (isMounted) {
+          setMicGranted(mic.isAllowed);
+        }
+      } catch { }
+
+      // Listen for runtime changes in browser settings
+      if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
         try {
           const camQuery = await navigator.permissions.query({ name: 'camera' });
-          const isAllowed = camQuery.state === 'granted' && camPref !== 'disabled';
-          if (isMounted) setCameraGranted(isAllowed);
-
           camQuery.onchange = () => {
             const currentPref = window.localStorage.getItem('arena_perm_camera');
             if (isMounted && currentPref !== 'disabled') {
               setCameraGranted(camQuery.state === 'granted');
             }
           };
-        } catch {
-          if (isMounted) setCameraGranted(camPref === 'granted');
-        }
-      } else {
-        if (isMounted) setCameraGranted(camPref === 'granted');
-      }
+        } catch { }
 
-      // 2. Microphone permission check:
-      // Respect user's explicit in-app choice first
-      const micPref = typeof window !== 'undefined' ? window.localStorage.getItem('arena_perm_mic') : null;
-      if (micPref === 'disabled') {
-        if (isMounted) setMicGranted(false);
-      } else if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
         try {
           const micQuery = await navigator.permissions.query({ name: 'microphone' });
-          const isAllowed = micQuery.state === 'granted' && micPref !== 'disabled';
-          if (isMounted) setMicGranted(isAllowed);
-
           micQuery.onchange = () => {
             const currentPref = window.localStorage.getItem('arena_perm_mic');
             if (isMounted && currentPref !== 'disabled') {
               setMicGranted(micQuery.state === 'granted');
             }
           };
-        } catch {
-          if (isMounted) setMicGranted(micPref === 'granted');
-        }
-      } else {
-        if (isMounted) setMicGranted(micPref === 'granted');
+        } catch { }
       }
     };
 
@@ -278,6 +255,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       try {
         window.localStorage.setItem('arena_perm_camera', 'disabled');
       } catch { }
+      killAllMediaTracks('User toggled Camera OFF in Profile', 'video');
       return;
     }
 
@@ -298,21 +276,18 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       }
 
       if (alreadyGranted) {
-        // Hardware already allowed in browser: immediately flip ON with ZERO pop-up!
         setCameraGranted(true);
         try {
           window.localStorage.setItem('arena_perm_camera', 'granted');
         } catch { }
       } else {
-        // First-time grant request: trigger native prompt with desktop fallback
         let stream = null;
         try {
           try {
             stream = await navigator.mediaDevices.getUserMedia({
               video: { facingMode: 'environment' }
             });
-          } catch (firstErr) {
-            // Desktop / laptop webcam fallback (prevents OverconstrainedError)
+          } catch {
             stream = await navigator.mediaDevices.getUserMedia({
               video: true
             });
@@ -321,9 +296,12 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           // Release hardware immediately in finally block so camera light turns off
           if (stream) {
             stream.getTracks().forEach((track) => {
-              try { track.stop(); } catch { }
+              try {
+                track.stop();
+              } catch { }
             });
           }
+          killAllMediaTracks('Permission test stream cleanup', 'video');
         }
 
         setCameraGranted(true);
@@ -332,7 +310,6 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         } catch { }
       }
     } catch (err) {
-      console.warn('[Permissions] Camera request denied or failed:', err);
       setCameraGranted(false);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setCameraError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
@@ -357,6 +334,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       try {
         window.localStorage.setItem('arena_perm_mic', 'disabled');
       } catch { }
+      killAllMediaTracks('User toggled Microphone OFF in Profile', 'audio');
       return;
     }
 
@@ -367,7 +345,6 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         throw new Error('Microphone is not supported on this browser');
       }
 
-      // Check if browser has already granted hardware permission in the past
       let alreadyGranted = false;
       if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
         try {
@@ -377,25 +354,25 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       }
 
       if (alreadyGranted) {
-        // Hardware already allowed in browser: immediately flip ON with ZERO pop-up!
         setMicGranted(true);
         try {
           window.localStorage.setItem('arena_perm_mic', 'granted');
         } catch { }
       } else {
-        // First-time grant request
         let stream = null;
         try {
           stream = await navigator.mediaDevices.getUserMedia({
             audio: true
           });
         } finally {
-          // Release hardware immediately so device privacy indicator turns off
           if (stream) {
             stream.getTracks().forEach((track) => {
-              try { track.stop(); } catch { }
+              try {
+                track.stop();
+              } catch { }
             });
           }
+          killAllMediaTracks('Permission test audio stream cleanup', 'audio');
         }
 
         setMicGranted(true);
@@ -404,7 +381,6 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         } catch { }
       }
     } catch (err) {
-      console.warn('[Permissions] Microphone request denied or failed:', err);
       setMicGranted(false);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setMicError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
