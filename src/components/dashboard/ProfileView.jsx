@@ -117,27 +117,26 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   };
 
   return (
-    <div className="w-full max-w-[430px] mx-auto space-y-4 pb-12 select-none font-sans">
+    <div className="w-full max-w-[430px] mx-auto space-y-6 pb-12 select-none font-sans">
       {/* ========================================================
-          1. MAIN PROFILE & AVATAR EDIT CARD
+          1. MAIN PROFILE & AVATAR EDIT FORM (Directly on canvas)
           ======================================================== */}
-      <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 sm:p-7 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6] animate-in fade-in duration-200">
-        <form onSubmit={handleSaveProfile} className="space-y-5">
-          {/* Ethereal ChatGPT-Style Player Orb with Clickable QR Badge */}
-          <div className="flex flex-col items-center justify-center pt-1">
-            <ChatGPTOrb
-              orbNumber={orbNumber}
-              avatar={selectedAvatar}
-              badge="qr"
-              onBadgeClick={() => setQrModalOpen(true)}
-              onOrbClick={() => setQrModalOpen(true)}
-              size="w-24 h-24 sm:w-28 sm:h-28"
-            />
+      <form onSubmit={handleSaveProfile} className="space-y-5">
+        {/* Ethereal ChatGPT-Style Player Orb with Clickable QR Badge */}
+        <div className="flex flex-col items-center justify-center pt-1">
+          <ChatGPTOrb
+            orbNumber={orbNumber}
+            avatar={selectedAvatar}
+            badge="qr"
+            onBadgeClick={() => setQrModalOpen(true)}
+            onOrbClick={() => setQrModalOpen(true)}
+            size="w-28 h-28 sm:w-28 sm:h-28"
+          />
 
             <div className="mt-3.5 text-center">
               <span
                 className="font-arena inline-block px-3.5 py-1 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[12.5px] tracking-wider shadow-sm"
-                style={{ WebkitTextStroke: '0px', fontWeight: 400 }}
+                style={{ WebkitTextStroke: '0.5px', fontWeight: 400 }}
               >
                 {guestId}
               </span>
@@ -235,7 +234,6 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
             </button>
           </div>
         </form>
-      </div>
 
       {/* ========================================================
           3. SESSION & ACCOUNT CARD (Shifted to bottom per user request)
