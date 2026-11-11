@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X } from '../icons';
 import Logo from '../Logo';
 import ArenaAvatar from '../avatars/ArenaAvatar';
@@ -333,28 +334,29 @@ export const DashboardShell = ({
       </main>
 
       {/* QR Modals (Quick access from anywhere) */}
-      {qrModalOpen === 'badge' && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+      {qrModalOpen === 'badge' && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
           <div className="relative w-full max-w-sm bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
             <button
               type="button"
               onClick={() => setQrModalOpen(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_4px_#c5ccd6,-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-500 hover:text-zinc-900 border border-white/60 transition-all cursor-pointer z-10"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_4px_#c5ccd6,-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-500 hover:text-zinc-900 border border-white/60 transition-all cursor-pointer z-10 active:scale-90"
             >
               <X size={16} weight="bold" />
             </button>
             <PlayerQRBadge player={player} />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {qrModalOpen === 'scanner' && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+      {qrModalOpen === 'scanner' && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
           <div className="relative w-full max-w-sm bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
             <button
               type="button"
               onClick={() => setQrModalOpen(null)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_4px_#c5ccd6,-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-500 hover:text-zinc-900 border border-white/60 transition-all cursor-pointer z-10"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_4px_#c5ccd6,-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-500 hover:text-zinc-900 border border-white/60 transition-all cursor-pointer z-10 active:scale-90"
             >
               <X size={16} weight="bold" />
             </button>
@@ -365,7 +367,8 @@ export const DashboardShell = ({
               }}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   User,
   UserCircle,
@@ -176,10 +177,9 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between pl-1">
               <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5">
-                <UserCircle size={17} weight="bold" className="text-zinc-500/80" />
+                <UserCircle size={19} weight="bold" className="text-zinc-500/80" />
                 Choose Avatar
               </label>
-              <span className="text-[11px] font-bold text-zinc-400/80">30 Curated</span>
             </div>
 
             <div className="p-2 bg-[#F2F7FC] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
@@ -277,8 +277,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       {/* ========================================================
           3. PLAYER QR BADGE POP-UP MODAL (Triggered via Orb QR Icon)
           ======================================================== */}
-      {qrModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+      {qrModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
           <div className="relative w-full max-w-sm bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
             <button
               type="button"
@@ -297,7 +297,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
               }}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
