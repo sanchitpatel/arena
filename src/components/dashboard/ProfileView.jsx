@@ -117,7 +117,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   };
 
   return (
-    <div className="w-full max-w-[430px] mx-auto space-y-6 pb-12 select-none font-sans">
+    <div className="w-full max-w-[430px] mx-auto px-4 sm:px-2 space-y-6 pb-12 select-none font-sans">
       {/* ========================================================
           1. MAIN PROFILE & AVATAR EDIT FORM (Directly on canvas)
           ======================================================== */}
@@ -131,6 +131,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
             onBadgeClick={() => setQrModalOpen(true)}
             onOrbClick={() => setQrModalOpen(true)}
             size="w-28 h-28 sm:w-28 sm:h-28"
+            numberSize="text-[40px] sm:text-[40px]"
           />
 
             <div className="mt-3.5 text-center">
@@ -182,7 +183,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
             </div>
 
             <div className="p-2 bg-[#F2F7FC] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
-              <div className="grid grid-cols-5 gap-2.5 sm:gap-3 max-h-[175px] overflow-y-auto p-1.5 pr-1.5 avatar-scroll">
+              <div className="grid grid-cols-5 gap-2.5 sm:gap-3 max-h-[180px] overflow-y-auto p-1.5 pr-1.5 avatar-scroll">
                 {CURATED_AVATARS.map((av) => {
                   const isSelected = String(selectedAvatar) === String(av.id) || String(selectedAvatar) === String(av.num);
                   return (
