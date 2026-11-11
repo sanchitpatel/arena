@@ -329,7 +329,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
       {/* Sub-instruction */}
       {scannerStatus === 'scanning' && (
         <p className="text-[11px] text-zinc-500 text-center mt-3 font-medium">
-          Align any attendee's Arena QR code within the frame to verify.
+          Align any attendee's QR code within the frame to verify.
         </p>
       )}
     </div>

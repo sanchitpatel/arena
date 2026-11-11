@@ -7,6 +7,9 @@ import {
   CircleNotch,
   SignOut,
   X,
+  Camera,
+  Microphone,
+  ShieldCheck,
 } from '../icons';
 import ChatGPTOrb from './ChatGPTOrb';
 import ArenaAvatar, { CURATED_AVATARS } from '../avatars/ArenaAvatar';
@@ -35,6 +38,75 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const debounceTimerRef = useRef(null);
   const savedTimerRef = useRef(null);
+
+  // Client device permissions state (Camera & Microphone/Audio)
+  const [cameraGranted, setCameraGranted] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+
+  const [micGranted, setMicGranted] = useState(false);
+  const [micLoading, setMicLoading] = useState(false);
+  const [micError, setMicError] = useState('');
+
+  // Check and listen to client device permission states
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkExistingPermissions = async () => {
+      // 1. Camera permission check
+      if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+        try {
+          const camQuery = await navigator.permissions.query({ name: 'camera' });
+          if (isMounted) {
+            setCameraGranted(camQuery.state === 'granted');
+          }
+          camQuery.onchange = () => {
+            if (isMounted) {
+              setCameraGranted(camQuery.state === 'granted');
+            }
+          };
+        } catch {
+          try {
+            const saved = window.localStorage.getItem('arena_perm_camera');
+            if (isMounted && saved) setCameraGranted(saved === 'granted');
+          } catch { }
+        }
+
+        // 2. Microphone permission check
+        try {
+          const micQuery = await navigator.permissions.query({ name: 'microphone' });
+          if (isMounted) {
+            setMicGranted(micQuery.state === 'granted');
+          }
+          micQuery.onchange = () => {
+            if (isMounted) {
+              setMicGranted(micQuery.state === 'granted');
+            }
+          };
+        } catch {
+          try {
+            const saved = window.localStorage.getItem('arena_perm_mic');
+            if (isMounted && saved) setMicGranted(saved === 'granted');
+          } catch { }
+        }
+      } else {
+        try {
+          const camSaved = window.localStorage.getItem('arena_perm_camera');
+          const micSaved = window.localStorage.getItem('arena_perm_mic');
+          if (isMounted) {
+            if (camSaved) setCameraGranted(camSaved === 'granted');
+            if (micSaved) setMicGranted(micSaved === 'granted');
+          }
+        } catch { }
+      }
+    };
+
+    checkExistingPermissions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Sync state if player prop updates
   useEffect(() => {
@@ -172,6 +244,96 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     persistProfile(playerName, selectedAvatar, 'username');
   };
 
+  const handleToggleCamera = async () => {
+    if (cameraLoading) return;
+    setCameraError('');
+
+    if (cameraGranted) {
+      setCameraGranted(false);
+      try {
+        window.localStorage.setItem('arena_perm_camera', 'disabled');
+      } catch { }
+      return;
+    }
+
+    setCameraLoading(true);
+    try {
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        throw new Error('Camera is not supported on this browser');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+
+      // Stop camera tracks immediately so device indicator turns off
+      stream.getTracks().forEach((track) => track.stop());
+
+      setCameraGranted(true);
+      try {
+        window.localStorage.setItem('arena_perm_camera', 'granted');
+      } catch { }
+    } catch (err) {
+      console.warn('[Permissions] Camera request denied or failed:', err);
+      setCameraGranted(false);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setCameraError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+      } else {
+        setCameraError(err.message || 'Unable to access camera.');
+      }
+      try {
+        window.localStorage.setItem('arena_perm_camera', 'denied');
+      } catch { }
+    } finally {
+      setCameraLoading(false);
+    }
+  };
+
+  const handleToggleMic = async () => {
+    if (micLoading) return;
+    setMicError('');
+
+    if (micGranted) {
+      setMicGranted(false);
+      try {
+        window.localStorage.setItem('arena_perm_mic', 'disabled');
+      } catch { }
+      return;
+    }
+
+    setMicLoading(true);
+    try {
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        throw new Error('Microphone is not supported on this browser');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true
+      });
+
+      // Stop audio tracks immediately so device indicator turns off
+      stream.getTracks().forEach((track) => track.stop());
+
+      setMicGranted(true);
+      try {
+        window.localStorage.setItem('arena_perm_mic', 'granted');
+      } catch { }
+    } catch (err) {
+      console.warn('[Permissions] Microphone request denied or failed:', err);
+      setMicGranted(false);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setMicError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+      } else {
+        setMicError(err.message || 'Unable to access microphone.');
+      }
+      try {
+        window.localStorage.setItem('arena_perm_mic', 'denied');
+      } catch { }
+    } finally {
+      setMicLoading(false);
+    }
+  };
+
   const renderFieldStatus = (field) => {
     if (savingField === field) {
       return (
@@ -287,7 +449,148 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         </form>
 
       {/* ========================================================
-          2. SESSION & ACCOUNT CARD (Single horizontal row)
+          2. APP PERMISSIONS SECTION (Camera & Microphone/Audio)
+          ======================================================== */}
+      <div className="space-y-1.5">
+        <div className="min-h-[20px] flex items-center justify-between pl-1 pr-1">
+          <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5">
+            <ShieldCheck size={15} weight="bold" className="text-zinc-500" />
+            Permissions
+          </label>
+          <span className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
+            {cameraGranted && micGranted ? (
+              <span className="text-emerald-600 font-semibold">Configured</span>
+            ) : cameraGranted || micGranted ? (
+              <span className="text-sky-600 font-semibold">Active</span>
+            ) : (
+              <span>Not Configured</span>
+            )}
+          </span>
+        </div>
+
+        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-2xl p-2.5 sm:p-3 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6] space-y-2">
+          {/* 1. Camera Permission Toggle Row */}
+          <div>
+            <div
+              onClick={handleToggleCamera}
+              className="flex items-center justify-between gap-3 p-1 rounded-xl cursor-pointer hover:bg-black/[0.02] active:scale-[0.99] transition-all select-none"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-[#ebedf2] shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] border border-white/80 flex items-center justify-center shrink-0">
+                  <Camera
+                    size={17}
+                    weight="bold"
+                    className={cameraGranted ? 'text-emerald-600 transition-colors' : 'text-zinc-500 transition-colors'}
+                  />
+                </div>
+                <div className="truncate">
+                  <div className="text-[12.5px] font-bold text-zinc-900 leading-tight">
+                    Camera Access
+                  </div>
+                  <div className="text-[10.5px] font-medium text-zinc-500 truncate leading-tight">
+                    Arena QR Scanner & Quests
+                  </div>
+                </div>
+              </div>
+
+              {/* Custom Neumorphic iOS Toggle Switch */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={cameraGranted}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleCamera();
+                }}
+                disabled={cameraLoading}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  cameraGranted
+                    ? 'bg-emerald-500 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.2)]'
+                    : 'bg-[#cbd2de] shadow-[inset_2px_2px_4px_#b3bac6,inset_-2px_-2px_4px_#ffffff]'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-[1px_2px_4px_rgba(0,0,0,0.25)] transition duration-200 ease-in-out flex items-center justify-center ${
+                    cameraGranted ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                >
+                  {cameraLoading && (
+                    <CircleNotch size={11} className="animate-spin text-zinc-500" />
+                  )}
+                </span>
+              </button>
+            </div>
+            {cameraError && (
+              <p className="text-[10px] font-medium text-rose-500 pl-11 pt-1 leading-tight">
+                {cameraError}
+              </p>
+            )}
+          </div>
+
+          <div className="border-t border-zinc-300/60" />
+
+          {/* 2. Microphone / Speaker Permission Toggle Row */}
+          <div>
+            <div
+              onClick={handleToggleMic}
+              className="flex items-center justify-between gap-3 p-1 rounded-xl cursor-pointer hover:bg-black/[0.02] active:scale-[0.99] transition-all select-none"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-[#ebedf2] shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] border border-white/80 flex items-center justify-center shrink-0">
+                  <Microphone
+                    size={17}
+                    weight="bold"
+                    className={micGranted ? 'text-emerald-600 transition-colors' : 'text-zinc-500 transition-colors'}
+                  />
+                </div>
+                <div className="truncate">
+                  <div className="text-[12.5px] font-bold text-zinc-900 leading-tight">
+                    Microphone & Audio
+                  </div>
+                  <div className="text-[10.5px] font-medium text-zinc-500 truncate leading-tight">
+                    Game sound & Alerts
+                  </div>
+                </div>
+              </div>
+
+              {/* Custom Neumorphic iOS Toggle Switch */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={micGranted}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleMic();
+                }}
+                disabled={micLoading}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  micGranted
+                    ? 'bg-emerald-500 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.2)]'
+                    : 'bg-[#cbd2de] shadow-[inset_2px_2px_4px_#b3bac6,inset_-2px_-2px_4px_#ffffff]'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-[1px_2px_4px_rgba(0,0,0,0.25)] transition duration-200 ease-in-out flex items-center justify-center ${
+                    micGranted ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                >
+                  {micLoading && (
+                    <CircleNotch size={11} className="animate-spin text-zinc-500" />
+                  )}
+                </span>
+              </button>
+            </div>
+            {micError && (
+              <p className="text-[10px] font-medium text-rose-500 pl-11 pt-1 leading-tight">
+                {micError}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================
+          3. SESSION & ACCOUNT CARD (Single horizontal row)
           ======================================================== */}
       <div className="bg-[#ebedf2] border border-slate-300/60 rounded-2xl p-2 sm:p-2.5 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6] flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
