@@ -223,13 +223,17 @@ export default function ChatGPTOrb({
           onClick={onBadgeClick}
           role={onBadgeClick ? 'button' : undefined}
           tabIndex={onBadgeClick ? 0 : undefined}
-          className={`absolute -bottom-1 -right-2.5 sm:-right-2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border-2 border-white bg-white shadow-[0_4px_16px_rgba(0,0,0,0.25)] backdrop-blur-md overflow-hidden transition-all ${
+          className={`absolute z-20 flex items-center justify-center border-2 border-white bg-white shadow-[0_4px_16px_rgba(0,0,0,0.25)] backdrop-blur-md overflow-hidden transition-all ${
+            badge === 'qr'
+              ? '-bottom-1 -right-2 sm:-right-1 w-9 h-9 rounded-lg'
+              : '-bottom-1 -right-2.5 sm:-right-2 h-10 w-10 sm:h-11 sm:w-11 rounded-full'
+          } ${
             onBadgeClick ? 'cursor-pointer active:scale-95 hover:scale-105' : ''
           }`}
           title={badge === 'qr' ? 'My QR Code' : 'Player Avatar'}
         >
           {badge === 'qr' ? (
-            <BootstrapQrCode size={28} className="text-zinc-900" />
+            <BootstrapQrCode size={25} className="text-zinc-900" />
           ) : avatar ? (
             <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
           ) : null}
