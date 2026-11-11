@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import QRCode, { toDataURL, toString } from 'qrcode';
 import Logo from '../Logo';
-import ArenaAvatar from '../avatars/ArenaAvatar';
-import { DownloadSimple, Copy, Check, ShieldCheck } from '../icons';
 
 // Bulletproof helper to safely invoke QRCode methods across all bundlers / ESM environments
 const safeToDataURL = async (text, options) => {
@@ -32,7 +30,6 @@ const safeToString = async (text, options) => {
  */
 export default function PlayerQRBadge({ player, className = '' }) {
   const [qrDataUrl, setQrDataUrl] = useState('');
-  const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(true);
 
   const guestId = player?.guest_id || 'Guest001';
@@ -115,36 +112,10 @@ export default function PlayerQRBadge({ player, className = '' }) {
     };
   }, [qrPayload]);
 
-  const handleCopyCode = () => {
-    if (navigator?.clipboard) {
-      navigator.clipboard.writeText(guestId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleDownloadQR = () => {
-    if (!qrDataUrl) return;
-    const a = document.createElement('a');
-    a.href = qrDataUrl;
-    a.download = `Arena_${guestId}_QR.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
   return (
-    <div className={`flex flex-col items-center select-none font-sans ${className}`}>
-      {/* Badge Sub-header */}
-      <div className="text-center mb-4">
-        <span className="text-[10.5px] font-bold text-zinc-500 uppercase tracking-widest flex items-center justify-center gap-1.5">
-          <ShieldCheck size={14} weight="bold" className="text-sky-600" />
-          Official Player Access Key
-        </span>
-      </div>
-
+    <div className={`flex flex-col items-center select-none font-sans pt-1 sm:pt-3 pb-1 ${className}`}>
       {/* Main QR Card Container */}
-      <div className="relative p-5 rounded-[2rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] max-w-[280px] w-full flex flex-col items-center">
+      <div className="relative p-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] max-w-[250px] w-full flex flex-col items-center">
         {/* Subtle Decorative Top Corner Accents */}
         <div className="absolute top-3 left-3 w-3 h-3 border-t-2 border-l-2 border-zinc-300 rounded-tl" />
         <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-zinc-300 rounded-tr" />
@@ -177,62 +148,10 @@ export default function PlayerQRBadge({ player, className = '' }) {
             <div className="text-xs text-rose-500">Failed to render QR</div>
           )}
         </div>
-
-        {/* Player Identifiers Pill */}
-        <div className="mt-4 w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#F2F7FC] border border-slate-200/60 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff]">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-full overflow-hidden border border-white shrink-0 shadow-sm">
-              <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
-            </div>
-            <div className="truncate">
-              <div className="text-[12px] font-bold text-zinc-900 truncate leading-tight">
-                {displayName}
-              </div>
-              <div className="text-[10px] font-arena font-semibold text-zinc-500 uppercase tracking-tight">
-                {guestId}
-              </div>
-            </div>
-          </div>
-
-          <div className="px-2 py-0.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 text-white text-[10px] font-extrabold tracking-wider shrink-0 shadow-sm">
-            ORB #{orbNumber}
-          </div>
-        </div>
       </div>
 
-      {/* Action Buttons Row */}
-      <div className="mt-4 flex items-center gap-2.5 w-full max-w-[280px]">
-        <button
-          type="button"
-          onClick={handleCopyCode}
-          className="flex-1 py-2 px-3 bg-[#ebedf2] hover:bg-[#e2e6ec] active:scale-95 text-zinc-700 text-xs font-bold rounded-xl border border-white/80 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-        >
-          {copied ? (
-            <>
-              <Check size={14} weight="bold" className="text-emerald-600" />
-              <span className="text-emerald-700">Copied!</span>
-            </>
-          ) : (
-            <>
-              <Copy size={14} weight="bold" className="text-zinc-500" />
-              <span>Copy ID</span>
-            </>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleDownloadQR}
-          disabled={!qrDataUrl}
-          className="flex-1 py-2 px-3 bg-[#ebedf2] hover:bg-[#e2e6ec] active:scale-95 text-zinc-700 text-xs font-bold rounded-xl border border-white/80 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-        >
-          <DownloadSimple size={14} weight="bold" className="text-zinc-500" />
-          <span>Save PNG</span>
-        </button>
-      </div>
-
-      <p className="text-[10.5px] text-zinc-500/80 text-center mt-3 max-w-[260px] leading-relaxed">
-        Scan with Arena scanner or any smartphone camera to view profile and verify ID.
+      <p className="text-[11px] text-zinc-600/90 text-center mt-3 max-w-[260px] leading-relaxed">
+        Scan with Arena scanner to verify ID and more...
       </p>
     </div>
   );
