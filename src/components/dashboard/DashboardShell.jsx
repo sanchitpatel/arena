@@ -191,14 +191,6 @@ export const DashboardShell = ({
               <div className="text-xs font-bold text-zinc-900 truncate">
                 {displayName}
               </div>
-              <div
-                className="text-[10.5px] font-arena font-normal text-zinc-600 tracking-tight flex items-center gap-1.5 mt-0.5"
-                style={{ WebkitTextStroke: '0.5px', fontWeight: 400 }}
-              >
-                <span>{guestId}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-900/50" />
-                <span className="text-zinc-600">Orb @{orbNumber}</span>
-              </div>
             </div>
             <div className="text-zinc-400 group-hover:text-zinc-600">
               <CaretUp size={14} weight="bold" className={`transition-transform duration-300 ease-out ${profileMenuOpen ? 'rotate-180 text-zinc-900' : ''}`} />
@@ -240,14 +232,6 @@ export const DashboardShell = ({
             <div className="flex-1 min-w-0">
               <div className="text-xs font-bold text-zinc-900 truncate">
                 {displayName}
-              </div>
-              <div
-                className="text-[10.5px] font-arena font-normal text-zinc-600 tracking-tight flex items-center gap-1.5 mt-0.5"
-                style={{ WebkitTextStroke: '0.5px', fontWeight: 400 }}
-              >
-                <span>{guestId}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-900/50" />
-                <span className="text-zinc-600">Orb @{orbNumber}</span>
               </div>
             </div>
           </div>

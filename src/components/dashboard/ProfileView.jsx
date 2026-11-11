@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   User,
   UserCircle,
-  ArrowRight,
   CheckCircle,
   CircleNotch,
   SignOut,
@@ -34,6 +33,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const debounceTimerRef = useRef(null);
 
   // Sync state if player prop updates
   useEffect(() => {
@@ -44,6 +44,60 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       setSelectedAvatar(String(player.avatar));
     }
   }, [player, guestId]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const persistProfile = async (targetName, targetAvatar) => {
+    try {
+      setIsSaving(true);
+      setErrorMessage('');
+
+      // 1. Strict Input Sanitization & Validation
+      const validation = validatePlayerHandle(targetName, guestId);
+      if (!validation.isValid) {
+        setErrorMessage(validation.error);
+        setIsSaving(false);
+        return;
+      }
+
+      const displayName = validation.value;
+
+      // 2. Immediate Local Storage Sync
+      try {
+        window.localStorage.setItem(STORAGE_KEY_DRAFT_NAME, displayName);
+        window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, String(targetAvatar));
+      } catch { }
+
+      // 3. Atomically persist to PostgreSQL database via Supabase RPC
+      const res = await claimOrRegisterGuest({
+        name: displayName,
+        avatar: String(targetAvatar),
+        team: player?.team || 'Alpha',
+      });
+
+      if (res.success && res.data) {
+        if (typeof onUpdatePlayer === 'function') {
+          onUpdatePlayer(res.data);
+        }
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+      } else {
+        setErrorMessage(res?.error || 'Changes saved locally (offline mode)');
+      }
+    } catch (err) {
+      console.error('[ProfileView] Auto-save error:', err);
+      setErrorMessage('Changes saved locally (offline mode)');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleNameChange = (e) => {
     const clean = normalizePlayerInput(e.target.value);
@@ -58,62 +112,45 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         window.localStorage.removeItem(STORAGE_KEY_DRAFT_NAME);
       }
     } catch { }
+
+    // Debounced automatic DB sync (500ms after last keystroke)
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      persistProfile(clean, selectedAvatar);
+    }, 500);
+  };
+
+  const handleNameBlur = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    persistProfile(playerName, selectedAvatar);
   };
 
   const handleAvatarSelect = (avatarId) => {
-    setSelectedAvatar(String(avatarId));
+    const newAvatar = String(avatarId);
+    setSelectedAvatar(newAvatar);
     if (saveSuccess) setSaveSuccess(false);
+
     try {
-      window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, String(avatarId));
+      window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, newAvatar);
     } catch { }
+
+    // Instant automatic DB sync on avatar selection
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    persistProfile(playerName, newAvatar);
   };
 
-  const handleSaveProfile = async (e) => {
+  const handleSaveProfile = (e) => {
     if (e) e.preventDefault();
-    if (isSaving) return;
-
-    try {
-      setIsSaving(true);
-      setErrorMessage('');
-      setSaveSuccess(false);
-
-      // 1. Strict Input Sanitization & Validation
-      const validation = validatePlayerHandle(playerName, guestId);
-      if (!validation.isValid) {
-        setErrorMessage(validation.error);
-        setIsSaving(false);
-        return;
-      }
-
-      const displayName = validation.value;
-
-      // 2. Persist to PostgreSQL database atomically
-      const res = await claimOrRegisterGuest({
-        name: displayName,
-        avatar: selectedAvatar,
-        team: player?.team || 'Alpha',
-      });
-
-      if (res.success && res.data) {
-        try {
-          window.localStorage.setItem(STORAGE_KEY_DRAFT_NAME, displayName);
-          window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, String(selectedAvatar));
-        } catch { }
-
-        if (typeof onUpdatePlayer === 'function') {
-          onUpdatePlayer(res.data);
-        }
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
-      } else {
-        setErrorMessage(res?.error || 'Unable to update profile. Please check Wi-Fi connection.');
-      }
-    } catch (err) {
-      console.error('[ProfileView] Error updating profile:', err);
-      setErrorMessage('Unable to connect to local Arena server. Please check Wi-Fi.');
-    } finally {
-      setIsSaving(false);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
+    persistProfile(playerName, selectedAvatar);
   };
 
   return (
@@ -158,6 +195,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                 type="text"
                 value={playerName}
                 onChange={handleNameChange}
+                onBlur={handleNameBlur}
                 placeholder={guestId || 'Player Name'}
                 maxLength={16}
                 autoComplete="off"
@@ -204,40 +242,26 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
             </div>
           </div>
 
-          {/* Success Banner */}
-          {saveSuccess && (
-            <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-emerald-100/70 border border-emerald-300/80 text-emerald-800 text-xs font-semibold animate-in fade-in duration-200">
-              <CheckCircle size={18} weight="fill" className="text-emerald-600 shrink-0" />
-              <span>Profile updated successfully!</span>
-            </div>
-          )}
-
-          {/* Save Profile CTA Button */}
-          <div className="pt-1">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="w-full py-3.5 px-6 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none text-white font-bold text-base rounded-full transition-[box-shadow] duration-200 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),3px_3px_8px_#c5ccd6,-3px_-3px_8px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] cursor-pointer border border-zinc-800/80 group"
-            >
-              {isSaving ? (
-                <>
-                  <CircleNotch size={18} className="animate-spin text-zinc-300" />
-                  <span>Saving Profile...</span>
-                </>
-              ) : (
-                <>
-                  <span>Save Changes</span>
-                  <div className="w-5 h-5 flex items-center justify-center pointer-events-none transition-transform duration-200 ease-out group-hover:translate-x-1.5">
-                    <ArrowRight size={18} weight="bold" />
-                  </div>
-                </>
-              )}
-            </button>
+          {/* Auto-Save Status Indicator */}
+          <div className="flex items-center justify-center min-h-[22px] pt-1 text-[11px] font-medium transition-all">
+            {isSaving ? (
+              <div className="flex items-center gap-1.5 text-zinc-500">
+                <CircleNotch size={13} className="animate-spin text-zinc-400" />
+                <span>Saving changes...</span>
+              </div>
+            ) : saveSuccess ? (
+              <div className="flex items-center gap-1.5 text-emerald-600 font-semibold animate-in fade-in">
+                <CheckCircle size={13} weight="fill" className="text-emerald-500" />
+                <span>Saved automatically</span>
+              </div>
+            ) : errorMessage ? (
+              <p className="text-rose-500 font-medium">{errorMessage}</p>
+            ) : null}
           </div>
         </form>
 
       {/* ========================================================
-          3. SESSION & ACCOUNT CARD (Shifted to bottom per user request)
+          2. SESSION & ACCOUNT CARD (Shifted to bottom per user request)
           ======================================================== */}
       <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2rem] p-4 sm:p-5 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6]">
         <div className="flex items-center gap-3.5 pb-3 mb-3 border-b border-zinc-300/60">
@@ -247,18 +271,6 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           <div className="flex-1 min-w-0">
             <div className="text-sm font-bold text-zinc-900 truncate">
               {playerName || player?.name || guestId}
-            </div>
-            <div
-              className="text-[11px] font-arena font-normal text-zinc-600 tracking-wider flex items-center gap-1.5 mt-0.5"
-              style={{ WebkitTextStroke: '0px', fontWeight: 400 }}
-            >
-              <span>{guestId}</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-              <span>Orb #{orbNumber}</span>
-            </div>
-            <div className="text-[9.5px] text-sky-700 font-bold uppercase tracking-wider mt-0.5 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Active Live Session</span>
             </div>
           </div>
         </div>
