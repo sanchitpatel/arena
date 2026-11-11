@@ -29,11 +29,12 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     return player?.avatar ? String(player.avatar) : '1';
   });
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [savingField, setSavingField] = useState(null); // 'username' | 'avatar' | null
+  const [savedField, setSavedField] = useState(null);   // 'username' | 'avatar' | null
   const [errorMessage, setErrorMessage] = useState('');
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const debounceTimerRef = useRef(null);
+  const savedTimerRef = useRef(null);
 
   // Sync state if player prop updates
   useEffect(() => {
@@ -45,25 +46,29 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     }
   }, [player, guestId]);
 
-  // Cleanup debounce on unmount
+  // Cleanup debounce & saved timers on unmount
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
     };
   }, []);
 
-  const persistProfile = async (targetName, targetAvatar) => {
+  const persistProfile = async (targetName, targetAvatar, targetField = 'username') => {
     try {
-      setIsSaving(true);
+      setSavingField(targetField);
+      setSavedField(null);
       setErrorMessage('');
 
       // 1. Strict Input Sanitization & Validation
       const validation = validatePlayerHandle(targetName, guestId);
       if (!validation.isValid) {
         setErrorMessage(validation.error);
-        setIsSaving(false);
+        setSavingField(null);
         return;
       }
 
@@ -86,16 +91,20 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         if (typeof onUpdatePlayer === 'function') {
           onUpdatePlayer(res.data);
         }
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 2000);
+        setSavingField(null);
+        setSavedField(targetField);
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => {
+          setSavedField(null);
+        }, 2200);
       } else {
+        setSavingField(null);
         setErrorMessage(res?.error || 'Changes saved locally (offline mode)');
       }
     } catch (err) {
       console.error('[ProfileView] Auto-save error:', err);
+      setSavingField(null);
       setErrorMessage('Changes saved locally (offline mode)');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -103,7 +112,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     const clean = normalizePlayerInput(e.target.value);
     setPlayerName(clean);
     if (errorMessage) setErrorMessage('');
-    if (saveSuccess) setSaveSuccess(false);
+    if (savedField === 'username') setSavedField(null);
 
     try {
       if (clean) {
@@ -118,7 +127,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       clearTimeout(debounceTimerRef.current);
     }
     debounceTimerRef.current = setTimeout(() => {
-      persistProfile(clean, selectedAvatar);
+      persistProfile(clean, selectedAvatar, 'username');
     }, 500);
   };
 
@@ -126,13 +135,13 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    persistProfile(playerName, selectedAvatar);
+    persistProfile(playerName, selectedAvatar, 'username');
   };
 
   const handleAvatarSelect = (avatarId) => {
     const newAvatar = String(avatarId);
     setSelectedAvatar(newAvatar);
-    if (saveSuccess) setSaveSuccess(false);
+    if (savedField === 'avatar') setSavedField(null);
 
     try {
       window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, newAvatar);
@@ -142,7 +151,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    persistProfile(playerName, newAvatar);
+    persistProfile(playerName, newAvatar, 'avatar');
   };
 
   const handleSaveProfile = (e) => {
@@ -150,7 +159,27 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    persistProfile(playerName, selectedAvatar);
+    persistProfile(playerName, selectedAvatar, 'username');
+  };
+
+  const renderFieldStatus = (field) => {
+    if (savingField === field) {
+      return (
+        <span className="flex items-center gap-1 text-[11px] font-medium text-zinc-500 animate-in fade-in duration-150 whitespace-nowrap shrink-0">
+          <CircleNotch size={12} className="animate-spin text-zinc-400 shrink-0" />
+          <span>Saving changes...</span>
+        </span>
+      );
+    }
+    if (savedField === field) {
+      return (
+        <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 animate-in fade-in duration-150 whitespace-nowrap shrink-0">
+          <CheckCircle size={12} weight="fill" className="text-emerald-500 shrink-0" />
+          <span>Saved</span>
+        </span>
+      );
+    }
+    return null;
   };
 
   return (
@@ -186,10 +215,13 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
 
           {/* Username Input Field */}
           <div className="space-y-1.5">
-            <label className="text-[12px] font-bold tracking-wider text-zinc-500 pl-1 flex items-center gap-1.5">
-              <User size={15} weight="bold" className="text-zinc-500" />
-              Username
-            </label>
+            <div className="min-h-[20px] flex items-center justify-between pl-1 pr-1">
+              <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5">
+                <User size={15} weight="bold" className="text-zinc-500" />
+                Username
+              </label>
+              {renderFieldStatus('username')}
+            </div>
             <div className="relative">
               <input
                 type="text"
@@ -213,11 +245,12 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
 
           {/* Curated Lorelei Avatar Selector Tray */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between pl-1">
+            <div className="min-h-[20px] flex items-center justify-between pl-1 pr-1">
               <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5">
                 <UserCircle size={19} weight="bold" className="text-zinc-500/80" />
                 Choose Avatar
               </label>
+              {renderFieldStatus('avatar')}
             </div>
 
             <div className="p-2 bg-[#F2F7FC] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
@@ -240,23 +273,6 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                 })}
               </div>
             </div>
-          </div>
-
-          {/* Auto-Save Status Indicator */}
-          <div className="flex items-center justify-center min-h-[22px] pt-1 text-[11px] font-medium transition-all">
-            {isSaving ? (
-              <div className="flex items-center gap-1.5 text-zinc-500">
-                <CircleNotch size={13} className="animate-spin text-zinc-400" />
-                <span>Saving changes...</span>
-              </div>
-            ) : saveSuccess ? (
-              <div className="flex items-center gap-1.5 text-emerald-600 font-semibold animate-in fade-in">
-                <CheckCircle size={13} weight="fill" className="text-emerald-500" />
-                <span>Saved automatically</span>
-              </div>
-            ) : errorMessage ? (
-              <p className="text-rose-500 font-medium">{errorMessage}</p>
-            ) : null}
           </div>
         </form>
 
