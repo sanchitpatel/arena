@@ -48,56 +48,57 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   const [micLoading, setMicLoading] = useState(false);
   const [micError, setMicError] = useState('');
 
-  // Check and listen to client device permission states
+  // Check and listen to client device permission states (localStorage preference takes priority over browser grant)
   useEffect(() => {
     let isMounted = true;
 
     const checkExistingPermissions = async () => {
-      // 1. Camera permission check
-      if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+      // 1. Camera permission check:
+      // Respect user's explicit in-app choice first
+      const camPref = typeof window !== 'undefined' ? window.localStorage.getItem('arena_perm_camera') : null;
+      if (camPref === 'disabled') {
+        if (isMounted) setCameraGranted(false);
+      } else if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
         try {
           const camQuery = await navigator.permissions.query({ name: 'camera' });
-          if (isMounted) {
-            setCameraGranted(camQuery.state === 'granted');
-          }
+          const isAllowed = camQuery.state === 'granted' && camPref !== 'disabled';
+          if (isMounted) setCameraGranted(isAllowed);
+
           camQuery.onchange = () => {
-            if (isMounted) {
+            const currentPref = window.localStorage.getItem('arena_perm_camera');
+            if (isMounted && currentPref !== 'disabled') {
               setCameraGranted(camQuery.state === 'granted');
             }
           };
         } catch {
-          try {
-            const saved = window.localStorage.getItem('arena_perm_camera');
-            if (isMounted && saved) setCameraGranted(saved === 'granted');
-          } catch { }
+          if (isMounted) setCameraGranted(camPref === 'granted');
         }
+      } else {
+        if (isMounted) setCameraGranted(camPref === 'granted');
+      }
 
-        // 2. Microphone permission check
+      // 2. Microphone permission check:
+      // Respect user's explicit in-app choice first
+      const micPref = typeof window !== 'undefined' ? window.localStorage.getItem('arena_perm_mic') : null;
+      if (micPref === 'disabled') {
+        if (isMounted) setMicGranted(false);
+      } else if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
         try {
           const micQuery = await navigator.permissions.query({ name: 'microphone' });
-          if (isMounted) {
-            setMicGranted(micQuery.state === 'granted');
-          }
+          const isAllowed = micQuery.state === 'granted' && micPref !== 'disabled';
+          if (isMounted) setMicGranted(isAllowed);
+
           micQuery.onchange = () => {
-            if (isMounted) {
+            const currentPref = window.localStorage.getItem('arena_perm_mic');
+            if (isMounted && currentPref !== 'disabled') {
               setMicGranted(micQuery.state === 'granted');
             }
           };
         } catch {
-          try {
-            const saved = window.localStorage.getItem('arena_perm_mic');
-            if (isMounted && saved) setMicGranted(saved === 'granted');
-          } catch { }
+          if (isMounted) setMicGranted(micPref === 'granted');
         }
       } else {
-        try {
-          const camSaved = window.localStorage.getItem('arena_perm_camera');
-          const micSaved = window.localStorage.getItem('arena_perm_mic');
-          if (isMounted) {
-            if (camSaved) setCameraGranted(camSaved === 'granted');
-            if (micSaved) setMicGranted(micSaved === 'granted');
-          }
-        } catch { }
+        if (isMounted) setMicGranted(micPref === 'granted');
       }
     };
 
@@ -248,6 +249,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     if (cameraLoading) return;
     setCameraError('');
 
+    // If currently ON, user wants to mute/pause camera in Arena
     if (cameraGranted) {
       setCameraGranted(false);
       try {
@@ -256,23 +258,52 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       return;
     }
 
+    // If currently OFF, user wants to enable camera in Arena
     setCameraLoading(true);
     try {
       if (!navigator?.mediaDevices?.getUserMedia) {
         throw new Error('Camera is not supported on this browser');
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
+      // Check if browser has already granted hardware permission in the past
+      let alreadyGranted = false;
+      if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+        try {
+          const q = await navigator.permissions.query({ name: 'camera' });
+          alreadyGranted = q.state === 'granted';
+        } catch { }
+      }
 
-      // Stop camera tracks immediately so device indicator turns off
-      stream.getTracks().forEach((track) => track.stop());
+      if (alreadyGranted) {
+        // Hardware already allowed in browser: immediately flip ON with ZERO pop-up!
+        setCameraGranted(true);
+        try {
+          window.localStorage.setItem('arena_perm_camera', 'granted');
+        } catch { }
+      } else {
+        // First-time grant request: trigger native prompt with desktop fallback
+        let stream = null;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+          });
+        } catch (firstErr) {
+          // Desktop / laptop webcam fallback (prevents OverconstrainedError)
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true
+          });
+        }
 
-      setCameraGranted(true);
-      try {
-        window.localStorage.setItem('arena_perm_camera', 'granted');
-      } catch { }
+        // Release hardware immediately so device privacy light turns off
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+
+        setCameraGranted(true);
+        try {
+          window.localStorage.setItem('arena_perm_camera', 'granted');
+        } catch { }
+      }
     } catch (err) {
       console.warn('[Permissions] Camera request denied or failed:', err);
       setCameraGranted(false);
@@ -293,6 +324,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     if (micLoading) return;
     setMicError('');
 
+    // If currently ON, user wants to mute/pause mic in Arena
     if (micGranted) {
       setMicGranted(false);
       try {
@@ -301,23 +333,44 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       return;
     }
 
+    // If currently OFF, user wants to enable mic in Arena
     setMicLoading(true);
     try {
       if (!navigator?.mediaDevices?.getUserMedia) {
         throw new Error('Microphone is not supported on this browser');
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true
-      });
+      // Check if browser has already granted hardware permission in the past
+      let alreadyGranted = false;
+      if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+        try {
+          const q = await navigator.permissions.query({ name: 'microphone' });
+          alreadyGranted = q.state === 'granted';
+        } catch { }
+      }
 
-      // Stop audio tracks immediately so device indicator turns off
-      stream.getTracks().forEach((track) => track.stop());
+      if (alreadyGranted) {
+        // Hardware already allowed in browser: immediately flip ON with ZERO pop-up!
+        setMicGranted(true);
+        try {
+          window.localStorage.setItem('arena_perm_mic', 'granted');
+        } catch { }
+      } else {
+        // First-time grant request
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true
+        });
 
-      setMicGranted(true);
-      try {
-        window.localStorage.setItem('arena_perm_mic', 'granted');
-      } catch { }
+        // Release hardware immediately so device privacy indicator turns off
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+
+        setMicGranted(true);
+        try {
+          window.localStorage.setItem('arena_perm_mic', 'granted');
+        } catch { }
+      }
     } catch (err) {
       console.warn('[Permissions] Microphone request denied or failed:', err);
       setMicGranted(false);
@@ -545,10 +598,10 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                 </div>
                 <div className="truncate">
                   <div className="text-[12.5px] font-bold text-zinc-900 leading-tight">
-                    Microphone & Audio
+                    Microphone Access
                   </div>
                   <div className="text-[10.5px] font-medium text-zinc-500 truncate leading-tight">
-                    Game sound & Alerts
+                    Venue Zone Tracking
                   </div>
                 </div>
               </div>

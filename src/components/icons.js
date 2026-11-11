@@ -22,6 +22,7 @@ export { CalendarBlank } from '@phosphor-icons/react/dist/icons/CalendarBlank';
 export { CalendarCheck } from '@phosphor-icons/react/dist/icons/CalendarCheck';
 export { CalendarX } from '@phosphor-icons/react/dist/icons/CalendarX';
 export { Camera } from '@phosphor-icons/react/dist/icons/Camera';
+export { CameraSlash } from '@phosphor-icons/react/dist/icons/CameraSlash';
 export { Car } from '@phosphor-icons/react/dist/icons/Car';
 export { CaretDown } from '@phosphor-icons/react/dist/icons/CaretDown';
 export { CaretLeft } from '@phosphor-icons/react/dist/icons/CaretLeft';

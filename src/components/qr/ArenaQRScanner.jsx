@@ -1,19 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch } from '../icons';
+import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash } from '../icons';
 import { Sword } from '@phosphor-icons/react/dist/icons/Sword';
 
 /**
  * ArenaQRScanner Component:
  * In-browser mobile/desktop camera scanner using html5-qrcode.
- * Safely handles camera lifecycle, desktop fallbacks, and mobile environments.
+ * Safely handles camera lifecycle, desktop fallbacks, and in-app permission overrides.
  */
 export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' }) {
-  const [scannerStatus, setScannerStatus] = useState('initializing'); // 'initializing' | 'scanning' | 'success' | 'error'
+  const [scannerStatus, setScannerStatus] = useState('initializing'); // 'initializing' | 'scanning' | 'success' | 'error' | 'disabled'
   const [errorMessage, setErrorMessage] = useState('');
   const [scannedPlayer, setScannedPlayer] = useState(null);
   const [facingMode, setFacingMode] = useState('environment'); // 'environment' | 'user'
+
+  // Track if attendee explicitly paused camera access in Arena settings
+  const [isCameraDisabledInApp, setIsCameraDisabledInApp] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('arena_perm_camera') === 'disabled';
+  });
 
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
@@ -171,6 +177,15 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
   useEffect(() => {
     isMountedRef.current = true;
+
+    // Check if camera is paused in user preferences
+    const pref = typeof window !== 'undefined' ? window.localStorage.getItem('arena_perm_camera') : null;
+    if (pref === 'disabled') {
+      setIsCameraDisabledInApp(true);
+      setScannerStatus('disabled');
+      return;
+    }
+
     startCamera(facingMode);
 
     return () => {
@@ -188,6 +203,15 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
       }
     };
   }, [facingMode]);
+
+  // Re-enable camera directly inside the scanner box
+  const handleEnableCameraInScanner = async () => {
+    try {
+      window.localStorage.setItem('arena_perm_camera', 'granted');
+    } catch { }
+    setIsCameraDisabledInApp(false);
+    startCamera(facingMode);
+  };
 
   const handleFlipCamera = () => {
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
@@ -215,7 +239,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         <div id={containerId} className="w-full h-full object-cover" />
 
         {/* Viewfinder Target Overlays (while scanning) */}
-        {scannerStatus === 'scanning' && (
+        {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             {/* Center Reticle Frame */}
             <div className="relative w-52 h-52 border-2 border-sky-400/80 rounded-2xl shadow-[0_0_15px_rgba(56,189,248,0.4)]">
@@ -238,15 +262,47 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         )}
 
         {/* Initializing Spinner Overlay */}
-        {scannerStatus === 'initializing' && (
+        {scannerStatus === 'initializing' && !isCameraDisabledInApp && (
           <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2.5 text-white">
             <CircleNotch size={32} className="animate-spin text-sky-400" />
             <span className="text-xs font-semibold text-zinc-300">Starting Camera...</span>
           </div>
         )}
 
+        {/* Paused by User Preference in App (Re-enable directly via identical toggle) */}
+        {isCameraDisabledInApp && (
+          <div className="absolute inset-0 bg-[#09090B]/95 backdrop-blur-md p-6 flex flex-col items-center justify-center text-center gap-3.5 text-white z-30 animate-in fade-in duration-200">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-700/80 shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] flex items-center justify-center text-zinc-400">
+              <CameraSlash size={22} weight="bold" />
+            </div>
+
+            <div>
+              <h4 className="text-sm font-bold text-white">Camera Access Paused</h4>
+              <p className="text-[11px] text-zinc-400 mt-1 max-w-[210px] leading-relaxed">
+                You turned off camera access in settings. Toggle below to resume scanning.
+              </p>
+            </div>
+
+            {/* Custom Exact Same Neumorphic iOS Toggle Switch */}
+            <div
+              onClick={handleEnableCameraInScanner}
+              className="mt-1 flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-zinc-900/80 border border-zinc-800 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.5)] cursor-pointer hover:bg-zinc-800/80 active:scale-95 transition-all select-none"
+            >
+              <span className="text-xs font-semibold text-zinc-300">Enable Camera</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={false}
+                className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out bg-[#cbd2de] shadow-[inset_2px_2px_4px_#b3bac6,inset_-2px_-2px_4px_#ffffff]"
+              >
+                <span className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-[1px_2px_4px_rgba(0,0,0,0.25)] transition duration-200 ease-in-out translate-x-0" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Error Fallback Overlay */}
-        {scannerStatus === 'error' && (
+        {scannerStatus === 'error' && !isCameraDisabledInApp && (
           <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-sm p-6 flex flex-col items-center justify-center text-center gap-3 text-white">
             <WarningCircle size={36} weight="bold" className="text-rose-500" />
             <p className="text-xs text-zinc-300 leading-relaxed">{errorMessage}</p>
@@ -262,7 +318,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         )}
 
         {/* Camera Flip Button (Top Right Floating) */}
-        {scannerStatus === 'scanning' && (
+        {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
           <button
             type="button"
             onClick={handleFlipCamera}
@@ -327,9 +383,9 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
       )}
 
       {/* Sub-instruction */}
-      {scannerStatus === 'scanning' && (
+      {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
         <p className="text-[11px] text-zinc-500 text-center mt-3 font-medium">
-          Align any attendee's QR code within the frame to verify.
+          Align any Arena QR code within the frame to verify.
         </p>
       )}
     </div>
