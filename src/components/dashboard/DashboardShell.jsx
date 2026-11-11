@@ -335,17 +335,22 @@ export const DashboardShell = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[420px] bg-[#ebedf2] rounded-[36px] p-3 border-4 border-white animate-in zoom-in-95 duration-150 cursor-default"
+            className="relative w-full max-w-[310px] bg-[#ebedf2] rounded-[36px] p-3 sm:p-3 border-4 border-white animate-in zoom-in-95 duration-150 cursor-default"
           >
-            <div className="relative bg-[#f0f2f5] rounded-[26px] p-4 sm:p-5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
-              <button
-                type="button"
-                onClick={() => setQrModalOpen(null)}
-                className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_4px_#c5ccd6,-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-500 hover:text-zinc-900 border border-white/60 transition-all cursor-pointer z-10 active:scale-90"
-                title="Close QR Badge"
-              >
-                <X size={16} weight="bold" />
-              </button>
+            {/* Close button positioned in the top-right corner OUT of the card frame */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setQrModalOpen(null);
+              }}
+              className="absolute -top-3 -right-2.5 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_6px_rgba(0,0,0,0.3),-1px_-1px_3px_#ffffff] flex items-center justify-center text-rose-500 hover:text-rose-700 border-2 border-white transition-all cursor-pointer z-30 active:scale-90"
+              title="Close QR Badge"
+            >
+              <X size={16} weight="bold" />
+            </button>
+
+            <div className="relative bg-[#f0f2f5] rounded-[26px] p-4 sm:p-3.5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
               <PlayerQRBadge player={player} />
             </div>
           </div>
@@ -360,17 +365,22 @@ export const DashboardShell = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[420px] bg-[#ebedf2] rounded-[36px] p-3 border-4 border-white animate-in zoom-in-95 duration-150 cursor-default"
+            className="relative w-full max-w-sm bg-[#ebedf2] rounded-[38px] p-3 sm:p-3 border-4 border-white animate-in zoom-in-95 duration-150 cursor-default"
           >
-            <div className="relative bg-[#f0f2f5] rounded-[26px] p-4 sm:p-5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
-              <button
-                type="button"
-                onClick={() => setQrModalOpen(null)}
-                className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_4px_#c5ccd6,-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-500 hover:text-zinc-900 border border-white/60 transition-all cursor-pointer z-10 active:scale-90"
-                title="Close Scanner"
-              >
-                <X size={16} weight="bold" />
-              </button>
+            {/* Close button positioned in the top-right corner OUT of the card frame */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setQrModalOpen(null);
+              }}
+              className="absolute -top-3 -right-2.5 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_6px_rgba(0,0,0,0.3),-1px_-1px_3px_#ffffff] flex items-center justify-center text-rose-500 hover:text-rose-700 border-2 border-white transition-all cursor-pointer z-30 active:scale-90"
+              title="Close Scanner"
+            >
+              <X size={15} weight="bold" />
+            </button>
+
+            <div className="relative bg-[#f0f2f5] rounded-[36px] p-4 sm:p-4 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
               <ArenaQRScanner
                 onClose={() => setQrModalOpen(null)}
                 onScanSuccess={(scanned) => {
