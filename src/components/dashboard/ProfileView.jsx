@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { User, UserCircle, ArrowRight, CheckCircle, CircleNotch, SignOut, ShieldCheck } from '../icons';
+import {
+  User,
+  UserCircle,
+  ArrowRight,
+  CheckCircle,
+  CircleNotch,
+  SignOut,
+  ShieldCheck,
+  QrCode,
+  Scan,
+} from '../icons';
 import ChatGPTOrb from './ChatGPTOrb';
 import ArenaAvatar, { CURATED_AVATARS } from '../avatars/ArenaAvatar';
+import PlayerQRBadge from '../qr/PlayerQRBadge';
+import ArenaQRScanner from '../qr/ArenaQRScanner';
 import { normalizePlayerInput, validatePlayerHandle } from '../../utils/sanitize';
 import { claimOrRegisterGuest } from '../../services/arenaService';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
@@ -23,6 +35,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [activeSection, setActiveSection] = useState('profile'); // 'profile' | 'qr' | 'scan'
 
   // Sync state if player prop updates
   useEffect(() => {
@@ -145,10 +158,82 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       </div>
 
       {/* ========================================================
-          2. EDIT PROFILE & AVATAR CARD (The LoginView Blueprint)
+          2. SECTION TABS: Profile Details | My QR Badge | Scan QR
           ======================================================== */}
-      <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 sm:p-7 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
-        <form onSubmit={handleSaveProfile} className="space-y-5">
+      <div className="flex items-center justify-between p-1 bg-[#e2e6ec] rounded-2xl shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] border border-white/60">
+        <button
+          type="button"
+          onClick={() => setActiveSection('profile')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs transition-all duration-150 cursor-pointer ${
+            activeSection === 'profile'
+              ? 'bg-gradient-to-b from-zinc-900 to-black text-white font-bold shadow-[2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
+              : 'text-zinc-600 hover:text-zinc-900 font-semibold'
+          }`}
+        >
+          <User size={15} weight={activeSection === 'profile' ? 'bold' : 'regular'} />
+          <span>Profile</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSection('qr')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs transition-all duration-150 cursor-pointer ${
+            activeSection === 'qr'
+              ? 'bg-gradient-to-b from-zinc-900 to-black text-white font-bold shadow-[2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
+              : 'text-zinc-600 hover:text-zinc-900 font-semibold'
+          }`}
+        >
+          <QrCode size={15} weight={activeSection === 'qr' ? 'bold' : 'regular'} />
+          <span>My QR</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSection('scan')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs transition-all duration-150 cursor-pointer ${
+            activeSection === 'scan'
+              ? 'bg-gradient-to-b from-zinc-900 to-black text-white font-bold shadow-[2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
+              : 'text-zinc-600 hover:text-zinc-900 font-semibold'
+          }`}
+        >
+          <Scan size={15} weight={activeSection === 'scan' ? 'bold' : 'regular'} />
+          <span>Scan QR</span>
+        </button>
+      </div>
+
+      {/* ========================================================
+          3. TAB CONTENT VIEWS
+          ======================================================== */}
+      {/* Tab A: My QR Badge */}
+      {activeSection === 'qr' && (
+        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 sm:p-7 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6] animate-in fade-in duration-200">
+          <PlayerQRBadge
+            player={{
+              guest_id: guestId,
+              orb_number: orbNumber,
+              name: playerName || player?.name || guestId,
+              avatar: selectedAvatar,
+            }}
+          />
+        </div>
+      )}
+
+      {/* Tab B: Live QR Scanner */}
+      {activeSection === 'scan' && (
+        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 sm:p-7 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6] animate-in fade-in duration-200">
+          <ArenaQRScanner
+            onClose={() => setActiveSection('profile')}
+            onScanSuccess={(scanned) => {
+              console.log('[ProfileView] QR Scanned:', scanned);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Tab C: Edit Profile & Avatar Card */}
+      {activeSection === 'profile' && (
+        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 sm:p-7 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6] animate-in fade-in duration-200">
+          <form onSubmit={handleSaveProfile} className="space-y-5">
           {/* Ethereal ChatGPT-Style Player Orb */}
           <div className="flex flex-col items-center justify-center pt-1">
             <ChatGPTOrb
@@ -260,7 +345,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           </div>
         </form>
       </div>
-    </div>
+    )}
+  </div>
   );
 };
 
