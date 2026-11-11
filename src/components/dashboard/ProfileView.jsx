@@ -17,7 +17,12 @@ import PlayerQRBadge from '../qr/PlayerQRBadge';
 import { normalizePlayerInput, validatePlayerHandle } from '../../utils/sanitize';
 import { claimOrRegisterGuest } from '../../services/arenaService';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
-import { killAllMediaTracks, queryPermissionStatus } from '../../utils/mediaGuard';
+import {
+  killAllMediaTracks,
+  queryPermissionStatus,
+  setInAppPermission,
+  subscribeToPermissionChanges,
+} from '../../utils/mediaGuard';
 
 const STORAGE_KEY_DRAFT_NAME = 'arena_draft_username';
 const STORAGE_KEY_DRAFT_AVATAR = 'arena_draft_avatar';
@@ -67,6 +72,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         const cam = await queryPermissionStatus('camera');
         if (isMounted) {
           setCameraGranted(cam.isAllowed);
+          if (cam.isAllowed) setCameraError('');
         }
       } catch { }
 
@@ -75,6 +81,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         const mic = await queryPermissionStatus('microphone');
         if (isMounted) {
           setMicGranted(mic.isAllowed);
+          if (mic.isAllowed) setMicError('');
         }
       } catch { }
 
@@ -85,7 +92,9 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           camQuery.onchange = () => {
             const currentPref = window.localStorage.getItem('arena_perm_camera');
             if (isMounted && currentPref !== 'disabled') {
-              setCameraGranted(camQuery.state === 'granted');
+              const isAllowed = camQuery.state === 'granted';
+              setCameraGranted(isAllowed);
+              if (isAllowed) setCameraError('');
             }
           };
         } catch { }
@@ -95,7 +104,9 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           micQuery.onchange = () => {
             const currentPref = window.localStorage.getItem('arena_perm_mic');
             if (isMounted && currentPref !== 'disabled') {
-              setMicGranted(micQuery.state === 'granted');
+              const isAllowed = micQuery.state === 'granted';
+              setMicGranted(isAllowed);
+              if (isAllowed) setMicError('');
             }
           };
         } catch { }
@@ -104,8 +115,23 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
 
     checkExistingPermissions();
 
+    // Subscribe to in-app permission changes (e.g. from ArenaQRScanner overlay)
+    const unsubscribePerms = subscribeToPermissionChanges(({ capability, state }) => {
+      if (!isMounted) return;
+      if (capability === 'camera') {
+        const isAllowed = state === 'granted';
+        setCameraGranted(isAllowed);
+        if (isAllowed) setCameraError('');
+      } else if (capability === 'mic') {
+        const isAllowed = state === 'granted';
+        setMicGranted(isAllowed);
+        if (isAllowed) setMicError('');
+      }
+    });
+
     return () => {
       isMounted = false;
+      unsubscribePerms();
     };
   }, []);
 
@@ -252,9 +278,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     // If currently ON, user wants to mute/pause camera in Arena
     if (cameraGranted) {
       setCameraGranted(false);
-      try {
-        window.localStorage.setItem('arena_perm_camera', 'disabled');
-      } catch { }
+      setCameraError('');
+      setInAppPermission('camera', 'disabled');
       killAllMediaTracks('User toggled Camera OFF in Profile', 'video');
       return;
     }
@@ -277,9 +302,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
 
       if (alreadyGranted) {
         setCameraGranted(true);
-        try {
-          window.localStorage.setItem('arena_perm_camera', 'granted');
-        } catch { }
+        setCameraError('');
+        setInAppPermission('camera', 'granted');
       } else {
         let stream = null;
         try {
@@ -305,9 +329,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         }
 
         setCameraGranted(true);
-        try {
-          window.localStorage.setItem('arena_perm_camera', 'granted');
-        } catch { }
+        setCameraError('');
+        setInAppPermission('camera', 'granted');
       }
     } catch (err) {
       setCameraGranted(false);
@@ -316,9 +339,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       } else {
         setCameraError(err.message || 'Unable to access camera.');
       }
-      try {
-        window.localStorage.setItem('arena_perm_camera', 'denied');
-      } catch { }
+      setInAppPermission('camera', 'denied');
     } finally {
       setCameraLoading(false);
     }
@@ -331,9 +352,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     // If currently ON, user wants to mute/pause mic in Arena
     if (micGranted) {
       setMicGranted(false);
-      try {
-        window.localStorage.setItem('arena_perm_mic', 'disabled');
-      } catch { }
+      setMicError('');
+      setInAppPermission('mic', 'disabled');
       killAllMediaTracks('User toggled Microphone OFF in Profile', 'audio');
       return;
     }
@@ -355,9 +375,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
 
       if (alreadyGranted) {
         setMicGranted(true);
-        try {
-          window.localStorage.setItem('arena_perm_mic', 'granted');
-        } catch { }
+        setMicError('');
+        setInAppPermission('mic', 'granted');
       } else {
         let stream = null;
         try {
@@ -376,9 +395,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         }
 
         setMicGranted(true);
-        try {
-          window.localStorage.setItem('arena_perm_mic', 'granted');
-        } catch { }
+        setMicError('');
+        setInAppPermission('mic', 'granted');
       }
     } catch (err) {
       setMicGranted(false);
@@ -387,9 +405,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       } else {
         setMicError(err.message || 'Unable to access microphone.');
       }
-      try {
-        window.localStorage.setItem('arena_perm_mic', 'denied');
-      } catch { }
+      setInAppPermission('mic', 'denied');
     } finally {
       setMicLoading(false);
     }
@@ -581,7 +597,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                 </span>
               </button>
             </div>
-            {cameraError && (
+            {cameraError && !cameraGranted && (
               <p className="text-[10px] font-medium text-rose-500 pl-11 pt-1 leading-tight">
                 {cameraError}
               </p>
@@ -641,7 +657,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                 </span>
               </button>
             </div>
-            {micError && (
+            {micError && !micGranted && (
               <p className="text-[10px] font-medium text-rose-500 pl-11 pt-1 leading-tight">
                 {micError}
               </p>

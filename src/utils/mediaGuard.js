@@ -124,3 +124,42 @@ export async function queryPermissionStatus(type) {
 
   return { localPref, browserState, isAllowed };
 }
+
+export const ARENA_PERM_EVENT = 'arena_permission_changed';
+
+/**
+ * Persists an in-app permission setting and broadcasts the change across all components
+ * in the active window (so Profile and QR Scanner stay 100% in sync in real time).
+ * 
+ * @param {'camera'|'mic'} capability
+ * @param {'granted'|'disabled'|'denied'} state
+ */
+export function setInAppPermission(capability, state) {
+  const prefKey = capability === 'camera' ? 'arena_perm_camera' : 'arena_perm_mic';
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(prefKey, state);
+      window.dispatchEvent(
+        new CustomEvent(ARENA_PERM_EVENT, {
+          detail: { capability, state },
+        })
+      );
+    }
+  } catch { }
+}
+
+/**
+ * Subscribes to real-time in-app permission changes across all components.
+ * 
+ * @param {(detail: { capability: 'camera'|'mic', state: 'granted'|'disabled'|'denied' }) => void} callback
+ * @returns {() => void} Unsubscribe function
+ */
+export function subscribeToPermissionChanges(callback) {
+  if (typeof window === 'undefined') return () => {};
+  const handler = (e) => {
+    if (e?.detail) callback(e.detail);
+  };
+  window.addEventListener(ARENA_PERM_EVENT, handler);
+  return () => window.removeEventListener(ARENA_PERM_EVENT, handler);
+}
+

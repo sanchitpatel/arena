@@ -3,7 +3,11 @@ import { Html5Qrcode } from 'html5-qrcode';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash } from '../icons';
 import { Sword } from '@phosphor-icons/react/dist/icons/Sword';
-import { killAllMediaTracks } from '../../utils/mediaGuard';
+import {
+  killAllMediaTracks,
+  setInAppPermission,
+  subscribeToPermissionChanges,
+} from '../../utils/mediaGuard';
 
 /**
  * ArenaQRScanner Component:
@@ -180,13 +184,28 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
     if (pref === 'disabled') {
       setIsCameraDisabledInApp(true);
       setScannerStatus('disabled');
-      return;
+    } else {
+      startCamera(facingMode);
     }
 
-    startCamera(facingMode);
+    // Subscribe to in-app changes from ProfileView or elsewhere
+    const unsubscribe = subscribeToPermissionChanges(({ capability, state }) => {
+      if (!isMountedRef.current) return;
+      if (capability === 'camera') {
+        if (state === 'disabled') {
+          setIsCameraDisabledInApp(true);
+          setScannerStatus('disabled');
+          stopCameraHardwareImmediately('Disabled via app settings');
+        } else if (state === 'granted') {
+          setIsCameraDisabledInApp(false);
+          startCamera(facingMode);
+        }
+      }
+    });
 
     return () => {
       isMountedRef.current = false;
+      unsubscribe();
       stopCameraHardwareImmediately('ArenaQRScanner unmounted');
     };
   }, [facingMode]);
@@ -234,9 +253,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
   // Re-enable camera directly inside the scanner box
   const handleEnableCameraInScanner = async () => {
-    try {
-      window.localStorage.setItem('arena_perm_camera', 'granted');
-    } catch { }
+    setInAppPermission('camera', 'granted');
     setIsCameraDisabledInApp(false);
     startCamera(facingMode);
   };
