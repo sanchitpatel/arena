@@ -162,6 +162,7 @@ export default function ChatGPTOrb({
   speed = 0.65,
   badge = 'avatar',
   onBadgeClick,
+  onOrbClick,
 }) {
   const canvasRef = useRef(null);
   const [isGlReady, setIsGlReady] = useState(false);
@@ -172,7 +173,12 @@ export default function ChatGPTOrb({
       <div className="pointer-events-none absolute inset-2 -z-10 rounded-full bg-sky-400/40 blur-2xl" />
 
       <div
-        className={`relative ${size} rounded-full`}
+        onClick={onOrbClick}
+        role={onOrbClick ? 'button' : undefined}
+        tabIndex={onOrbClick ? 0 : undefined}
+        className={`relative ${size} rounded-full ${
+          onOrbClick ? 'cursor-pointer active:scale-95 transition-transform duration-150' : ''
+        }`}
         style={{
           boxShadow: '0 14px 36px rgba(2,110,220,0.30)',
         }}
