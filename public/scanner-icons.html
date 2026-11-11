@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arena — Scanner Icon Picker Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #f0f2f5;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #18181b;
+      min-height: 100vh;
+      padding-bottom: 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .font-arena {
+      font-family: 'Orbitron', 'Plus Jakarta Sans', sans-serif;
+      letter-spacing: 0.12em;
+      font-weight: 900;
+    }
+
+    /* Inward Neumorphic Shadow (Exact Match from DashboardShell.jsx) */
+    .inward-pill {
+      background-color: #ebedf2;
+      border: 1px solid #ffffff;
+      box-shadow: inset 0 2px 4px #ffffff, inset 0 -2px 5px rgba(0, 0, 0, 0.14);
+      border-radius: 12px;
+      padding: 4px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .inward-pill:hover {
+      box-shadow: inset 0 2px 5px #ffffff, inset 0 -3px 6px rgba(0, 0, 0, 0.20);
+    }
+    .inward-pill:active {
+      transform: scale(0.96);
+      box-shadow: inset 0 1px 3px #ffffff, inset 0 -2px 4px rgba(0, 0, 0, 0.25);
+    }
+
+    .inward-card {
+      background: #ebedf2;
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: 20px;
+      box-shadow: inset 3px 3px 6px #ffffff, inset -3px -3px 6px #c5ccd6;
+      transition: all 0.2s ease;
+    }
+
+    .inward-tile {
+      background: #ebedf2;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: 16px;
+      box-shadow: inset 2px 2px 5px #ffffff, inset -2px -2px 5px #cbd3de;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Outward Raised Card */
+    .outward-card {
+      background: #ebedf2;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+      box-shadow: 4px 4px 12px #c9d1dc, -4px -4px 12px #ffffff;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    }
+    .outward-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 6px 8px 18px #c2cbda, -6px -6px 18px #ffffff;
+    }
+    .outward-card.selected {
+      border: 2px solid #18181b;
+      box-shadow: 0 0 0 4px rgba(24, 24, 27, 0.1), 6px 8px 18px #c2cbda, -6px -6px 18px #ffffff;
+    }
+
+    /* Sticky Live Header Replicator */
+    .sticky-header-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(240, 242, 245, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(203, 213, 225, 0.4);
+      padding: 12px 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .filter-btn {
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      background: #ebedf2;
+      color: #52525b;
+      box-shadow: 2px 2px 5px #c8d0db, -2px -2px 5px #ffffff;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .filter-btn.active {
+      background: #18181b;
+      color: #ffffff;
+      box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 2px 6px rgba(0, 0, 0, 0.2);
+      border-color: #18181b;
+    }
+
+    .copy-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #18181b;
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .copy-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Badge styles */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .badge-primary {
+      background: #18181b;
+      color: #ffffff;
+    }
+    .badge-secondary {
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .badge-star {
+      background: #fef08a;
+      color: #854d0e;
+      border: 1px solid #fde047;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- STICKY LIVE NAVBAR PREVIEW -->
+  <header class="sticky-header-bar">
+    <div class="container" style="display: flex; align-items: center; justify-content: space-between; max-width: 900px;">
+      <div>
+        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #71717a; margin-bottom: 2px;">
+          Live Navigation Bar Replica (1:1 Scale)
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <!-- Brand Logo Text -->
+          <span class="font-arena" style="font-size: 19px; color: #18181b;">ARENA</span>
+        </div>
+      </div>
+
+      <!-- Live Interactive Inward Scanner Pill -->
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 11px; color: #71717a; font-weight: 600;">Active: <strong id="live-icon-name" style="color: #18181b;">ScanQrCode</strong></span>
+        <div class="inward-pill" id="live-pill" title="Click to test click reaction">
+          <div id="live-icon-slot" style="display: flex; align-items: center; color: #27272a;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-qr-code w-5 h-5" aria-hidden="true"><path d="M17 12v4a1 1 0 0 1-1 1h-4"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M17 8V7"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M7 17h.01"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><rect x="7" y="7" width="5" height="5" rx="1"></rect></svg>
+          </div>
+          <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- INTRO HERO -->
+  <main class="container" style="max-width: 1100px; padding-top: 36px;">
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px; background: #e2e8f0; font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 12px;">
+        <span>✨ Arena UI Design System</span>
+        <span>•</span>
+        <span>Top Bar Scanner Icon Studio</span>
+      </div>
+      <h1 style="font-size: 28px; font-weight: 800; color: #09090b; letter-spacing: -0.02em; margin-bottom: 8px;">
+        Choose Your QR Scanner Icon
+      </h1>
+      <p style="font-size: 14px; color: #52525b; max-width: 620px; margin: 0 auto; line-height: 1.5;">
+        Compare 16 high-quality icons from <strong>Lucide</strong> and <strong>Phosphor Icons</strong>.
+        Each option is rendered standalone and inside your exact <strong>inward-shadow scanner pill</strong> (white top highlight + black bottom depth).
+      </p>
+
+      <!-- Filter Controls -->
+      <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 24px;">
+        <button class="filter-btn active" onclick="filterIcons('all', this)">All Icons (16)</button>
+        <button class="filter-btn" onclick="filterIcons('Lucide', this)">Lucide Icons (8)</button>
+        <button class="filter-btn" onclick="filterIcons('Phosphor', this)">Phosphor Icons (8)</button>
+        <button class="filter-btn" onclick="filterIcons('viewfinder', this)">Viewfinder / Reticle Style</button>
+        <button class="filter-btn" onclick="filterIcons('qr', this)">QR Matrix Style</button>
+      </div>
+    </div>
+
+    <!-- MOBILE PHONE LIVE MOCKUP -->
+    <div style="margin-bottom: 44px; display: flex; justify-content: center;">
+      <div style="width: 100%; max-width: 420px; background: #ebedf2; border-radius: 36px; padding: 12px; box-shadow: 10px 10px 28px #c2c9d6, -10px -10px 28px #ffffff; border: 4px solid #ffffff;">
+        <!-- Mock Phone Header -->
+        <div style="background: #f0f2f5; border-radius: 26px; padding: 14px 16px 20px; box-shadow: inset 2px 2px 6px #cbd2de, inset -2px -2px 6px #ffffff;">
+          <!-- Status Bar -->
+          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #71717a; margin-bottom: 12px; padding: 0 4px;">
+            <span>9:41</span>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <span>5G</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          <!-- Arena Top App Bar in Phone -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0;">
+            <span class="font-arena" style="font-size: 18px; color: #18181b;">ARENA</span>
+            <div class="inward-pill" id="phone-pill" style="transform: scale(1.05);">
+              <div id="phone-icon-slot" style="display: flex; align-items: center; color: #27272a;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-qr-code w-5 h-5" aria-hidden="true"><path d="M17 12v4a1 1 0 0 1-1 1h-4"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M17 8V7"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M7 17h.01"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><rect x="7" y="7" width="5" height="5" rx="1"></rect></svg>
+              </div>
+              <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+            </div>
+          </div>
+
+          <!-- Mock Feed Below -->
+          <div style="margin-top: 18px; padding: 14px; background: #ebedf2; border-radius: 18px; box-shadow: inset 2px 2px 4px #ffffff, inset -2px -2px 4px #c5ccd6; text-align: center;">
+            <div style="font-size: 11px; font-weight: 700; color: #71717a; text-transform: uppercase;">Mobile Screen Context</div>
+            <div style="font-size: 13px; font-weight: 600; color: #27272a; margin-top: 2px;">
+              Currently Testing: <span id="phone-active-name" style="font-weight: 800; color: #09090b;">ScanQrCode</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ICON CARDS GRID -->
+    <div id="icons-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+      
+        <div class="outward-card selected" 
+             data-id="lucide-scan-qr-code"
+             data-library="Lucide"
+             data-category="qr"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-star">★ Top Recommendation</span>
+              <span class="badge badge-secondary">Lucide</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-qr-code w-10 h-10" aria-hidden="true"><path d="M17 12v4a1 1 0 0 1-1 1h-4"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M17 8V7"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M7 17h.01"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><rect x="7" y="7" width="5" height="5" rx="1"></rect></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('lucide-scan-qr-code')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-qr-code w-5 h-5" aria-hidden="true"><path d="M17 12v4a1 1 0 0 1-1 1h-4"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M17 8V7"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M7 17h.01"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><rect x="7" y="7" width="5" height="5" rx="1"></rect></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              ScanQrCode
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Viewfinder framing a mini QR code matrix. Instant recognition for attendee badge & table scanning.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('lucide-scan-qr-code')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('lucide-scan-qr-code')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="lucide-scan-line"
+             data-library="Lucide"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Sci-Fi / Dynamic</span>
+              <span class="badge badge-secondary">Lucide</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-line w-10 h-10" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 12h10"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('lucide-scan-line')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-line w-5 h-5" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 12h10"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              ScanLine
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Viewfinder with a horizontal laser beam across the center. High-tech, energetic gaming vibe.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('lucide-scan-line')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('lucide-scan-line')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="lucide-scan"
+             data-library="Lucide"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Current Icon</span>
+              <span class="badge badge-secondary">Lucide</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan w-10 h-10" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('lucide-scan')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan w-5 h-5" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              Scan
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Balanced corner brackets with a subtle crosshair reticle. Clean, classic, and familiar.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('lucide-scan')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('lucide-scan')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="lucide-scan-barcode"
+             data-library="Lucide"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Event Badge</span>
+              <span class="badge badge-secondary">Lucide</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-barcode w-10 h-10" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M8 7v10"></path><path d="M12 7v10"></path><path d="M17 7v10"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('lucide-scan-barcode')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-barcode w-5 h-5" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M8 7v10"></path><path d="M12 7v10"></path><path d="M17 7v10"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              ScanBarcode
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Viewfinder framing vertical event badge barcode lines. Ideal for ticket and lanyard scanning.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('lucide-scan-barcode')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('lucide-scan-barcode')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="lucide-scan-search"
+             data-library="Lucide"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Discovery / Scouting</span>
+              <span class="badge badge-secondary">Lucide</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-search w-10 h-10" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><circle cx="12" cy="12" r="3"></circle><path d="m16 16-1.9-1.9"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('lucide-scan-search')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-search w-5 h-5" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><circle cx="12" cy="12" r="3"></circle><path d="m16 16-1.9-1.9"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              ScanSearch
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Viewfinder with a magnifying lens glyph. Communicates finding or looking up player stats.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('lucide-scan-search')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('lucide-scan-search')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="lucide-focus"
+             data-library="Lucide"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Ultra Minimal</span>
+              <span class="badge badge-secondary">Lucide</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-focus w-10 h-10" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('lucide-focus')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-focus w-5 h-5" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              Focus
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Minimalist camera autofocus reticle with center point. Apple-level simplicity with zero noise.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('lucide-focus')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('lucide-focus')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="lucide-qr-code"
+             data-library="Lucide"
+             data-category="qr"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Pure QR Matrix</span>
+              <span class="badge badge-secondary">Lucide</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-qr-code w-10 h-10" aria-hidden="true"><rect width="5" height="5" x="3" y="3" rx="1"></rect><rect width="5" height="5" x="16" y="3" rx="1"></rect><rect width="5" height="5" x="3" y="16" rx="1"></rect><path d="M21 16h-3a2 2 0 0 0-2 2v3"></path><path d="M21 21v.01"></path><path d="M12 7v3a2 2 0 0 1-2 2H7"></path><path d="M3 12h.01"></path><path d="M12 3h.01"></path><path d="M12 16v.01"></path><path d="M16 12h1"></path><path d="M21 12v.01"></path><path d="M12 21v-1"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('lucide-qr-code')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-qr-code w-5 h-5" aria-hidden="true"><rect width="5" height="5" x="3" y="3" rx="1"></rect><rect width="5" height="5" x="16" y="3" rx="1"></rect><rect width="5" height="5" x="3" y="16" rx="1"></rect><path d="M21 16h-3a2 2 0 0 0-2 2v3"></path><path d="M21 21v.01"></path><path d="M12 7v3a2 2 0 0 1-2 2H7"></path><path d="M3 12h.01"></path><path d="M12 3h.01"></path><path d="M12 16v.01"></path><path d="M16 12h1"></path><path d="M21 12v.01"></path><path d="M12 21v-1"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              QrCode
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              High-contrast QR code glyph without surrounding brackets. Clear, direct, zero ambiguity.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('lucide-qr-code')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('lucide-qr-code')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="lucide-scan-face"
+             data-library="Lucide"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Player Avatars</span>
+              <span class="badge badge-secondary">Lucide</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-face w-10 h-10" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><path d="M9 9h.01"></path><path d="M15 9h.01"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('lucide-scan-face')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-face w-5 h-5" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><path d="M9 9h.01"></path><path d="M15 9h.01"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              ScanFace
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Viewfinder framing a friendly avatar face. Excellent metaphor for scanning player avatars.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('lucide-scan-face')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('lucide-scan-face')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="phosphor-corners-out-bold"
+             data-library="Phosphor"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-star">★ Bold Favorite</span>
+              <span class="badge badge-secondary">Phosphor</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 256 256" class="w-10 h-10"><path d="M220,48V88a12,12,0,0,1-24,0V60H168a12,12,0,0,1,0-24h40A12,12,0,0,1,220,48ZM88,196H60V168a12,12,0,0,0-24,0v40a12,12,0,0,0,12,12H88a12,12,0,0,0,0-24Zm120-40a12,12,0,0,0-12,12v28H168a12,12,0,0,0,0,24h40a12,12,0,0,0,12-12V168A12,12,0,0,0,208,156ZM88,36H48A12,12,0,0,0,36,48V88a12,12,0,0,0,24,0V60H88a12,12,0,0,0,0-24Z"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('phosphor-corners-out-bold')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="w-5 h-5"><path d="M220,48V88a12,12,0,0,1-24,0V60H168a12,12,0,0,1,0-24h40A12,12,0,0,1,220,48ZM88,196H60V168a12,12,0,0,0-24,0v40a12,12,0,0,0,12,12H88a12,12,0,0,0,0-24Zm120-40a12,12,0,0,0-12,12v28H168a12,12,0,0,0,0,24h40a12,12,0,0,0,12-12V168A12,12,0,0,0,208,156ZM88,36H48A12,12,0,0,0,36,48V88a12,12,0,0,0,24,0V60H88a12,12,0,0,0,0-24Z"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              CornersOut (Bold)
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Solid outward corner brackets. Bold stroke weight harmonizes perfectly with the heavy ARENA brandmark.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('phosphor-corners-out-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('phosphor-corners-out-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="phosphor-corners-out-regular"
+             data-library="Phosphor"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Clean Reticle</span>
+              <span class="badge badge-secondary">Phosphor</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 256 256" class="w-10 h-10"><path d="M216,48V88a8,8,0,0,1-16,0V56H168a8,8,0,0,1,0-16h40A8,8,0,0,1,216,48ZM88,200H56V168a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H88a8,8,0,0,0,0-16Zm120-40a8,8,0,0,0-8,8v32H168a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V168A8,8,0,0,0,208,160ZM88,40H48a8,8,0,0,0-8,8V88a8,8,0,0,0,16,0V56H88a8,8,0,0,0,0-16Z"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('phosphor-corners-out-regular')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="w-5 h-5"><path d="M216,48V88a8,8,0,0,1-16,0V56H168a8,8,0,0,1,0-16h40A8,8,0,0,1,216,48ZM88,200H56V168a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H88a8,8,0,0,0,0-16Zm120-40a8,8,0,0,0-8,8v32H168a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V168A8,8,0,0,0,208,160ZM88,40H48a8,8,0,0,0-8,8V88a8,8,0,0,0,16,0V56H88a8,8,0,0,0,0-16Z"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              CornersOut (Regular)
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Crisp medium-weight outward brackets. Subtle, balanced, modern camera interface aesthetic.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('phosphor-corners-out-regular')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('phosphor-corners-out-regular')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="phosphor-scan-bold"
+             data-library="Phosphor"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Laser Reticle</span>
+              <span class="badge badge-secondary">Phosphor</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 256 256" class="w-10 h-10"><path d="M228,40V80a12,12,0,0,1-24,0V52H176a12,12,0,0,1,0-24h40A12,12,0,0,1,228,40ZM80,204H52V176a12,12,0,0,0-24,0v40a12,12,0,0,0,12,12H80a12,12,0,0,0,0-24Zm136-40a12,12,0,0,0-12,12v28H176a12,12,0,0,0,0,24h40a12,12,0,0,0,12-12V176A12,12,0,0,0,216,164ZM40,92A12,12,0,0,0,52,80V52H80a12,12,0,0,0,0-24H40A12,12,0,0,0,28,40V80A12,12,0,0,0,40,92ZM84,72h88a12,12,0,0,1,12,12v88a12,12,0,0,1-12,12H84a12,12,0,0,1-12-12V84A12,12,0,0,1,84,72Zm12,88h64V96H96Z"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('phosphor-scan-bold')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="w-5 h-5"><path d="M228,40V80a12,12,0,0,1-24,0V52H176a12,12,0,0,1,0-24h40A12,12,0,0,1,228,40ZM80,204H52V176a12,12,0,0,0-24,0v40a12,12,0,0,0,12,12H80a12,12,0,0,0,0-24Zm136-40a12,12,0,0,0-12,12v28H176a12,12,0,0,0,0,24h40a12,12,0,0,0,12-12V176A12,12,0,0,0,216,164ZM40,92A12,12,0,0,0,52,80V52H80a12,12,0,0,0,0-24H40A12,12,0,0,0,28,40V80A12,12,0,0,0,40,92ZM84,72h88a12,12,0,0,1,12,12v88a12,12,0,0,1-12,12H84a12,12,0,0,1-12-12V84A12,12,0,0,1,84,72Zm12,88h64V96H96Z"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              Scan (Phosphor Bold)
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Phosphor’s scanner design: rounded corner brackets with a bold laser scan line.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('phosphor-scan-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('phosphor-scan-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="phosphor-frame-corners-bold"
+             data-library="Phosphor"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Framed Reticle</span>
+              <span class="badge badge-secondary">Phosphor</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 256 256" class="w-10 h-10"><path d="M140,88a12,12,0,0,1,12-12h32a12,12,0,0,1,12,12v32a12,12,0,0,1-24,0V100H152A12,12,0,0,1,140,88ZM72,180h32a12,12,0,0,0,0-24H84V136a12,12,0,0,0-24,0v32A12,12,0,0,0,72,180ZM236,56V200a20,20,0,0,1-20,20H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56Zm-24,4H44V196H212Z"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('phosphor-frame-corners-bold')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="w-5 h-5"><path d="M140,88a12,12,0,0,1,12-12h32a12,12,0,0,1,12,12v32a12,12,0,0,1-24,0V100H152A12,12,0,0,1,140,88ZM72,180h32a12,12,0,0,0,0-24H84V136a12,12,0,0,0-24,0v32A12,12,0,0,0,72,180ZM236,56V200a20,20,0,0,1-20,20H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56Zm-24,4H44V196H212Z"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              FrameCorners (Bold)
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Structured outer frame with corner notches. Creates a grounded framing effect inside the pill.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('phosphor-frame-corners-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('phosphor-frame-corners-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="phosphor-qr-code-bold"
+             data-library="Phosphor"
+             data-category="qr"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Geometric QR</span>
+              <span class="badge badge-secondary">Phosphor</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 256 256" class="w-10 h-10"><path d="M100,36H56A20,20,0,0,0,36,56v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V56A20,20,0,0,0,100,36ZM96,96H60V60H96Zm4,40H56a20,20,0,0,0-20,20v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V156A20,20,0,0,0,100,136Zm-4,60H60V160H96ZM200,36H156a20,20,0,0,0-20,20v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V56A20,20,0,0,0,200,36Zm-4,60H160V60h36Zm-60,76V148a12,12,0,0,1,24,0v24a12,12,0,0,1-24,0Zm84-8a12,12,0,0,1-12,12H196v32a12,12,0,0,1-12,12H148a12,12,0,0,1,0-24h24V148a12,12,0,0,1,24,0v4h12A12,12,0,0,1,220,164Z"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('phosphor-qr-code-bold')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="w-5 h-5"><path d="M100,36H56A20,20,0,0,0,36,56v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V56A20,20,0,0,0,100,36ZM96,96H60V60H96Zm4,40H56a20,20,0,0,0-20,20v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V156A20,20,0,0,0,100,136Zm-4,60H60V160H96ZM200,36H156a20,20,0,0,0-20,20v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V56A20,20,0,0,0,200,36Zm-4,60H160V60h36Zm-60,76V148a12,12,0,0,1,24,0v24a12,12,0,0,1-24,0Zm84-8a12,12,0,0,1-12,12H196v32a12,12,0,0,1-12,12H148a12,12,0,0,1,0-24h24V148a12,12,0,0,1,24,0v4h12A12,12,0,0,1,220,164Z"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              QrCode (Phosphor Bold)
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Bold geometric QR matrix with rounded positional corners. Ultra legible even at small sizes.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('phosphor-qr-code-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('phosphor-qr-code-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="phosphor-barcode-bold"
+             data-library="Phosphor"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Venue Pass</span>
+              <span class="badge badge-secondary">Phosphor</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 256 256" class="w-10 h-10"><path d="M232,52V92a12,12,0,0,1-24,0V64H180a12,12,0,0,1,0-24h40A12,12,0,0,1,232,52ZM76,192H48V164a12,12,0,0,0-24,0v40a12,12,0,0,0,12,12H76a12,12,0,0,0,0-24Zm144-40a12,12,0,0,0-12,12v28H180a12,12,0,0,0,0,24h40a12,12,0,0,0,12-12V164A12,12,0,0,0,220,152ZM36,104A12,12,0,0,0,48,92V64H76a12,12,0,0,0,0-24H36A12,12,0,0,0,24,52V92A12,12,0,0,0,36,104ZM88,80A12,12,0,0,0,76,92v72a12,12,0,0,0,24,0V92A12,12,0,0,0,88,80Zm92,84V92a12,12,0,0,0-24,0v72a12,12,0,0,0,24,0ZM128,80a12,12,0,0,0-12,12v72a12,12,0,0,0,24,0V92A12,12,0,0,0,128,80Z"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('phosphor-barcode-bold')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="w-5 h-5"><path d="M232,52V92a12,12,0,0,1-24,0V64H180a12,12,0,0,1,0-24h40A12,12,0,0,1,232,52ZM76,192H48V164a12,12,0,0,0-24,0v40a12,12,0,0,0,12,12H76a12,12,0,0,0,0-24Zm144-40a12,12,0,0,0-12,12v28H180a12,12,0,0,0,0,24h40a12,12,0,0,0,12-12V164A12,12,0,0,0,220,152ZM36,104A12,12,0,0,0,48,92V64H76a12,12,0,0,0,0-24H36A12,12,0,0,0,24,52V92A12,12,0,0,0,36,104ZM88,80A12,12,0,0,0,76,92v72a12,12,0,0,0,24,0V92A12,12,0,0,0,88,80Zm92,84V92a12,12,0,0,0-24,0v72a12,12,0,0,0,24,0ZM128,80a12,12,0,0,0-12,12v72a12,12,0,0,0,24,0V92A12,12,0,0,0,128,80Z"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              Barcode (Phosphor Bold)
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              High-contrast barcode icon with bold bars. Feels like scanning an official arena wristband or ticket.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('phosphor-barcode-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('phosphor-barcode-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="phosphor-bounding-box-bold"
+             data-library="Phosphor"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Vision Reticle</span>
+              <span class="badge badge-secondary">Phosphor</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 256 256" class="w-10 h-10"><path d="M208,100a20,20,0,0,0,20-20V48a20,20,0,0,0-20-20H176a20,20,0,0,0-20,20v4H100V48A20,20,0,0,0,80,28H48A20,20,0,0,0,28,48V80a20,20,0,0,0,20,20h4v56H48a20,20,0,0,0-20,20v32a20,20,0,0,0,20,20H80a20,20,0,0,0,20-20v-4h56v4a20,20,0,0,0,20,20h32a20,20,0,0,0,20-20V176a20,20,0,0,0-20-20h-4V100ZM180,52h24V76H180ZM52,52H76V76H52ZM76,204H52V180H76Zm128,0H180V180h24Zm-24-48h-4a20,20,0,0,0-20,20v4H100v-4a20,20,0,0,0-20-20H76V100h4a20,20,0,0,0,20-20V76h56v4a20,20,0,0,0,20,20h4Z"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('phosphor-bounding-box-bold')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="w-5 h-5"><path d="M208,100a20,20,0,0,0,20-20V48a20,20,0,0,0-20-20H176a20,20,0,0,0-20,20v4H100V48A20,20,0,0,0,80,28H48A20,20,0,0,0,28,48V80a20,20,0,0,0,20,20h4v56H48a20,20,0,0,0-20,20v32a20,20,0,0,0,20,20H80a20,20,0,0,0,20-20v-4h56v4a20,20,0,0,0,20,20h32a20,20,0,0,0,20-20V176a20,20,0,0,0-20-20h-4V100ZM180,52h24V76H180ZM52,52H76V76H52ZM76,204H52V180H76Zm128,0H180V180h24Zm-24-48h-4a20,20,0,0,0-20,20v4H100v-4a20,20,0,0,0-20-20H76V100h4a20,20,0,0,0,20-20V76h56v4a20,20,0,0,0,20,20h4Z"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              BoundingBox (Bold)
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Computer-vision style object detection bounding box with prominent corner pins.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('phosphor-bounding-box-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('phosphor-bounding-box-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+        <div class="outward-card " 
+             data-id="phosphor-target-bold"
+             data-library="Phosphor"
+             data-category="viewfinder"
+             style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+          
+          <div>
+            <!-- Top Badges Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span class="badge badge-primary">Tactical Reticle</span>
+              <span class="badge badge-secondary">Phosphor</span>
+            </div>
+
+            <!-- Previews: Large vs 1:1 Inward Pill -->
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 12px; margin-bottom: 16px;">
+              <!-- Large Standalone Icon Tile -->
+              <div class="inward-tile" style="height: 76px;" title="Standalone enlarged icon">
+                <div style="color: #18181b;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 256 256" class="w-10 h-10"><path d="M229.26,90.4a108,108,0,0,1-177.63,114A108,108,0,0,1,195.41,43.63l20.1-20.11a12,12,0,0,1,17,17l-96,96a12,12,0,1,1-17-17l24-24a36,36,0,1,0,19.76,39.65,12,12,0,0,1,23.53,4.74,60,60,0,1,1-25.73-62L178.3,60.74a84,84,0,1,0,28.46,38,12,12,0,1,1,22.5-8.35Z"></path></svg>
+                </div>
+              </div>
+
+              <!-- Real 1:1 Scale Pill in context -->
+              <div class="inward-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;">
+                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Actual Inward Pill</span>
+                <div class="inward-pill" onclick="selectIcon('phosphor-target-bold')" title="Click to test in sticky top bar">
+                  <div style="display: flex; align-items: center; color: #27272a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" class="w-5 h-5"><path d="M229.26,90.4a108,108,0,0,1-177.63,114A108,108,0,0,1,195.41,43.63l20.1-20.11a12,12,0,0,1,17,17l-96,96a12,12,0,1,1-17-17l24-24a36,36,0,1,0,19.76,39.65,12,12,0,0,1,23.53,4.74,60,60,0,1,1-25.73-62L178.3,60.74a84,84,0,1,0,28.46,38,12,12,0,1,1,22.5-8.35Z"></path></svg>
+                  </div>
+                  <span style="font-size: 13px; font-weight: 700; color: #27272a;">Scan</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Icon Details -->
+            <h3 style="font-size: 16px; font-weight: 800; color: #18181b; margin-bottom: 4px;">
+              Target (Phosphor Bold)
+            </h3>
+            <p style="font-size: 12.5px; color: #52525b; line-height: 1.45; margin-bottom: 16px;">
+              Concentric precision target reticle. Bold tactical gaming aesthetic that pops on mobile.
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(203, 213, 225, 0.6);">
+            <button onclick="selectIcon('phosphor-target-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #18181b; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: opacity 0.15s ease;">
+              <span>Preview Live</span>
+            </button>
+            <button onclick="copySnippet('phosphor-target-bold')" 
+                    style="padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; background: #ffffff; color: #27272a; border: 1px solid #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: background 0.15s ease;">
+              <span>Copy Code</span>
+            </button>
+          </div>
+        </div>
+      
+    </div>
+  </main>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="copy-toast">
+    <span>✓ Code snippet copied to clipboard!</span>
+  </div>
+
+  <script>
+    const iconData = [{"id":"lucide-scan-qr-code","name":"ScanQrCode","library":"Lucide","importCode":"import { ScanQrCode } from 'lucide-react';\n<ScanQrCode size={20} className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-scan-qr-code w-5 h-5\" aria-hidden=\"true\"><path d=\"M17 12v4a1 1 0 0 1-1 1h-4\"></path><path d=\"M17 3h2a2 2 0 0 1 2 2v2\"></path><path d=\"M17 8V7\"></path><path d=\"M21 17v2a2 2 0 0 1-2 2h-2\"></path><path d=\"M3 7V5a2 2 0 0 1 2-2h2\"></path><path d=\"M7 17h.01\"></path><path d=\"M7 21H5a2 2 0 0 1-2-2v-2\"></path><rect x=\"7\" y=\"7\" width=\"5\" height=\"5\" rx=\"1\"></rect></svg>"},{"id":"lucide-scan-line","name":"ScanLine","library":"Lucide","importCode":"import { ScanLine } from 'lucide-react';\n<ScanLine size={20} className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-scan-line w-5 h-5\" aria-hidden=\"true\"><path d=\"M3 7V5a2 2 0 0 1 2-2h2\"></path><path d=\"M17 3h2a2 2 0 0 1 2 2v2\"></path><path d=\"M21 17v2a2 2 0 0 1-2 2h-2\"></path><path d=\"M7 21H5a2 2 0 0 1-2-2v-2\"></path><path d=\"M7 12h10\"></path></svg>"},{"id":"lucide-scan","name":"Scan","library":"Lucide","importCode":"import { Scan } from 'lucide-react';\n<Scan size={20} className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-scan w-5 h-5\" aria-hidden=\"true\"><path d=\"M3 7V5a2 2 0 0 1 2-2h2\"></path><path d=\"M17 3h2a2 2 0 0 1 2 2v2\"></path><path d=\"M21 17v2a2 2 0 0 1-2 2h-2\"></path><path d=\"M7 21H5a2 2 0 0 1-2-2v-2\"></path></svg>"},{"id":"lucide-scan-barcode","name":"ScanBarcode","library":"Lucide","importCode":"import { ScanBarcode } from 'lucide-react';\n<ScanBarcode size={20} className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-scan-barcode w-5 h-5\" aria-hidden=\"true\"><path d=\"M3 7V5a2 2 0 0 1 2-2h2\"></path><path d=\"M17 3h2a2 2 0 0 1 2 2v2\"></path><path d=\"M21 17v2a2 2 0 0 1-2 2h-2\"></path><path d=\"M7 21H5a2 2 0 0 1-2-2v-2\"></path><path d=\"M8 7v10\"></path><path d=\"M12 7v10\"></path><path d=\"M17 7v10\"></path></svg>"},{"id":"lucide-scan-search","name":"ScanSearch","library":"Lucide","importCode":"import { ScanSearch } from 'lucide-react';\n<ScanSearch size={20} className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-scan-search w-5 h-5\" aria-hidden=\"true\"><path d=\"M3 7V5a2 2 0 0 1 2-2h2\"></path><path d=\"M17 3h2a2 2 0 0 1 2 2v2\"></path><path d=\"M21 17v2a2 2 0 0 1-2 2h-2\"></path><path d=\"M7 21H5a2 2 0 0 1-2-2v-2\"></path><circle cx=\"12\" cy=\"12\" r=\"3\"></circle><path d=\"m16 16-1.9-1.9\"></path></svg>"},{"id":"lucide-focus","name":"Focus","library":"Lucide","importCode":"import { Focus } from 'lucide-react';\n<Focus size={20} className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-focus w-5 h-5\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"3\"></circle><path d=\"M3 7V5a2 2 0 0 1 2-2h2\"></path><path d=\"M17 3h2a2 2 0 0 1 2 2v2\"></path><path d=\"M21 17v2a2 2 0 0 1-2 2h-2\"></path><path d=\"M7 21H5a2 2 0 0 1-2-2v-2\"></path></svg>"},{"id":"lucide-qr-code","name":"QrCode","library":"Lucide","importCode":"import { QrCode } from 'lucide-react';\n<QrCode size={20} className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-qr-code w-5 h-5\" aria-hidden=\"true\"><rect width=\"5\" height=\"5\" x=\"3\" y=\"3\" rx=\"1\"></rect><rect width=\"5\" height=\"5\" x=\"16\" y=\"3\" rx=\"1\"></rect><rect width=\"5\" height=\"5\" x=\"3\" y=\"16\" rx=\"1\"></rect><path d=\"M21 16h-3a2 2 0 0 0-2 2v3\"></path><path d=\"M21 21v.01\"></path><path d=\"M12 7v3a2 2 0 0 1-2 2H7\"></path><path d=\"M3 12h.01\"></path><path d=\"M12 3h.01\"></path><path d=\"M12 16v.01\"></path><path d=\"M16 12h1\"></path><path d=\"M21 12v.01\"></path><path d=\"M12 21v-1\"></path></svg>"},{"id":"lucide-scan-face","name":"ScanFace","library":"Lucide","importCode":"import { ScanFace } from 'lucide-react';\n<ScanFace size={20} className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-scan-face w-5 h-5\" aria-hidden=\"true\"><path d=\"M3 7V5a2 2 0 0 1 2-2h2\"></path><path d=\"M17 3h2a2 2 0 0 1 2 2v2\"></path><path d=\"M21 17v2a2 2 0 0 1-2 2h-2\"></path><path d=\"M7 21H5a2 2 0 0 1-2-2v-2\"></path><path d=\"M8 14s1.5 2 4 2 4-2 4-2\"></path><path d=\"M9 9h.01\"></path><path d=\"M15 9h.01\"></path></svg>"},{"id":"phosphor-corners-out-bold","name":"CornersOut (Bold)","library":"Phosphor","importCode":"import { CornersOut } from '@phosphor-icons/react';\n<CornersOut size={20} weight=\"bold\" className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" fill=\"currentColor\" viewBox=\"0 0 256 256\" class=\"w-5 h-5\"><path d=\"M220,48V88a12,12,0,0,1-24,0V60H168a12,12,0,0,1,0-24h40A12,12,0,0,1,220,48ZM88,196H60V168a12,12,0,0,0-24,0v40a12,12,0,0,0,12,12H88a12,12,0,0,0,0-24Zm120-40a12,12,0,0,0-12,12v28H168a12,12,0,0,0,0,24h40a12,12,0,0,0,12-12V168A12,12,0,0,0,208,156ZM88,36H48A12,12,0,0,0,36,48V88a12,12,0,0,0,24,0V60H88a12,12,0,0,0,0-24Z\"></path></svg>"},{"id":"phosphor-corners-out-regular","name":"CornersOut (Regular)","library":"Phosphor","importCode":"import { CornersOut } from '@phosphor-icons/react';\n<CornersOut size={20} weight=\"regular\" className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" fill=\"currentColor\" viewBox=\"0 0 256 256\" class=\"w-5 h-5\"><path d=\"M216,48V88a8,8,0,0,1-16,0V56H168a8,8,0,0,1,0-16h40A8,8,0,0,1,216,48ZM88,200H56V168a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H88a8,8,0,0,0,0-16Zm120-40a8,8,0,0,0-8,8v32H168a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V168A8,8,0,0,0,208,160ZM88,40H48a8,8,0,0,0-8,8V88a8,8,0,0,0,16,0V56H88a8,8,0,0,0,0-16Z\"></path></svg>"},{"id":"phosphor-scan-bold","name":"Scan (Phosphor Bold)","library":"Phosphor","importCode":"import { Scan } from '@phosphor-icons/react';\n<Scan size={20} weight=\"bold\" className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" fill=\"currentColor\" viewBox=\"0 0 256 256\" class=\"w-5 h-5\"><path d=\"M228,40V80a12,12,0,0,1-24,0V52H176a12,12,0,0,1,0-24h40A12,12,0,0,1,228,40ZM80,204H52V176a12,12,0,0,0-24,0v40a12,12,0,0,0,12,12H80a12,12,0,0,0,0-24Zm136-40a12,12,0,0,0-12,12v28H176a12,12,0,0,0,0,24h40a12,12,0,0,0,12-12V176A12,12,0,0,0,216,164ZM40,92A12,12,0,0,0,52,80V52H80a12,12,0,0,0,0-24H40A12,12,0,0,0,28,40V80A12,12,0,0,0,40,92ZM84,72h88a12,12,0,0,1,12,12v88a12,12,0,0,1-12,12H84a12,12,0,0,1-12-12V84A12,12,0,0,1,84,72Zm12,88h64V96H96Z\"></path></svg>"},{"id":"phosphor-frame-corners-bold","name":"FrameCorners (Bold)","library":"Phosphor","importCode":"import { FrameCorners } from '@phosphor-icons/react';\n<FrameCorners size={20} weight=\"bold\" className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" fill=\"currentColor\" viewBox=\"0 0 256 256\" class=\"w-5 h-5\"><path d=\"M140,88a12,12,0,0,1,12-12h32a12,12,0,0,1,12,12v32a12,12,0,0,1-24,0V100H152A12,12,0,0,1,140,88ZM72,180h32a12,12,0,0,0,0-24H84V136a12,12,0,0,0-24,0v32A12,12,0,0,0,72,180ZM236,56V200a20,20,0,0,1-20,20H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56Zm-24,4H44V196H212Z\"></path></svg>"},{"id":"phosphor-qr-code-bold","name":"QrCode (Phosphor Bold)","library":"Phosphor","importCode":"import { QrCode } from '@phosphor-icons/react';\n<QrCode size={20} weight=\"bold\" className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" fill=\"currentColor\" viewBox=\"0 0 256 256\" class=\"w-5 h-5\"><path d=\"M100,36H56A20,20,0,0,0,36,56v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V56A20,20,0,0,0,100,36ZM96,96H60V60H96Zm4,40H56a20,20,0,0,0-20,20v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V156A20,20,0,0,0,100,136Zm-4,60H60V160H96ZM200,36H156a20,20,0,0,0-20,20v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V56A20,20,0,0,0,200,36Zm-4,60H160V60h36Zm-60,76V148a12,12,0,0,1,24,0v24a12,12,0,0,1-24,0Zm84-8a12,12,0,0,1-12,12H196v32a12,12,0,0,1-12,12H148a12,12,0,0,1,0-24h24V148a12,12,0,0,1,24,0v4h12A12,12,0,0,1,220,164Z\"></path></svg>"},{"id":"phosphor-barcode-bold","name":"Barcode (Phosphor Bold)","library":"Phosphor","importCode":"import { Barcode } from '@phosphor-icons/react';\n<Barcode size={20} weight=\"bold\" className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" fill=\"currentColor\" viewBox=\"0 0 256 256\" class=\"w-5 h-5\"><path d=\"M232,52V92a12,12,0,0,1-24,0V64H180a12,12,0,0,1,0-24h40A12,12,0,0,1,232,52ZM76,192H48V164a12,12,0,0,0-24,0v40a12,12,0,0,0,12,12H76a12,12,0,0,0,0-24Zm144-40a12,12,0,0,0-12,12v28H180a12,12,0,0,0,0,24h40a12,12,0,0,0,12-12V164A12,12,0,0,0,220,152ZM36,104A12,12,0,0,0,48,92V64H76a12,12,0,0,0,0-24H36A12,12,0,0,0,24,52V92A12,12,0,0,0,36,104ZM88,80A12,12,0,0,0,76,92v72a12,12,0,0,0,24,0V92A12,12,0,0,0,88,80Zm92,84V92a12,12,0,0,0-24,0v72a12,12,0,0,0,24,0ZM128,80a12,12,0,0,0-12,12v72a12,12,0,0,0,24,0V92A12,12,0,0,0,128,80Z\"></path></svg>"},{"id":"phosphor-bounding-box-bold","name":"BoundingBox (Bold)","library":"Phosphor","importCode":"import { BoundingBox } from '@phosphor-icons/react';\n<BoundingBox size={20} weight=\"bold\" className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" fill=\"currentColor\" viewBox=\"0 0 256 256\" class=\"w-5 h-5\"><path d=\"M208,100a20,20,0,0,0,20-20V48a20,20,0,0,0-20-20H176a20,20,0,0,0-20,20v4H100V48A20,20,0,0,0,80,28H48A20,20,0,0,0,28,48V80a20,20,0,0,0,20,20h4v56H48a20,20,0,0,0-20,20v32a20,20,0,0,0,20,20H80a20,20,0,0,0,20-20v-4h56v4a20,20,0,0,0,20,20h32a20,20,0,0,0,20-20V176a20,20,0,0,0-20-20h-4V100ZM180,52h24V76H180ZM52,52H76V76H52ZM76,204H52V180H76Zm128,0H180V180h24Zm-24-48h-4a20,20,0,0,0-20,20v4H100v-4a20,20,0,0,0-20-20H76V100h4a20,20,0,0,0,20-20V76h56v4a20,20,0,0,0,20,20h4Z\"></path></svg>"},{"id":"phosphor-target-bold","name":"Target (Phosphor Bold)","library":"Phosphor","importCode":"import { Target } from '@phosphor-icons/react';\n<Target size={20} weight=\"bold\" className=\"text-zinc-800\" />","pillSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" fill=\"currentColor\" viewBox=\"0 0 256 256\" class=\"w-5 h-5\"><path d=\"M229.26,90.4a108,108,0,0,1-177.63,114A108,108,0,0,1,195.41,43.63l20.1-20.11a12,12,0,0,1,17,17l-96,96a12,12,0,1,1-17-17l24-24a36,36,0,1,0,19.76,39.65,12,12,0,0,1,23.53,4.74,60,60,0,1,1-25.73-62L178.3,60.74a84,84,0,1,0,28.46,38,12,12,0,1,1,22.5-8.35Z\"></path></svg>"}];
+
+    let activeIconId = 'lucide-scan-qr-code';
+
+    function selectIcon(id) {
+      activeIconId = id;
+      const icon = iconData.find(i => i.id === id);
+      if (!icon) return;
+
+      // Update sticky top bar
+      document.getElementById('live-icon-name').textContent = icon.name;
+      document.getElementById('live-icon-slot').innerHTML = icon.pillSvg;
+
+      // Update mobile phone frame
+      document.getElementById('phone-active-name').textContent = icon.name;
+      document.getElementById('phone-icon-slot').innerHTML = icon.pillSvg;
+
+      // Update card selections
+      document.querySelectorAll('.outward-card').forEach(card => {
+        if (card.getAttribute('data-id') === id) {
+          card.classList.add('selected');
+        } else {
+          card.classList.remove('selected');
+        }
+      });
+    }
+
+    function copySnippet(id) {
+      const icon = iconData.find(i => i.id === id);
+      if (!icon) return;
+
+      navigator.clipboard.writeText(icon.importCode).then(() => {
+        showToast('Copied ' + icon.name + ' import code!');
+      }).catch(() => {
+        // Fallback
+        const textarea = document.createElement('textarea');
+        textarea.value = icon.importCode;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast('Copied ' + icon.name + ' import code!');
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = '✓ ' + msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2200);
+    }
+
+    function filterIcons(filter, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const cards = document.querySelectorAll('.outward-card');
+      cards.forEach(card => {
+        if (filter === 'all') {
+          card.style.display = 'flex';
+        } else if (filter === 'Lucide' || filter === 'Phosphor') {
+          card.style.display = card.getAttribute('data-library') === filter ? 'flex' : 'none';
+        } else if (filter === 'viewfinder' || filter === 'qr') {
+          card.style.display = card.getAttribute('data-category') === filter ? 'flex' : 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

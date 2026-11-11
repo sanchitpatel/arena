@@ -121,44 +121,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   return (
     <div className="w-full max-w-[430px] mx-auto space-y-4 pb-12 select-none font-sans">
       {/* ========================================================
-          1. SESSION & ACCOUNT CARD (Preserving the Overlay Menu Card)
-          ======================================================== */}
-      <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2rem] p-4 sm:p-5 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6]">
-        <div className="flex items-center gap-3.5 pb-3 mb-3 border-b border-zinc-300/60">
-          <div className="w-12 h-12 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] border-2 border-white flex items-center justify-center overflow-hidden shrink-0 bg-white">
-            <ArenaAvatar id={selectedAvatar} size="badge" className="w-full h-full" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold text-zinc-900 truncate">
-              {playerName || player?.name || guestId}
-            </div>
-            <div
-              className="text-[11px] font-arena font-normal text-zinc-600 tracking-wider flex items-center gap-1.5 mt-0.5"
-              style={{ WebkitTextStroke: '0px', fontWeight: 400 }}
-            >
-              <span>{guestId}</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-              <span>Orb #{orbNumber}</span>
-            </div>
-            <div className="text-[9.5px] text-sky-700 font-bold uppercase tracking-wider mt-0.5 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Active Live Session</span>
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={onSignOut}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-rose-700 bg-rose-100/60 hover:bg-rose-100/90 shadow-[inset_2px_2px_4px_#ddb6b6,inset_-2px_-2px_4px_#ffffff] hover:shadow-[inset_3px_3px_5px_#ddb6b6,inset_-3px_-3px_5px_#ffffff] active:scale-[0.98] transition-all cursor-pointer border border-rose-300/60"
-        >
-          <SignOut size={16} weight="bold" />
-          <span>Sign Out</span>
-        </button>
-      </div>
-
-      {/* ========================================================
-          2. SECTION TABS: Profile Details | My QR Badge | Scan QR
+          1. SECTION TABS: Profile Details | My QR Badge | Scan QR
           ======================================================== */}
       <div className="flex items-center justify-between p-1 bg-[#e2e6ec] rounded-2xl shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] border border-white/60">
         <button
@@ -202,7 +165,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       </div>
 
       {/* ========================================================
-          3. TAB CONTENT VIEWS
+          2. TAB CONTENT VIEWS
           ======================================================== */}
       {/* Tab A: My QR Badge */}
       {activeSection === 'qr' && (
@@ -239,6 +202,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
             <ChatGPTOrb
               orbNumber={orbNumber}
               avatar={selectedAvatar}
+              badge="qr"
+              onBadgeClick={() => setActiveSection('qr')}
               size="w-24 h-24 sm:w-28 sm:h-28"
             />
 
@@ -346,7 +311,44 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         </form>
       </div>
     )}
-  </div>
+
+      {/* ========================================================
+          3. SESSION & ACCOUNT CARD (Shifted to bottom per user request)
+          ======================================================== */}
+      <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2rem] p-4 sm:p-5 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6]">
+        <div className="flex items-center gap-3.5 pb-3 mb-3 border-b border-zinc-300/60">
+          <div className="w-12 h-12 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] border-2 border-white flex items-center justify-center overflow-hidden shrink-0 bg-white">
+            <ArenaAvatar id={selectedAvatar} size="badge" className="w-full h-full" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-zinc-900 truncate">
+              {playerName || player?.name || guestId}
+            </div>
+            <div
+              className="text-[11px] font-arena font-normal text-zinc-600 tracking-wider flex items-center gap-1.5 mt-0.5"
+              style={{ WebkitTextStroke: '0px', fontWeight: 400 }}
+            >
+              <span>{guestId}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+              <span>Orb #{orbNumber}</span>
+            </div>
+            <div className="text-[9.5px] text-sky-700 font-bold uppercase tracking-wider mt-0.5 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Active Live Session</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-rose-700 bg-rose-100/60 hover:bg-rose-100/90 shadow-[inset_2px_2px_4px_#ddb6b6,inset_-2px_-2px_4px_#ffffff] hover:shadow-[inset_3px_3px_5px_#ddb6b6,inset_-3px_-3px_5px_#ffffff] active:scale-[0.98] transition-all cursor-pointer border border-rose-300/60"
+        >
+          <SignOut size={16} weight="bold" />
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </div>
   );
 };
 

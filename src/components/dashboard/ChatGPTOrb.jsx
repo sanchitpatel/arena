@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ArenaAvatar from '../avatars/ArenaAvatar';
+import { QrCode } from '../icons';
 
 const VERT = `attribute vec2 a; void main(){ gl_Position = vec4(a, 0., 1.); }`;
 
@@ -154,7 +155,14 @@ function useOrbGL(canvasRef, speed, onReady) {
   }, [canvasRef, speed]);
 }
 
-export default function ChatGPTOrb({ orbNumber = 1, avatar = '1', size = 'w-24 h-24 sm:w-28 sm:h-28', speed = 0.45 }) {
+export default function ChatGPTOrb({
+  orbNumber = 1,
+  avatar = '1',
+  size = 'w-24 h-24 sm:w-28 sm:h-28',
+  speed = 0.65,
+  badge = 'qr',
+  onBadgeClick,
+}) {
   const canvasRef = useRef(null);
   const [isGlReady, setIsGlReady] = useState(false);
   useOrbGL(canvasRef, speed, () => setIsGlReady(true));
@@ -210,9 +218,21 @@ export default function ChatGPTOrb({ orbNumber = 1, avatar = '1', size = 'w-24 h
         </div>
       </div>
 
-      {avatar && (
-        <div className="absolute -bottom-1 -right-2.5 sm:-right-2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border-2 border-white bg-white shadow-[0_4px_16px_rgba(0,0,0,0.25)] backdrop-blur-md overflow-hidden transition-all">
-          <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
+      {badge && (
+        <div
+          onClick={onBadgeClick}
+          role={onBadgeClick ? 'button' : undefined}
+          tabIndex={onBadgeClick ? 0 : undefined}
+          className={`absolute -bottom-1 -right-2.5 sm:-right-2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border-2 border-white bg-white shadow-[0_4px_16px_rgba(0,0,0,0.25)] backdrop-blur-md overflow-hidden transition-all ${
+            onBadgeClick ? 'cursor-pointer active:scale-95 hover:scale-105' : ''
+          }`}
+          title={badge === 'qr' ? 'My QR Code' : 'Player Avatar'}
+        >
+          {badge === 'qr' ? (
+            <QrCode size={22} weight="bold" className="text-zinc-900" />
+          ) : avatar ? (
+            <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
+          ) : null}
         </div>
       )}
     </div>
