@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell } from '../icons';
+import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X } from '../icons';
 import Logo from '../Logo';
 import ArenaAvatar from '../avatars/ArenaAvatar';
+import PlayerQRBadge from '../qr/PlayerQRBadge';
+import ArenaQRScanner from '../qr/ArenaQRScanner';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import {
   getPendingNotificationCount,
@@ -18,6 +20,7 @@ export const DashboardShell = ({
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [qrModalOpen, setQrModalOpen] = useState(null); // 'badge' | 'scanner' | null
   const profileRef = useRef(null);
   const mobileProfileRef = useRef(null);
   const mobileProfileBtnRef = useRef(null);
@@ -302,31 +305,68 @@ export const DashboardShell = ({
           3. MAIN CONTENT WORKSPACE
           ======================================================== */}
       <main className="flex-1 flex flex-col min-w-0 h-full bg-[#f0f2f5] overflow-y-scroll [scrollbar-gutter:stable] pb-20 md:pb-0">
-        {/* Top Header info bar (Desktop only) */}
-        <div className="hidden md:flex items-center justify-between px-8 py-3.5 border-b border-slate-300/60 bg-[#f0f2f5]/90 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
-              {navItems.find(i => i.id === activeTab)?.label}
-            </span>
-            <span className="text-zinc-400">/</span>
-            <span className="text-xs text-zinc-600 font-medium">
-              {navItems.find(i => i.id === activeTab)?.description}
-            </span>
-          </div>
+        {/* ========================================================
+            TOP TRANSPARENT APP BAR (Constant across all pages, no border)
+            ======================================================== */}
+        <header className="sticky top-0 z-30 w-full bg-[#f0f2f5]/80 backdrop-blur-md border-none px-4 sm:px-6 py-3 flex items-center justify-between select-none">
+          {/* Brand Name */}
+          <span className="font-arena text-base sm:text-lg font-black tracking-wider text-zinc-900">
+            ARENA
+          </span>
 
-          <div className="flex items-center gap-3 text-xs">
-            <div className="flex items-center gap-1.5 text-zinc-700 font-medium px-3.5 py-1.5 rounded-full bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c2c9d4,inset_-2px_-2px_4px_#ffffff] border border-white/40">
-              <CalendarCheck size={18} className="text-zinc-700" weight="bold" />
-              <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
-            </div>
-          </div>
-        </div>
+          {/* Scanner Option on the Rightmost Corner */}
+          <button
+            type="button"
+            onClick={() => setQrModalOpen('scanner')}
+            title="Scan QR Code"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ebedf2] shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] hover:shadow-[inset_0_-2px_4px_rgba(0,0,0,0.15),inset_0_1px_3px_rgba(255,255,255,0.4)] active:scale-95 transition-all text-xs font-bold text-zinc-700 hover:text-zinc-900 border border-white/60 cursor-pointer"
+          >
+            <Scan size={16} weight="bold" className="text-zinc-800" />
+            <span className="text-xs font-bold text-zinc-800">Scan</span>
+          </button>
+        </header>
 
         {/* View Container */}
-        <div className="flex-1 px-4 pt-12 pb-6 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <div className="flex-1 px-4 pt-3 pb-6 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           {children}
         </div>
       </main>
+
+      {/* QR Modals (Quick access from anywhere) */}
+      {qrModalOpen === 'badge' && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="relative w-full max-w-sm bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
+            <button
+              type="button"
+              onClick={() => setQrModalOpen(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_4px_#c5ccd6,-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-500 hover:text-zinc-900 border border-white/60 transition-all cursor-pointer z-10"
+            >
+              <X size={16} weight="bold" />
+            </button>
+            <PlayerQRBadge player={player} />
+          </div>
+        </div>
+      )}
+
+      {qrModalOpen === 'scanner' && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="relative w-full max-w-sm bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-5 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
+            <button
+              type="button"
+              onClick={() => setQrModalOpen(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_4px_#c5ccd6,-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-500 hover:text-zinc-900 border border-white/60 transition-all cursor-pointer z-10"
+            >
+              <X size={16} weight="bold" />
+            </button>
+            <ArenaQRScanner
+              onClose={() => setQrModalOpen(null)}
+              onScanSuccess={(scanned) => {
+                console.log('[TopNav] QR Scanned:', scanned);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
