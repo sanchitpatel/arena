@@ -70,6 +70,16 @@ export const DashboardShell = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Close QR/Scanner modal on Escape key press
+  useEffect(() => {
+    if (!qrModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setQrModalOpen(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [qrModalOpen]);
+
   const handleSignOutClick = () => {
     setProfileMenuOpen(false);
     setMobileProfileOpen(false);
@@ -319,9 +329,13 @@ export const DashboardShell = ({
 
       {/* QR Modals (Quick access from anywhere) */}
       {qrModalOpen === 'badge' && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
+        <div
+          onClick={() => setQrModalOpen(null)}
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150 cursor-pointer"
+        >
           <div
-            className="relative w-full max-w-[420px] bg-[#ebedf2] rounded-[36px] p-3 border-4 border-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.4),10px_10px_28px_#c2c9d6,-10px_-10px_28px_#ffffff] animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-[420px] bg-[#ebedf2] rounded-[36px] p-3 border-4 border-white animate-in zoom-in-95 duration-150 cursor-default"
           >
             <div className="relative bg-[#f0f2f5] rounded-[26px] p-4 sm:p-5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
               <button
@@ -340,9 +354,13 @@ export const DashboardShell = ({
       )}
 
       {qrModalOpen === 'scanner' && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
+        <div
+          onClick={() => setQrModalOpen(null)}
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150 cursor-pointer"
+        >
           <div
-            className="relative w-full max-w-[420px] bg-[#ebedf2] rounded-[36px] p-3 border-4 border-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.4),10px_10px_28px_#c2c9d6,-10px_-10px_28px_#ffffff] animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-[420px] bg-[#ebedf2] rounded-[36px] p-3 border-4 border-white animate-in zoom-in-95 duration-150 cursor-default"
           >
             <div className="relative bg-[#f0f2f5] rounded-[26px] p-4 sm:p-5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
               <button
