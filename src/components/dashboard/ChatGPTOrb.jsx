@@ -237,7 +237,7 @@ export default function ChatGPTOrb({
           tabIndex={onBadgeClick ? 0 : undefined}
           className={`absolute z-20 flex items-center justify-center border-2 border-white bg-white shadow-[0_4px_16px_rgba(0,0,0,0.25)] backdrop-blur-md overflow-hidden transition-all ${
             badge === 'qr'
-              ? '-bottom-1 -right-2 sm:-right-1 w-9 h-9 rounded-lg'
+              ? '-bottom-0.5 -right-1 sm:-right-1 w-9 h-9 rounded-lg'
               : '-bottom-1 -right-2.5 sm:-right-2 h-10 w-10 sm:h-11 sm:w-11 rounded-full'
           } ${
             onBadgeClick ? 'cursor-pointer active:scale-95 hover:scale-105' : ''

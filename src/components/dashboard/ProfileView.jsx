@@ -187,7 +187,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       {/* ========================================================
           1. MAIN PROFILE & AVATAR EDIT FORM (Directly on canvas)
           ======================================================== */}
-      <form onSubmit={handleSaveProfile} className="space-y-5">
+      <form onSubmit={handleSaveProfile} className="space-y-4">
         {/* Ethereal ChatGPT-Style Player Orb with Clickable QR Badge */}
         <div className="flex flex-col items-center justify-center pt-1">
           <ChatGPTOrb
@@ -277,14 +277,14 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         </form>
 
       {/* ========================================================
-          2. SESSION & ACCOUNT CARD (Shifted to bottom per user request)
+          2. SESSION & ACCOUNT CARD (Single horizontal row)
           ======================================================== */}
-      <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2rem] p-4 sm:p-5 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6]">
-        <div className="flex items-center gap-3.5 pb-3 mb-3 border-b border-zinc-300/60">
-          <div className="w-12 h-12 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] border-2 border-white flex items-center justify-center overflow-hidden shrink-0 bg-white">
+      <div className="bg-[#ebedf2] border border-slate-300/60 rounded-2xl p-2 sm:p-2.5 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6] flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] border-2 border-white flex items-center justify-center overflow-hidden shrink-0 bg-white">
             <ArenaAvatar id={selectedAvatar} size="badge" className="w-full h-full" />
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0">
             <div className="text-sm font-bold text-zinc-900 truncate">
               {playerName || player?.name || guestId}
             </div>
@@ -294,9 +294,9 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         <button
           type="button"
           onClick={onSignOut}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-rose-700 bg-rose-100/60 hover:bg-rose-100/90 shadow-[inset_2px_2px_4px_#ddb6b6,inset_-2px_-2px_4px_#ffffff] hover:shadow-[inset_3px_3px_5px_#ddb6b6,inset_-3px_-3px_5px_#ffffff] active:scale-[0.98] transition-all cursor-pointer border border-rose-300/60"
+          className="shrink-0 flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl text-xs font-bold text-rose-700 bg-rose-100/60 hover:bg-rose-100/90 shadow-[inset_2px_2px_4px_#ddb6b6,inset_-2px_-2px_4px_#ffffff] hover:shadow-[inset_3px_3px_5px_#ddb6b6,inset_-3px_-3px_5px_#ffffff] active:scale-[0.96] transition-all cursor-pointer border border-rose-300/60"
         >
-          <SignOut size={16} weight="bold" />
+          <SignOut size={15} weight="bold" />
           <span>Sign Out</span>
         </button>
       </div>
