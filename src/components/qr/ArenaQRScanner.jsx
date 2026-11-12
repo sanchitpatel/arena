@@ -29,24 +29,72 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
   const isMountedRef = useRef(true);
+  const runIdRef = useRef(0);
+  const hasScannedRef = useRef(false);
 
   // Generate unique DOM container ID per mount to avoid collision
   const containerId = useRef(`arena-qr-reader-${Math.random().toString(36).substring(2, 9)}`).current;
 
+  // Fully awaits stopping and clearing any running instance
+  const teardown = async () => {
+    const s = scannerRef.current;
+    scannerRef.current = null;
+    isScanningRef.current = false;
+    if (!s) return;
+    try {
+      await s.stop();
+    } catch { }
+    try {
+      s.clear();
+    } catch { }
+  };
+
+  // Forcefully stop all camera tracks immediately on unmount or pause
+  const stopCameraHardwareImmediately = async (reason = 'Manual stop') => {
+    runIdRef.current++;
+    isScanningRef.current = false;
+
+    // 1. Direct hardware track termination on DOM video elements:
+    try {
+      const container = document.getElementById(containerId);
+      if (container) {
+        const videos = container.querySelectorAll('video');
+        videos.forEach((video) => {
+          if (video && video.srcObject) {
+            const stream = video.srcObject;
+            if (stream && typeof stream.getTracks === 'function') {
+              stream.getTracks().forEach((track) => {
+                try {
+                  track.stop();
+                } catch { }
+              });
+            }
+            video.srcObject = null;
+          }
+        });
+      }
+    } catch { }
+
+    // 2. Await clean teardown of Html5Qrcode instance
+    await teardown();
+
+    // 3. Global MediaGuard kill to guarantee NO orphaned stream remains in memory (camera video only, preserving audio/mic):
+    killAllMediaTracks(`Scanner stop: ${reason}`, 'video');
+  };
+
   // Initialize and start camera scanner
   const startCamera = async (mode = facingMode) => {
+    const runId = ++runIdRef.current;
+    hasScannedRef.current = false;
+
     try {
       setScannerStatus('initializing');
       setErrorMessage('');
       setScannedPlayer(null);
 
-      // Clean up previous running instance safely
-      if (scannerRef.current && isScanningRef.current) {
-        try {
-          isScanningRef.current = false;
-          await scannerRef.current.stop();
-        } catch { }
-      }
+      // Clean up previous running instance completely before mounting new one
+      await teardown();
+      if (runId !== runIdRef.current || !isMountedRef.current) return;
 
       // Ensure the container element exists in DOM
       const elem = document.getElementById(containerId);
@@ -58,7 +106,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
       scannerRef.current = html5QrCode;
 
       const qrCodeSuccessCallback = (decodedText) => {
-        if (!isMountedRef.current) return;
+        if (!isMountedRef.current || runId !== runIdRef.current || hasScannedRef.current) return;
 
         try {
           let parsed = null;
@@ -86,6 +134,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
           }
 
           if (parsed && (parsed.app === 'ARENA' || parsed.gid)) {
+            hasScannedRef.current = true;
             setScannedPlayer(parsed);
             setScannerStatus('success');
 
@@ -104,6 +153,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         } catch (e) { }
 
         // Generic text/URL scan fallback
+        hasScannedRef.current = true;
         setScannedPlayer({
           rawText: decodedText,
           gid: 'Scanned Token',
@@ -137,6 +187,11 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
           qrCodeErrorCallback
         );
       } catch (firstErr) {
+        if (runId !== runIdRef.current || !isMountedRef.current) {
+          await teardown();
+          return;
+        }
+
         // If desktop has no environment camera, retry with user/webcam fallback
         try {
           await html5QrCode.start(
@@ -146,6 +201,10 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
             qrCodeErrorCallback
           );
         } catch (secondErr) {
+          if (runId !== runIdRef.current || !isMountedRef.current) {
+            await teardown();
+            return;
+          }
           // Ultimate fallback to default camera without constraint
           await html5QrCode.start(
             true,
@@ -156,15 +215,15 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         }
       }
 
-      if (isMountedRef.current) {
-        isScanningRef.current = true;
-        setScannerStatus('scanning');
-      } else {
-        // Unmounted during start: shut down immediately
-        stopCameraHardwareImmediately('Unmounted during startup');
+      if (runId !== runIdRef.current || !isMountedRef.current) {
+        await teardown();
+        return;
       }
+
+      isScanningRef.current = true;
+      setScannerStatus('scanning');
     } catch (err) {
-      if (isMountedRef.current) {
+      if (runId === runIdRef.current && isMountedRef.current) {
         setScannerStatus('error');
         setErrorMessage(
           err?.name === 'NotAllowedError' || err?.message?.includes('Permission')
@@ -210,52 +269,11 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
     };
   }, [facingMode]);
 
-  // Forcefully stop all camera tracks immediately on unmount or pause
-  const stopCameraHardwareImmediately = (reason = 'Manual stop') => {
-    isScanningRef.current = false;
-
-    // 1. Direct hardware track termination on DOM video elements:
-    try {
-      const container = document.getElementById(containerId);
-      if (container) {
-        const videos = container.querySelectorAll('video');
-        videos.forEach((video) => {
-          if (video && video.srcObject) {
-            const stream = video.srcObject;
-            if (stream && typeof stream.getTracks === 'function') {
-              stream.getTracks().forEach((track) => {
-                try {
-                  track.stop();
-                } catch { }
-              });
-            }
-            video.srcObject = null;
-          }
-        });
-      }
-    } catch { }
-
-    // 2. Safe Html5Qrcode instance shutdown:
-    if (scannerRef.current) {
-      try {
-        const scanner = scannerRef.current;
-        scanner.stop().catch(() => {}).finally(() => {
-          try { scanner.clear(); } catch {}
-        });
-      } catch {
-        try { scannerRef.current.clear(); } catch {}
-      }
-    }
-
-    // 3. Global MediaGuard kill to guarantee NO orphaned stream remains in memory (camera video only, preserving audio/mic):
-    killAllMediaTracks(`Scanner stop: ${reason}`, 'video');
-  };
-
   // Re-enable camera directly inside the scanner box
   const handleEnableCameraInScanner = async () => {
-    setInAppPermission('camera', 'granted');
     setIsCameraDisabledInApp(false);
-    startCamera(facingMode);
+    // setInAppPermission triggers the subscriber, which starts camera cleanly once without double-starting
+    setInAppPermission('camera', 'granted');
   };
 
   const handleFlipCamera = () => {
@@ -264,6 +282,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
   const handleScanAgain = () => {
     setScannedPlayer(null);
+    hasScannedRef.current = false;
     setScannerStatus('scanning');
     startCamera(facingMode);
   };
