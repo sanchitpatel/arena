@@ -159,7 +159,7 @@ export default function ChatGPTOrb({
   orbNumber = 1,
   avatar = '1',
   size = 'w-24 h-24 sm:w-28 sm:h-28',
-  speed = 0.65,
+  speed = 0.85,
   badge = 'avatar',
   onBadgeClick,
   onOrbClick,

@@ -175,7 +175,7 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
       </div>
 
       {/* Helper text explaining the QR Code */}
-      <p className="text-[10.5px] text-zinc-500 text-center mt-2.5 max-w-[240px] leading-relaxed">
+      <p className="text-[10.5px] text-zinc-600/90 text-center mt-2.5 max-w-[240px] leading-relaxed">
         Scan with Arena scanner to verify ID and more...
       </p>
 
@@ -194,9 +194,9 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
           <button
             type="button"
             onClick={onScanClick}
-            className="w-full max-w-[250px] py-2.5 px-3.5 bg-white active:scale-[0.97] text-zinc-700 text-[14px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group"
+            className="w-full max-w-[250px] py-2 px-3.5 bg-white active:scale-[0.97] text-zinc-700 text-[14px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group"
           >
-            <Scan size={22} weight="bold" className="text-zinc-700 scale-105 transition-transform" />
+            <Scan size={24} weight="bold" className="text-zinc-700 scale-105 transition-transform" />
             <span>Scan a QR</span>
           </button>
         </>
