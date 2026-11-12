@@ -47,8 +47,10 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   const [savedField, setSavedField] = useState(null);   // 'username' | 'avatar' | null
   const [errorMessage, setErrorMessage] = useState('');
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
   const debounceTimerRef = useRef(null);
   const savedTimerRef = useRef(null);
+  const saveSeqRef = useRef(0);
 
   // Client device permissions state (Camera & Microphone/Audio)
   const [cameraGranted, setCameraGranted] = useState(false);
@@ -135,15 +137,15 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     };
   }, []);
 
-  // Sync state if player prop updates
+  // Sync state if player prop updates (only when user is not actively editing)
   useEffect(() => {
-    if (player?.name && player.name !== guestId) {
+    if (!nameFocused && player?.name && player.name !== guestId) {
       setPlayerName(player.name);
     }
     if (player?.avatar) {
       setSelectedAvatar(String(player.avatar));
     }
-  }, [player, guestId]);
+  }, [player, guestId, nameFocused]);
 
   // Cleanup debounce & saved timers on unmount
   useEffect(() => {
@@ -168,6 +170,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   }, [qrModalOpen]);
 
   const persistProfile = async (targetName, targetAvatar, targetField = 'username') => {
+    const seq = ++saveSeqRef.current;
     try {
       setSavingField(targetField);
       setSavedField(null);
@@ -196,6 +199,9 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         team: player?.team || 'Alpha',
       });
 
+      // Discard stale responses if a newer save was initiated in the meantime
+      if (seq !== saveSeqRef.current) return;
+
       if (res.success && res.data) {
         if (typeof onUpdatePlayer === 'function') {
           onUpdatePlayer(res.data);
@@ -211,6 +217,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         setErrorMessage(res?.error || 'Changes saved locally (offline mode)');
       }
     } catch (err) {
+      if (seq !== saveSeqRef.current) return;
       console.error('[ProfileView] Auto-save error:', err);
       setSavingField(null);
       setErrorMessage('Changes saved locally (offline mode)');
@@ -241,10 +248,16 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   };
 
   const handleNameBlur = () => {
+    setNameFocused(false);
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    persistProfile(playerName, selectedAvatar, 'username');
+
+    // Skip redundant network/DB RPC if the name hasn't changed from saved state
+    const currentSaved = player?.name && player.name !== guestId ? player.name : '';
+    if (playerName.trim() !== currentSaved.trim()) {
+      persistProfile(playerName, selectedAvatar, 'username');
+    }
   };
 
   const handleAvatarSelect = (avatarId) => {
@@ -488,6 +501,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                 type="text"
                 value={playerName}
                 onChange={handleNameChange}
+                onFocus={() => setNameFocused(true)}
                 onBlur={handleNameBlur}
                 placeholder={guestId || 'Player Name'}
                 maxLength={16}
