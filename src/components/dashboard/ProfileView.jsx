@@ -20,6 +20,7 @@ import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import {
   killAllMediaTracks,
   queryPermissionStatus,
+  getInAppPermission,
   setInAppPermission,
   subscribeToPermissionChanges,
 } from '../../utils/mediaGuard';
@@ -99,7 +100,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           if (!isMounted) return;
           camQuery = cq;
           camQuery.onchange = () => {
-            const currentPref = window.localStorage.getItem('arena_perm_camera');
+            const currentPref = getInAppPermission('camera');
             if (isMounted) {
               const isAllowed = camQuery.state === 'granted' && currentPref !== 'disabled';
               setCameraGranted(isAllowed);
@@ -118,7 +119,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           if (!isMounted) return;
           micQuery = mq;
           micQuery.onchange = () => {
-            const currentPref = window.localStorage.getItem('arena_perm_mic');
+            const currentPref = getInAppPermission('mic');
             if (isMounted) {
               const isAllowed = micQuery.state === 'granted' && currentPref !== 'disabled';
               setMicGranted(isAllowed);

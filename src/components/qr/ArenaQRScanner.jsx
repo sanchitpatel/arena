@@ -5,6 +5,7 @@ import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash } 
 import { Sword } from '@phosphor-icons/react/dist/icons/Sword';
 import {
   killAllMediaTracks,
+  getInAppPermission,
   setInAppPermission,
   subscribeToPermissionChanges,
 } from '../../utils/mediaGuard';
@@ -25,8 +26,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
   // Track if attendee explicitly paused camera access in Arena settings
   const [isCameraDisabledInApp, setIsCameraDisabledInApp] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem('arena_perm_camera') === 'disabled';
+    return getInAppPermission('camera') === 'disabled';
   });
 
   const scannerRef = useRef(null);
@@ -351,7 +351,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
     isMountedRef.current = true;
 
     // Check if camera is paused in user preferences
-    const pref = typeof window !== 'undefined' ? window.localStorage.getItem('arena_perm_camera') : null;
+    const pref = getInAppPermission('camera');
 
     if (pref === 'disabled') {
       setIsCameraDisabledInApp(true);
@@ -368,9 +368,17 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
           setIsCameraDisabledInApp(true);
           setScannerStatus('disabled');
           stopCameraHardwareImmediately('Disabled via app settings');
+        } else if (state === 'denied') {
+          setIsCameraDisabledInApp(false);
+          setScannerStatus('error');
+          setErrorMessage('Camera permission was blocked in browser settings. Please allow camera access.');
+          stopCameraHardwareImmediately('Denied via browser settings');
         } else if (state === 'granted') {
           setIsCameraDisabledInApp(false);
-          startCamera(facingMode);
+          // Don't restart camera if already actively scanning or if an opponent's card is showing!
+          if (!isScanningRef.current && !hasScannedRef.current) {
+            startCamera(facingMode);
+          }
         }
       }
     });

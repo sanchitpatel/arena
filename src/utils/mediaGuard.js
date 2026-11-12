@@ -111,6 +111,22 @@ export function killAllMediaTracks(reason = 'Manual Shutdown', kindFilter = null
 }
 
 /**
+ * Safely reads in-app permission setting without throwing in Safari Private Browsing mode.
+ * 
+ * @param {'camera'|'mic'|'microphone'} capability
+ * @returns {string|null}
+ */
+export function getInAppPermission(capability) {
+  if (typeof window === 'undefined') return null;
+  const prefKey = (capability === 'camera') ? 'arena_perm_camera' : 'arena_perm_mic';
+  try {
+    return window.localStorage.getItem(prefKey);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Checks the current permission state for a device capability (camera or microphone).
  * Compares in-app user preference (localStorage) against native browser query.
  * 
@@ -119,7 +135,7 @@ export function killAllMediaTracks(reason = 'Manual Shutdown', kindFilter = null
  */
 export async function queryPermissionStatus(type) {
   const prefKey = type === 'camera' ? 'arena_perm_camera' : 'arena_perm_mic';
-  const localPref = typeof window !== 'undefined' ? window.localStorage.getItem(prefKey) : null;
+  const localPref = getInAppPermission(type);
   let browserState = 'unknown';
 
   if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
