@@ -229,7 +229,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       const res = await claimOrRegisterGuest({
         name: displayName,
         avatar: String(targetAvatar),
-        team: player?.team || 'Alpha',
+        team: player?.team || null,
       });
 
       // Discard stale responses if a newer save was initiated in the meantime

@@ -18,6 +18,13 @@ if (typeof window !== 'undefined' && !window.__arenaActiveMediaStreams) {
       try {
         const stream = await rawGetUserMedia(constraints);
         if (stream) {
+          // Prune stopped/dead streams from registry before adding new active stream
+          window.__arenaActiveMediaStreams.forEach((s) => {
+            if (!s || typeof s.getTracks !== 'function' || s.getTracks().every((t) => t.readyState === 'ended')) {
+              window.__arenaActiveMediaStreams.delete(s);
+            }
+          });
+
           window.__arenaActiveMediaStreams.add(stream);
 
           // Clean up registry when tracks end naturally
@@ -49,33 +56,36 @@ if (typeof window !== 'undefined' && !window.__arenaActiveMediaStreams) {
 export function killAllMediaTracks(reason = 'Manual Shutdown', kindFilter = null) {
   let stoppedCount = 0;
 
-  // 1. Terminate matching streams in the global registry
+  // 1. Terminate matching streams in the global registry and prune ended streams
   if (typeof window !== 'undefined' && window.__arenaActiveMediaStreams) {
     window.__arenaActiveMediaStreams.forEach((stream) => {
-      if (stream && typeof stream.getTracks === 'function') {
-        stream.getTracks().forEach((track) => {
-          if (!kindFilter || track.kind === kindFilter) {
-            try {
-              if (track.readyState !== 'ended') {
-                track.stop();
-                stoppedCount++;
-              }
-            } catch { }
-          }
-        });
+      if (!stream || typeof stream.getTracks !== 'function') {
+        window.__arenaActiveMediaStreams.delete(stream);
+        return;
+      }
 
-        // If all tracks in this stream are stopped, remove stream from registry
-        if (stream.getTracks().every((t) => t.readyState === 'ended')) {
-          window.__arenaActiveMediaStreams.delete(stream);
+      stream.getTracks().forEach((track) => {
+        if (!kindFilter || track.kind === kindFilter) {
+          try {
+            if (track.readyState !== 'ended') {
+              track.stop();
+              stoppedCount++;
+            }
+          } catch { }
         }
+      });
+
+      // If all tracks in this stream are stopped, remove stream from registry
+      if (stream.getTracks().every((t) => t.readyState === 'ended')) {
+        window.__arenaActiveMediaStreams.delete(stream);
       }
     });
   }
 
   // 2. Terminate matching tracks attached to <video> or <audio> DOM elements
+  // Note: Scans both elements since a <video> element may carry both video and audio tracks
   if (typeof document !== 'undefined') {
-    const selector = kindFilter === 'video' ? 'video' : kindFilter === 'audio' ? 'audio' : 'video, audio';
-    const mediaElements = document.querySelectorAll(selector);
+    const mediaElements = document.querySelectorAll('video, audio');
     mediaElements.forEach((el) => {
       if (el && el.srcObject && typeof el.srcObject.getTracks === 'function') {
         el.srcObject.getTracks().forEach((track) => {
@@ -88,7 +98,9 @@ export function killAllMediaTracks(reason = 'Manual Shutdown', kindFilter = null
             } catch { }
           }
         });
-        if (!kindFilter || el.tagName.toLowerCase() === kindFilter) {
+
+        // Release element's srcObject if all tracks are ended
+        if (el.srcObject.getTracks().every((t) => t.readyState === 'ended')) {
           el.srcObject = null;
         }
       }
