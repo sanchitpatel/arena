@@ -178,3 +178,10 @@ export function subscribeToPermissionChanges(callback) {
   return () => window.removeEventListener(ARENA_PERM_EVENT, handler);
 }
 
+/**
+ * Forcefully kills any lingering camera/microphone media tracks in the browser document
+ */
+export const forceReleaseAllMediaTracks = () => {
+  return killAllMediaTracks('forceReleaseAllMediaTracks called');
+};
+

@@ -48,13 +48,16 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
     if (rawText.startsWith('{') && rawText.endsWith('}')) {
       try {
         const json = JSON.parse(rawText);
-        if (json && (json.app === 'ARENA' || json.gid?.startsWith('Guest')) && json.gid) {
+        const rawGid = json.gid || json.player;
+        if (json && (json.app === 'ARENA' || /^guest/i.test(rawGid)) && rawGid) {
           const parsedOrb = parseInt(json.orb, 10);
+          const gidMatch = String(rawGid).match(/^guest(\d+)$/i);
+          const canonicalGid = gidMatch ? `Guest${gidMatch[1].padStart(3, '0')}` : String(rawGid).trim();
           payload = {
             app: 'ARENA',
-            gid: String(json.gid).trim(),
+            gid: canonicalGid,
             orb: isNaN(parsedOrb) || parsedOrb < 1 ? 1 : parsedOrb,
-            name: String(json.name || json.gid).trim(),
+            name: String(json.name || canonicalGid).trim(),
             avatar: String(json.avatar || '1').trim(),
           };
         }
@@ -88,11 +91,14 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
         if (isTrustedHost && playerParam && (appParam === 'ARENA' || url.pathname.includes('/arena'))) {
           const parsedOrb = parseInt(params.get('orb'), 10);
+          const rawGid = String(playerParam).trim();
+          const gidMatch = rawGid.match(/^guest(\d+)$/i);
+          const canonicalGid = gidMatch ? `Guest${gidMatch[1].padStart(3, '0')}` : rawGid;
           payload = {
             app: 'ARENA',
-            gid: String(playerParam).trim(),
+            gid: canonicalGid,
             orb: isNaN(parsedOrb) || parsedOrb < 1 ? 1 : parsedOrb,
-            name: String(params.get('name') || playerParam).trim(),
+            name: String(params.get('name') || canonicalGid).trim(),
             avatar: String(params.get('avatar') || '1').trim(),
           };
         }

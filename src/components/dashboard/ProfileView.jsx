@@ -27,11 +27,6 @@ import {
 const STORAGE_KEY_DRAFT_NAME = 'arena_draft_username';
 const STORAGE_KEY_DRAFT_AVATAR = 'arena_draft_avatar';
 
-// Forcefully kills any lingering camera/microphone media tracks in the browser document
-export const forceReleaseAllMediaTracks = () => {
-  return killAllMediaTracks('forceReleaseAllMediaTracks called');
-};
-
 export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   const guestId = player?.guest_id || getPlayerId() || 'Guest001';
   const orbNumber = player?.orb_number || getOrbNumber(guestId) || 1;

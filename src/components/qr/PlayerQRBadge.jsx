@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import QRCode, { toDataURL, toString } from 'qrcode';
 import Logo from '../Logo';
+import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 
 // Bulletproof helper to safely invoke QRCode methods across all bundlers / ESM environments
 const safeToDataURL = async (text, options) => {
@@ -32,15 +33,27 @@ export default function PlayerQRBadge({ player, className = '' }) {
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [isGenerating, setIsGenerating] = useState(true);
 
-  const guestId = player?.guest_id || 'Guest001';
-  const orbNumber = player?.orb_number || 1;
-  const displayName = player?.name || guestId;
+  // Normalize and validate player ID; prevent rendering fake Guest001 before real ID loads
+  const rawId = player?.guest_id || (typeof window !== 'undefined' ? getPlayerId() : null);
+  const guestId = useMemo(() => {
+    if (!rawId) return null;
+    const match = String(rawId).match(/^guest(\d+)$/i);
+    if (match) {
+      return `Guest${match[1].padStart(3, '0')}`;
+    }
+    return String(rawId).trim();
+  }, [rawId]);
+
+  const orbNumber = player?.orb_number || (guestId ? getOrbNumber(guestId) : 1);
+  const displayName = player?.name || guestId || 'Player';
   const avatar = player?.avatar || '1';
 
   // Construct official URL format:
   // - Enables native smartphone cameras (iOS Camera, Google Lens) to show a direct link to the Arena web app.
   // - Allows our in-game Arena scanner to decode player profile parameters instantly.
   const qrPayload = useMemo(() => {
+    if (!guestId) return null;
+
     let baseOrigin = 'https://arena.bmiil.com';
     if (typeof window !== 'undefined' && window.location?.origin) {
       baseOrigin = window.location.origin;
@@ -58,6 +71,11 @@ export default function PlayerQRBadge({ player, className = '' }) {
   }, [guestId, orbNumber, displayName, avatar]);
 
   useEffect(() => {
+    if (!qrPayload) {
+      setIsGenerating(true);
+      return;
+    }
+
     let isMounted = true;
     setIsGenerating(true);
 
@@ -124,7 +142,7 @@ export default function PlayerQRBadge({ player, className = '' }) {
 
         {/* QR Code Canvas with Embedded Arena Logo Emblem */}
         <div className="relative w-52 h-52 flex items-center justify-center bg-white rounded-2xl overflow-hidden p-2">
-          {isGenerating ? (
+          {isGenerating || !guestId ? (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2">
               <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
               <span className="text-[11px] font-medium text-zinc-400">Rendering QR...</span>
