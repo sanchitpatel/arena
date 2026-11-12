@@ -362,7 +362,19 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
             stream = await navigator.mediaDevices.getUserMedia({
               video: { facingMode: 'environment' }
             });
-          } catch {
+          } catch (firstErr) {
+            const firstErrStr = String(firstErr?.message || firstErr?.name || firstErr || '');
+            const isDenial =
+              firstErr?.name === 'NotAllowedError' ||
+              firstErr?.name === 'PermissionDeniedError' ||
+              /notallowed|permission/i.test(firstErrStr);
+
+            // If user explicitly denied permission, do not prompt again!
+            if (isDenial) {
+              throw firstErr;
+            }
+
+            // Otherwise, retry with generic video for laptops / devices lacking environment camera
             stream = await navigator.mediaDevices.getUserMedia({
               video: true
             });

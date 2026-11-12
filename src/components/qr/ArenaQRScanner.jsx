@@ -220,7 +220,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
       const config = {
         fps: 15,
-        qrbox: { width: 220, height: 220 },
+        // qrbox: { width: 220, height: 220 },
         aspectRatio: 1.0,
       };
 
@@ -238,6 +238,17 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
           return;
         }
 
+        const firstErrStr = String(firstErr?.message || firstErr?.name || firstErr || '');
+        const isDenial =
+          firstErr?.name === 'NotAllowedError' ||
+          firstErr?.name === 'PermissionDeniedError' ||
+          /notallowed|permission/i.test(firstErrStr);
+
+        // If user denied camera permission, fail immediately without re-prompting on iOS
+        if (isDenial) {
+          throw firstErr;
+        }
+
         // If desktop has no environment camera, retry with user/webcam fallback
         try {
           await html5QrCode.start(
@@ -251,6 +262,12 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
             await teardown();
             return;
           }
+
+          const secondErrStr = String(secondErr?.message || secondErr?.name || secondErr || '');
+          if (/notallowed|permission/i.test(secondErrStr)) {
+            throw secondErr;
+          }
+
           // Ultimate fallback: Enumerate available cameras and bind directly to the first available camera ID
           const cams = await Html5Qrcode.getCameras();
           if (cams && cams.length > 0) {
