@@ -82,6 +82,7 @@ export { MagnifyingGlass } from '@phosphor-icons/react/dist/icons/MagnifyingGlas
 export { MagnifyingGlassPlus } from '@phosphor-icons/react/dist/icons/MagnifyingGlassPlus';
 export { Microphone } from '@phosphor-icons/react/dist/icons/Microphone';
 export { MapPin } from '@phosphor-icons/react/dist/icons/MapPin';
+export { Pause } from '@phosphor-icons/react/dist/icons/Pause';
 export { PaperPlaneTilt } from '@phosphor-icons/react/dist/icons/PaperPlaneTilt';
 export { Phone } from '@phosphor-icons/react/dist/icons/Phone';
 export { PhoneCall } from '@phosphor-icons/react/dist/icons/PhoneCall';

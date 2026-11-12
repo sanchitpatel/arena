@@ -25,11 +25,7 @@ export const ScannerView = ({ player, onNavigate, isActive = true }) => {
             onMyQrClick={() => setViewMode('badge')}
             onScanSuccess={handleScanSuccess}
           />
-        ) : (
-          <div className="w-64 h-64 flex flex-col items-center justify-center text-zinc-400 text-xs gap-2">
-            <span>Scanner Paused</span>
-          </div>
-        )
+        ) : null
       ) : (
         <PlayerQRBadge
           variant="page"

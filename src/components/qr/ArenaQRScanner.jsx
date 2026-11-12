@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash, QrCode } from '../icons';
+import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash, QrCode, Play, Pause } from '../icons';
 import { Sword } from '@phosphor-icons/react/dist/icons/Sword';
 import {
   killAllMediaTracks,
@@ -30,6 +30,7 @@ export default function ArenaQRScanner({
   const [facingMode, setFacingMode] = useState('environment'); // 'environment' | 'user'
   const [invalidBanner, setInvalidBanner] = useState('');
   const [duelStatus, setDuelStatus] = useState(null); // 'sent' | null
+  const [isPaused, setIsPaused] = useState(false);
 
   // Track if attendee explicitly paused camera access in Arena settings
   const [isCameraDisabledInApp, setIsCameraDisabledInApp] = useState(() => {
@@ -405,11 +406,35 @@ export default function ArenaQRScanner({
     setInAppPermission('camera', 'granted');
   };
 
+  const handleTogglePause = () => {
+    if (isPaused) {
+      setIsPaused(false);
+      if (scannerRef.current) {
+        try {
+          scannerRef.current.resume();
+        } catch {
+          startCamera(facingMode);
+        }
+      } else {
+        startCamera(facingMode);
+      }
+    } else {
+      setIsPaused(true);
+      if (scannerRef.current) {
+        try {
+          scannerRef.current.pause(true);
+        } catch { }
+      }
+    }
+  };
+
   const handleFlipCamera = () => {
+    setIsPaused(false);
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
   };
 
   const handleScanAgain = () => {
+    setIsPaused(false);
     setScannedPlayer(null);
     setDuelStatus(null);
     setInvalidBanner('');
@@ -468,7 +493,7 @@ export default function ArenaQRScanner({
           )}
 
           {/* Viewfinder Target Overlays (while scanning) */}
-          {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
+          {scannerStatus === 'scanning' && !isCameraDisabledInApp && !isPaused && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               {/* Center Reticle Frame */}
               <div className={`relative border-2 border-sky-400/80 rounded-xl shadow-[0_0_15px_rgba(56,189,248,0.4)] ${
@@ -489,6 +514,21 @@ export default function ArenaQRScanner({
                   }}
                 />
               </div>
+            </div>
+          )}
+
+          {/* Paused Overlay */}
+          {isPaused && !isCameraDisabledInApp && (
+            <div
+              onClick={handleTogglePause}
+              className="absolute inset-0 bg-black/55 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 text-white z-20 animate-in fade-in duration-150 cursor-pointer select-none"
+            >
+              <div className="w-12 h-12 rounded-full bg-white/20 border border-white/40 shadow-lg flex items-center justify-center text-white active:scale-90 transition-transform">
+                <Play size={22} weight="fill" className="text-white ml-0.5" />
+              </div>
+              <span className="font-arena text-[11px] font-black tracking-widest text-zinc-200 uppercase">
+                Scanner Paused • Tap to Resume
+              </span>
             </div>
           )}
 
@@ -626,7 +666,7 @@ export default function ArenaQRScanner({
         </div>
       )}
 
-      {/* Sub-instruction, Break Line, and "My QR" Button */}
+      {/* Sub-instruction and 3 Action Buttons in the Same Horizontal Row */}
       {scannerStatus !== 'success' && (
         <>
           {/* Helper text explaining */}
@@ -636,32 +676,52 @@ export default function ArenaQRScanner({
             Align any Arena QR code within the frame to verify.
           </p>
 
-          {showMyQrButton && (
-            <>
-              {/* Break line with "OR" in Center */}
-              <div className={`w-full flex items-center gap-2.5 my-2.5 select-none ${
-                isPage ? 'max-w-[340px]' : 'max-w-[240px]'
-              }`}>
-                <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
-                <span className="text-[11px] font-bold tracking-widest text-zinc-500/80 uppercase font-arena">
-                  OR
-                </span>
-                <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
-              </div>
+          {/* 3 Action Buttons: Pause/Resume, Flip, QR (Within the Same Horizontal Row) */}
+          <div className={`w-full flex items-center gap-2 sm:gap-2.5 mt-3 select-none ${
+            isPage ? 'max-w-[345px]' : 'max-w-[250px]'
+          }`}>
+            {/* Button 1: Pause / Resume */}
+            <button
+              type="button"
+              onClick={handleTogglePause}
+              className="flex-1 py-2.5 sm:py-3 px-2 bg-white active:scale-[0.96] text-zinc-700 text-xs sm:text-[13px] font-bold rounded-xl border border-slate-200/90 shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+              title={isPaused ? "Resume Camera" : "Pause Camera"}
+            >
+              {isPaused ? (
+                <>
+                  <Play size={16} weight="fill" className="text-emerald-600 scale-105 shrink-0" />
+                  <span className="truncate">Resume</span>
+                </>
+              ) : (
+                <>
+                  <Pause size={16} weight="fill" className="text-zinc-700 scale-105 shrink-0" />
+                  <span className="truncate">Pause</span>
+                </>
+              )}
+            </button>
 
-              {/* My QR Option Button */}
-              <button
-                type="button"
-                onClick={handleOpenMyQr}
-                className={`w-full py-3 px-4 bg-white active:scale-[0.97] text-zinc-700 text-[15px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group ${
-                  isPage ? 'max-w-[340px]' : 'max-w-[250px]'
-                }`}
-              >
-                <QrCode size={20} weight="bold" className="text-zinc-700 scale-105 transition-transform" />
-                <span>My QR</span>
-              </button>
-            </>
-          )}
+            {/* Button 2: Flip Camera */}
+            <button
+              type="button"
+              onClick={handleFlipCamera}
+              className="flex-1 py-2.5 sm:py-3 px-2 bg-white active:scale-[0.96] text-zinc-700 text-xs sm:text-[13px] font-bold rounded-xl border border-slate-200/90 shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+              title="Flip Front / Rear Camera"
+            >
+              <ArrowClockwise size={16} weight="bold" className="text-zinc-700 scale-105 shrink-0" />
+              <span className="truncate">Flip</span>
+            </button>
+
+            {/* Button 3: QR Code Opening */}
+            <button
+              type="button"
+              onClick={handleOpenMyQr}
+              className="flex-1 py-2.5 sm:py-3 px-2 bg-white active:scale-[0.96] text-zinc-700 text-xs sm:text-[13px] font-bold rounded-xl border border-slate-200/90 shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+              title="Open My QR Code"
+            >
+              <QrCode size={16} weight="bold" className="text-zinc-700 scale-105 shrink-0" />
+              <span className="truncate">QR</span>
+            </button>
+          </div>
         </>
       )}
     </div>
