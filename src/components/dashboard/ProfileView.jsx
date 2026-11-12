@@ -75,7 +75,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           if (cam.isAllowed) {
             setCameraError('');
           } else if (cam.browserState === 'denied') {
-            setCameraError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+            setCameraError('Camera access is blocked. Please allow it in your browser settings.');
           }
         }
       } catch { }
@@ -88,7 +88,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           if (mic.isAllowed) {
             setMicError('');
           } else if (mic.browserState === 'denied') {
-            setMicError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+            setMicError('Microphone access is blocked. Please allow it in your browser settings.');
           }
         }
       } catch { }
@@ -107,7 +107,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
               if (isAllowed) {
                 setCameraError('');
               } else if (camQuery.state === 'denied') {
-                setCameraError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+                setCameraError('Camera access is blocked. Please allow it in your browser settings.');
                 setInAppPermission('camera', 'denied');
               }
             }
@@ -126,7 +126,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
               if (isAllowed) {
                 setMicError('');
               } else if (micQuery.state === 'denied') {
-                setMicError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+                setMicError('Microphone access is blocked. Please allow it in your browser settings.');
                 setInAppPermission('mic', 'denied');
               }
             }
@@ -146,7 +146,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         if (isAllowed) {
           setCameraError('');
         } else if (state === 'denied') {
-          setCameraError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+          setCameraError('Camera access is blocked. Please allow it in your browser settings.');
         }
       } else if (capability === 'mic') {
         const isAllowed = state === 'granted';
@@ -154,7 +154,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         if (isAllowed) {
           setMicError('');
         } else if (state === 'denied') {
-          setMicError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+          setMicError('Microphone access is blocked. Please allow it in your browser settings.');
         }
       }
     });
@@ -405,7 +405,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         /notallowed|permission/i.test(errStr);
 
       if (isPermissionDenied) {
-        setCameraError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+        setCameraError('Camera access is blocked. Please allow it in your browser settings.');
       } else {
         setCameraError(err?.message || 'Unable to access camera.');
       }
@@ -477,7 +477,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         /notallowed|permission/i.test(errStr);
 
       if (isPermissionDenied) {
-        setMicError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+        setMicError('Microphone access is blocked. Please allow it in your browser settings.');
       } else {
         setMicError(err?.message || 'Unable to access microphone.');
       }

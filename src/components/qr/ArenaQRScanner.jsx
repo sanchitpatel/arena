@@ -340,7 +340,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
         setErrorMessage(
           isPermissionDenied
-            ? 'Camera permission was denied. Please allow camera access in your browser.'
+            ? 'Camera access is blocked. Please allow it in your browser settings.'
             : 'Unable to access device camera. Please check your camera permissions.'
         );
       }
@@ -371,7 +371,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         } else if (state === 'denied') {
           setIsCameraDisabledInApp(false);
           setScannerStatus('error');
-          setErrorMessage('Camera permission was blocked in browser settings. Please allow camera access.');
+          setErrorMessage('Camera access is blocked. Please allow it in your browser settings.');
           stopCameraHardwareImmediately('Denied via browser settings');
         } else if (state === 'granted') {
           setIsCameraDisabledInApp(false);
