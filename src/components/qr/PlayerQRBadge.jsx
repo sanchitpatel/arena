@@ -134,7 +134,7 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
   return (
     <div className={`flex flex-col items-center select-none font-sans pt-1 sm:pt-1 pb-1 ${className}`}>
       {/* Main QR Card Container */}
-      <div className="relative pt-2 pb-3 px-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] max-w-[250px] w-full flex flex-col items-center">
+      <div className="relative pt-2 pb-4 px-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] max-w-[250px] w-full flex flex-col items-center">
         {/* Subtle Decorative Top Corner Accents */}
         <div className="absolute top-3 left-3 w-3 h-3 border-t-2 border-l-2 border-zinc-300 rounded-tl" />
         <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-zinc-300 rounded-tr" />
@@ -194,9 +194,9 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
           <button
             type="button"
             onClick={onScanClick}
-            className="w-full max-w-[250px] py-2 px-3.5 bg-[#ebedf2] hover:bg-[#e2e6ec] active:scale-[0.97] text-zinc-800 text-[12px] font-bold rounded-xl border border-white/90 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] transition-all flex items-center justify-center gap-2 cursor-pointer group"
+            className="w-full max-w-[250px] py-2.5 px-3.5 bg-white active:scale-[0.97] text-zinc-700 text-[14px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group"
           >
-            <Scan size={16} weight="bold" className="text-zinc-700 group-hover:text-zinc-900 group-hover:scale-105 transition-transform" />
+            <Scan size={22} weight="bold" className="text-zinc-700 scale-105 transition-transform" />
             <span>Scan a QR</span>
           </button>
         </>
