@@ -64,6 +64,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   // Check and listen to client device permission states (localStorage preference takes priority over browser grant)
   useEffect(() => {
     let isMounted = true;
+    let camQuery = null;
+    let micQuery = null;
 
     // Release any lingering camera media tracks from previous scanner mounts immediately
     killAllMediaTracks('ProfileView mount cleanup', 'video');
@@ -98,7 +100,9 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       // Listen for runtime changes in browser settings
       if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
         try {
-          const camQuery = await navigator.permissions.query({ name: 'camera' });
+          const cq = await navigator.permissions.query({ name: 'camera' });
+          if (!isMounted) return;
+          camQuery = cq;
           camQuery.onchange = () => {
             const currentPref = window.localStorage.getItem('arena_perm_camera');
             if (isMounted) {
@@ -115,7 +119,9 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         } catch { }
 
         try {
-          const micQuery = await navigator.permissions.query({ name: 'microphone' });
+          const mq = await navigator.permissions.query({ name: 'microphone' });
+          if (!isMounted) return;
+          micQuery = mq;
           micQuery.onchange = () => {
             const currentPref = window.localStorage.getItem('arena_perm_mic');
             if (isMounted) {
@@ -160,6 +166,12 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     return () => {
       isMounted = false;
       unsubscribePerms();
+      if (camQuery) {
+        camQuery.onchange = null;
+      }
+      if (micQuery) {
+        micQuery.onchange = null;
+      }
     };
   }, []);
 

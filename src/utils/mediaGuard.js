@@ -146,15 +146,20 @@ export const ARENA_PERM_EVENT = 'arena_permission_changed';
  */
 export function setInAppPermission(capability, state) {
   const prefKey = capability === 'camera' ? 'arena_perm_camera' : 'arena_perm_mic';
+  if (typeof window === 'undefined') return;
+
+  // 1. Attempt to persist to localStorage (safely handles Safari Private Mode quota errors)
   try {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(prefKey, state);
-      window.dispatchEvent(
-        new CustomEvent(ARENA_PERM_EVENT, {
-          detail: { capability, state },
-        })
-      );
-    }
+    window.localStorage.setItem(prefKey, state);
+  } catch { }
+
+  // 2. Always broadcast the in-app event so components stay in sync even if storage fails
+  try {
+    window.dispatchEvent(
+      new CustomEvent(ARENA_PERM_EVENT, {
+        detail: { capability, state },
+      })
+    );
   } catch { }
 }
 
