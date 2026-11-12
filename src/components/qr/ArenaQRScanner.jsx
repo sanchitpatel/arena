@@ -639,7 +639,9 @@ export default function ArenaQRScanner({
           {showMyQrButton && (
             <>
               {/* Break line with "OR" in Center */}
-              <div className="w-full max-w-[240px] flex items-center gap-2.5 my-2 select-none">
+              <div className={`w-full flex items-center gap-2.5 my-2 select-none ${
+                isPage ? 'max-w-[280px]' : 'max-w-[240px]'
+              }`}>
                 <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
                 <span className="text-[11px] font-bold tracking-widest text-zinc-500/80 uppercase font-arena">
                   OR
@@ -651,7 +653,9 @@ export default function ArenaQRScanner({
               <button
                 type="button"
                 onClick={handleOpenMyQr}
-                className="w-full max-w-[250px] py-2.5 px-3.5 bg-white active:scale-[0.97] text-zinc-700 text-[14px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group"
+                className={`w-full py-2.5 px-3.5 bg-white active:scale-[0.97] text-zinc-700 text-[14px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group ${
+                  isPage ? 'max-w-[280px]' : 'max-w-[250px]'
+                }`}
               >
                 <QrCode size={20} weight="bold" className="text-zinc-700 scale-105 transition-transform" />
                 <span>My QR</span>
