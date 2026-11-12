@@ -132,7 +132,7 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
   }, [qrPayload]);
 
   return (
-    <div className={`flex flex-col items-center select-none font-sans pt-1 sm:pt-3 pb-1 ${className}`}>
+    <div className={`flex flex-col items-center select-none font-sans pt-1 sm:pt-1 pb-1 ${className}`}>
       {/* Main QR Card Container */}
       <div className="relative pt-2 pb-3 px-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] max-w-[250px] w-full flex flex-col items-center">
         {/* Subtle Decorative Top Corner Accents */}
@@ -174,20 +174,32 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
         </div>
       </div>
 
-      {/* Scan a QR Option */}
-      {typeof onScanClick === 'function' ? (
-        <button
-          type="button"
-          onClick={onScanClick}
-          className="mt-3 w-full max-w-[250px] py-2 px-3.5 bg-[#ebedf2] hover:bg-[#e2e6ec] active:scale-[0.97] text-zinc-800 text-[12px] font-bold rounded-xl border border-white/90 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] transition-all flex items-center justify-center gap-2 cursor-pointer group"
-        >
-          <Scan size={16} weight="bold" className="text-zinc-700 group-hover:text-zinc-900 group-hover:scale-105 transition-transform" />
-          <span>Scan a QR</span>
-        </button>
-      ) : (
-        <p className="text-[11px] text-zinc-600/90 text-center mt-3 max-w-[260px] leading-relaxed">
-          Scan with Arena scanner to verify ID and more...
-        </p>
+      {/* Helper text explaining the QR Code */}
+      <p className="text-[10.5px] text-zinc-500 text-center mt-2.5 max-w-[240px] leading-relaxed">
+        Scan with Arena scanner to verify ID and more...
+      </p>
+
+      {typeof onScanClick === 'function' && (
+        <>
+          {/* Break line with "OR" in Center */}
+          <div className="w-full max-w-[240px] flex items-center gap-2.5 my-2 select-none">
+            <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
+            <span className="text-[11px] font-bold tracking-widest text-zinc-500/80 uppercase font-arena">
+              OR
+            </span>
+            <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
+          </div>
+
+          {/* Scan a QR Option */}
+          <button
+            type="button"
+            onClick={onScanClick}
+            className="w-full max-w-[250px] py-2 px-3.5 bg-[#ebedf2] hover:bg-[#e2e6ec] active:scale-[0.97] text-zinc-800 text-[12px] font-bold rounded-xl border border-white/90 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] transition-all flex items-center justify-center gap-2 cursor-pointer group"
+          >
+            <Scan size={16} weight="bold" className="text-zinc-700 group-hover:text-zinc-900 group-hover:scale-105 transition-transform" />
+            <span>Scan a QR</span>
+          </button>
+        </>
       )}
     </div>
   );
