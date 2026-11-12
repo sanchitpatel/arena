@@ -80,6 +80,18 @@ export const DashboardShell = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [qrModalOpen]);
 
+  // Listen for global custom events to open Scanner or QR Badge modal
+  useEffect(() => {
+    const handleOpenScanner = () => setQrModalOpen('scanner');
+    const handleOpenBadge = () => setQrModalOpen('badge');
+    window.addEventListener('arena:open-scanner', handleOpenScanner);
+    window.addEventListener('arena:open-badge', handleOpenBadge);
+    return () => {
+      window.removeEventListener('arena:open-scanner', handleOpenScanner);
+      window.removeEventListener('arena:open-badge', handleOpenBadge);
+    };
+  }, []);
+
   const handleSignOutClick = () => {
     setProfileMenuOpen(false);
     setMobileProfileOpen(false);
@@ -350,8 +362,11 @@ export const DashboardShell = ({
               <X size={16} weight="bold" />
             </button>
 
-            <div className="relative bg-[#f0f2f5] rounded-[26px] p-4 sm:p-3.5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
-              <PlayerQRBadge player={player} />
+            <div className="relative bg-[#f0f2f5] rounded-[26px] p-3.5 sm:p-3.5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
+              <PlayerQRBadge
+                player={player}
+                onScanClick={() => setQrModalOpen('scanner')}
+              />
             </div>
           </div>
         </div>,

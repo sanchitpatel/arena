@@ -198,11 +198,24 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     };
   }, []);
 
+  const handleCloseQrModal = () => {
+    setQrModalOpen(false);
+  };
+
+  const handleOpenScanner = () => {
+    setQrModalOpen(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('arena:open-scanner'));
+    }
+  };
+
   // Close QR modal on Escape key press
   useEffect(() => {
     if (!qrModalOpen) return;
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setQrModalOpen(false);
+      if (e.key === 'Escape') {
+        handleCloseQrModal();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -773,7 +786,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           ======================================================== */}
       {qrModalOpen && typeof document !== 'undefined' && createPortal(
         <div
-          onClick={() => setQrModalOpen(false)}
+          onClick={handleCloseQrModal}
           className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150 cursor-pointer"
         >
           <div
@@ -785,15 +798,15 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setQrModalOpen(false);
+                handleCloseQrModal();
               }}
               className="absolute -top-3 -right-2.5 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_6px_rgba(0,0,0,0.3),-1px_-1px_3px_#ffffff] flex items-center justify-center text-rose-500 hover:text-rose-700 border-2 border-white transition-all cursor-pointer z-30 active:scale-90"
-              title="Close QR Badge"
+              title="Close"
             >
               <X size={15} weight="bold" />
             </button>
 
-            <div className="relative bg-[#f0f2f5] rounded-[26px] p-4 sm:p-3.5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
+            <div className="relative bg-[#f0f2f5] rounded-[26px] p-3.5 sm:p-3.5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
               <PlayerQRBadge
                 player={{
                   guest_id: guestId,
@@ -801,6 +814,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                   name: playerName || player?.name || guestId,
                   avatar: selectedAvatar,
                 }}
+                onScanClick={handleOpenScanner}
               />
             </div>
           </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import QRCode, { toDataURL, toString } from 'qrcode';
-import Logo from '../Logo';
+import ArenaAvatar from '../avatars/ArenaAvatar';
+import { Scan } from '../icons';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 
 // Bulletproof helper to safely invoke QRCode methods across all bundlers / ESM environments
@@ -29,7 +30,7 @@ const safeToString = async (text, options) => {
  * Generates an ultra-crisp, high-density vector QR code badge for the active attendee.
  * Uses Error Correction Level 'H' (30% recovery) allowing the embedded Arena Logo in the center.
  */
-export default function PlayerQRBadge({ player, className = '' }) {
+export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [isGenerating, setIsGenerating] = useState(true);
 
@@ -155,10 +156,10 @@ export default function PlayerQRBadge({ player, className = '' }) {
                 className="w-full h-full object-contain"
               />
 
-              {/* Centered Embedded Arena Badge (Level H allows center coverage safely) */}
+              {/* Centered Embedded Player Avatar (Level H allows center coverage safely) */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                <div className="w-11 h-11 rounded-xl bg-black p-1 border-2 border-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center">
-                  <Logo className="w-full h-full" dark />
+                <div className="w-11 h-11 rounded-full bg-white p-0.5 border-2 border-white shadow-[0_2px_8px_rgba(0,0,0,0.3)] flex items-center justify-center overflow-hidden">
+                  <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
                 </div>
               </div>
             </>
@@ -168,9 +169,21 @@ export default function PlayerQRBadge({ player, className = '' }) {
         </div>
       </div>
 
-      <p className="text-[11px] text-zinc-600/90 text-center mt-3 max-w-[260px] leading-relaxed">
-        Scan with Arena scanner to verify ID and more...
-      </p>
+      {/* Scan a QR Option */}
+      {typeof onScanClick === 'function' ? (
+        <button
+          type="button"
+          onClick={onScanClick}
+          className="mt-3 w-full max-w-[250px] py-2 px-3.5 bg-[#ebedf2] hover:bg-[#e2e6ec] active:scale-[0.97] text-zinc-800 text-[12px] font-bold rounded-xl border border-white/90 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] transition-all flex items-center justify-center gap-2 cursor-pointer group"
+        >
+          <Scan size={16} weight="bold" className="text-zinc-700 group-hover:text-zinc-900 group-hover:scale-105 transition-transform" />
+          <span>Scan a QR</span>
+        </button>
+      ) : (
+        <p className="text-[11px] text-zinc-600/90 text-center mt-3 max-w-[260px] leading-relaxed">
+          Scan with Arena scanner to verify ID and more...
+        </p>
+      )}
     </div>
   );
 }
