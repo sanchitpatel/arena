@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash, CameraRotate, QrCode, Play, Pause } from '../icons';
+import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash, FlipHorizontalIcon, BootstrapQrCode, Play, Pause } from '../icons';
 import { Sword } from '@phosphor-icons/react/dist/icons/Sword';
 import {
   killAllMediaTracks,
@@ -479,7 +479,7 @@ export default function ArenaQRScanner({
 
         {/* Viewfinder Canvas */}
         <div className={`relative flex items-center justify-center bg-black rounded-2xl overflow-hidden border border-slate-200/80 ${
-          isPage ? 'w-[325px] h-[325px] sm:w-[420px] sm:h-[420px]' : 'w-52 h-52'
+          isPage ? 'w-[315px] h-[315px] sm:w-[420px] sm:h-[420px]' : 'w-52 h-52'
         }`}>
           {/* html5-qrcode video target mount */}
           <div id={containerId} className="w-full h-full object-cover [&_video]:w-full [&_video]:h-full [&_video]:object-cover" />
@@ -543,13 +543,13 @@ export default function ArenaQRScanner({
           {/* Paused by User Preference in App */}
           {isCameraDisabledInApp && (
             <div className="absolute inset-0 bg-[#09090B]/95 backdrop-blur-md p-4 flex flex-col items-center justify-center text-center gap-2 text-white z-30 animate-in fade-in duration-200">
-              <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-700/80 shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] flex items-center justify-center text-zinc-400">
-                <CameraSlash size={20} weight="bold" />
+              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-700/80 shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] flex items-center justify-center text-zinc-400">
+                <CameraSlash size={22} weight="bold" />
               </div>
 
               <div>
-                <h4 className="text-xs font-bold text-white">Camera Access Paused</h4>
-                <p className="text-[10px] text-zinc-400 mt-0.5 max-w-[180px] leading-relaxed">
+                <h4 className="text-[13px] font-bold text-white">Camera Access Paused</h4>
+                <p className="text-[10px] text-zinc-400 mt-0.5 max-w-[220px] leading-relaxed">
                   Turned off in settings. Toggle below to resume.
                 </p>
               </div>
@@ -557,9 +557,9 @@ export default function ArenaQRScanner({
               {/* Toggle Switch */}
               <div
                 onClick={handleEnableCameraInScanner}
-                className="mt-0.5 flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.5)] cursor-pointer hover:bg-zinc-800/80 active:scale-95 transition-all select-none"
+                className="mt-0.5 flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-zinc-900/80 border border-zinc-800 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.5)] cursor-pointer hover:bg-zinc-800/80 active:scale-95 transition-all select-none"
               >
-                <span className="text-[11px] font-semibold text-zinc-300">Enable</span>
+                <span className="text-[12px] font-semibold text-zinc-100">Enable</span>
                 <button
                   type="button"
                   role="switch"
@@ -596,7 +596,7 @@ export default function ArenaQRScanner({
               className="absolute top-2.5 right-2.5 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md cursor-pointer active:scale-90 transition-all z-20"
               title="Flip Camera"
             >
-              <CameraRotate size={16} weight="bold" />
+              <FlipHorizontalIcon size={18} className="text-white" />
             </button>
           )}
         </div>
@@ -669,8 +669,8 @@ export default function ArenaQRScanner({
         {scannerStatus !== 'success' && (
           <>
             {/* Helper text explaining */}
-            <p className={`text-zinc-500 text-center mt-3 leading-relaxed ${
-              isPage ? 'max-w-[320px] text-[11.5px]' : 'max-w-[230px] text-[10.5px]'
+            <p className={`text-zinc-500/80 text-center mt-2 leading-relaxed ${
+              isPage ? 'max-w-[320px] text-[11px]' : 'max-w-[230px] text-[10.5px]'
             }`}>
               Align any Arena QR code within the frame to verify.
             </p>
@@ -683,17 +683,17 @@ export default function ArenaQRScanner({
               <button
                 type="button"
                 onClick={handleTogglePause}
-                className="flex-1 py-2.5 sm:py-3 px-2 bg-white active:scale-[0.96] text-zinc-700 text-xs sm:text-[13px] font-bold rounded-xl border border-slate-200/90 shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+                className="flex-1 py-2 sm:py-3 px-2 bg-white active:scale-[0.96] text-zinc-700 text-[13px] sm:text-[13px] font-bold rounded-lg border border-slate-200/90 shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
                 title={isPaused ? "Resume Camera" : "Pause Camera"}
               >
                 {isPaused ? (
                   <>
-                    <Play size={16} weight="fill" className="text-emerald-600 scale-105 shrink-0" />
+                    <Play size={18} weight="fill" className="text-sky-500/90 scale-105 shrink-0" />
                     <span className="truncate">Resume</span>
                   </>
                 ) : (
                   <>
-                    <Pause size={16} weight="fill" className="text-zinc-700 scale-105 shrink-0" />
+                    <Pause size={18} weight="fill" className="text-zinc-700 scale-105 shrink-0" />
                     <span className="truncate">Pause</span>
                   </>
                 )}
@@ -703,10 +703,10 @@ export default function ArenaQRScanner({
               <button
                 type="button"
                 onClick={handleFlipCamera}
-                className="flex-1 py-2.5 sm:py-3 px-2 bg-white active:scale-[0.96] text-zinc-700 text-xs sm:text-[13px] font-bold rounded-xl border border-slate-200/90 shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+                className="flex-1 py-2 sm:py-3 px-2 bg-white active:scale-[0.96] text-zinc-700 text-[13px] sm:text-[13px] font-bold rounded-lg border border-slate-200/90 shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
                 title="Flip Front / Rear Camera"
               >
-                <CameraRotate size={16} weight="bold" className="text-zinc-700 scale-105 shrink-0" />
+                <FlipHorizontalIcon size={20} className="text-zinc-700 scale-105 shrink-0" />
                 <span className="truncate">Flip</span>
               </button>
 
@@ -714,10 +714,10 @@ export default function ArenaQRScanner({
               <button
                 type="button"
                 onClick={handleOpenMyQr}
-                className="flex-1 py-2.5 sm:py-3 px-2 bg-white active:scale-[0.96] text-zinc-700 text-xs sm:text-[13px] font-bold rounded-xl border border-slate-200/90 shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+                className="flex-1 py-2 sm:py-3 px-2 bg-white active:scale-[0.96] text-zinc-700 text-[13px] sm:text-[13px] font-bold rounded-lg border border-slate-200/90 shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
                 title="Open My QR Code"
               >
-                <QrCode size={16} weight="bold" className="text-zinc-700 scale-105 shrink-0" />
+                <BootstrapQrCode size={20} weight="bold" className="text-zinc-700 scale-105 shrink-0" />
                 <span className="truncate">QR</span>
               </button>
             </div>
