@@ -74,7 +74,11 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         const cam = await queryPermissionStatus('camera');
         if (isMounted) {
           setCameraGranted(cam.isAllowed);
-          if (cam.isAllowed) setCameraError('');
+          if (cam.isAllowed) {
+            setCameraError('');
+          } else if (cam.browserState === 'denied') {
+            setCameraError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+          }
         }
       } catch { }
 
@@ -83,7 +87,11 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
         const mic = await queryPermissionStatus('microphone');
         if (isMounted) {
           setMicGranted(mic.isAllowed);
-          if (mic.isAllowed) setMicError('');
+          if (mic.isAllowed) {
+            setMicError('');
+          } else if (mic.browserState === 'denied') {
+            setMicError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+          }
         }
       } catch { }
 
@@ -93,10 +101,15 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           const camQuery = await navigator.permissions.query({ name: 'camera' });
           camQuery.onchange = () => {
             const currentPref = window.localStorage.getItem('arena_perm_camera');
-            if (isMounted && currentPref !== 'disabled') {
-              const isAllowed = camQuery.state === 'granted';
+            if (isMounted) {
+              const isAllowed = camQuery.state === 'granted' && currentPref !== 'disabled';
               setCameraGranted(isAllowed);
-              if (isAllowed) setCameraError('');
+              if (isAllowed) {
+                setCameraError('');
+              } else if (camQuery.state === 'denied') {
+                setCameraError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+                setInAppPermission('camera', 'denied');
+              }
             }
           };
         } catch { }
@@ -105,10 +118,15 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           const micQuery = await navigator.permissions.query({ name: 'microphone' });
           micQuery.onchange = () => {
             const currentPref = window.localStorage.getItem('arena_perm_mic');
-            if (isMounted && currentPref !== 'disabled') {
-              const isAllowed = micQuery.state === 'granted';
+            if (isMounted) {
+              const isAllowed = micQuery.state === 'granted' && currentPref !== 'disabled';
               setMicGranted(isAllowed);
-              if (isAllowed) setMicError('');
+              if (isAllowed) {
+                setMicError('');
+              } else if (micQuery.state === 'denied') {
+                setMicError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+                setInAppPermission('mic', 'denied');
+              }
             }
           };
         } catch { }
@@ -123,11 +141,19 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       if (capability === 'camera') {
         const isAllowed = state === 'granted';
         setCameraGranted(isAllowed);
-        if (isAllowed) setCameraError('');
+        if (isAllowed) {
+          setCameraError('');
+        } else if (state === 'denied') {
+          setCameraError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+        }
       } else if (capability === 'mic') {
         const isAllowed = state === 'granted';
         setMicGranted(isAllowed);
-        if (isAllowed) setMicError('');
+        if (isAllowed) {
+          setMicError('');
+        } else if (state === 'denied') {
+          setMicError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
+        }
       }
     });
 

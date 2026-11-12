@@ -282,6 +282,10 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
           err?.name === 'PermissionDeniedError' ||
           /notallowed|permission/i.test(errStr);
 
+        if (isPermissionDenied) {
+          setInAppPermission('camera', 'denied');
+        }
+
         setErrorMessage(
           isPermissionDenied
             ? 'Camera permission was denied. Please allow camera access in your browser.'

@@ -119,8 +119,18 @@ export async function queryPermissionStatus(type) {
     }
   }
 
-  // In-app explicit disable strictly takes precedence
-  const isAllowed = localPref !== 'disabled' && (browserState === 'granted' || localPref === 'granted');
+  // In-app explicit disable strictly takes precedence, AND browser 'denied' cannot be overridden
+  const isAllowed =
+    localPref !== 'disabled' &&
+    browserState !== 'denied' &&
+    (browserState === 'granted' || localPref === 'granted');
+
+  // Self-heal stale localStorage if the user revoked permission in browser settings
+  if (browserState === 'denied' && localPref === 'granted' && typeof window !== 'undefined') {
+    try {
+      window.localStorage.setItem(prefKey, 'denied');
+    } catch { }
+  }
 
   return { localPref, browserState, isAllowed };
 }
