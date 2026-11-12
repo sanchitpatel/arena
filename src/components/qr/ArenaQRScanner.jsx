@@ -19,6 +19,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
   const [errorMessage, setErrorMessage] = useState('');
   const [scannedPlayer, setScannedPlayer] = useState(null);
   const [facingMode, setFacingMode] = useState('environment'); // 'environment' | 'user'
+  const [invalidBanner, setInvalidBanner] = useState('');
 
   // Track if attendee explicitly paused camera access in Arena settings
   const [isCameraDisabledInApp, setIsCameraDisabledInApp] = useState(() => {
@@ -31,9 +32,80 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
   const isMountedRef = useRef(true);
   const runIdRef = useRef(0);
   const hasScannedRef = useRef(false);
+  const invalidBannerTimerRef = useRef(null);
+  const lastInvalidCodeRef = useRef('');
 
   // Generate unique DOM container ID per mount to avoid collision
   const containerId = useRef(`arena-qr-reader-${Math.random().toString(36).substring(2, 9)}`).current;
+
+  // Validates and extracts official Arena QR player payload
+  const parseArenaQRPayload = (rawText) => {
+    if (!rawText || typeof rawText !== 'string') return null;
+
+    let payload = null;
+
+    // Case 1: JSON payload format (e.g. {"app":"ARENA","gid":"Guest008","orb":8,"name":"Guest008","avatar":"1"})
+    if (rawText.startsWith('{') && rawText.endsWith('}')) {
+      try {
+        const json = JSON.parse(rawText);
+        if (json && (json.app === 'ARENA' || json.gid?.startsWith('Guest')) && json.gid) {
+          const parsedOrb = parseInt(json.orb, 10);
+          payload = {
+            app: 'ARENA',
+            gid: String(json.gid).trim(),
+            orb: isNaN(parsedOrb) || parsedOrb < 1 ? 1 : parsedOrb,
+            name: String(json.name || json.gid).trim(),
+            avatar: String(json.avatar || '1').trim(),
+          };
+        }
+      } catch { }
+    }
+
+    // Case 2: Official URL format (e.g. https://arena.bmiil.com/arena?app=ARENA&player=Guest008&orb=8&name=Guest008&avatar=1)
+    if (!payload && (rawText.includes('/arena') || rawText.includes('app=ARENA') || rawText.includes('player='))) {
+      try {
+        let url;
+        try {
+          url = new URL(rawText);
+        } catch {
+          url = new URL(`https://arena.bmiil.com${rawText.startsWith('/') ? '' : '/'}${rawText}`);
+        }
+
+        const params = url.searchParams;
+        const appParam = params.get('app');
+        const playerParam = params.get('player') || params.get('gid');
+
+        // Security validation:
+        // 1. Must explicitly have app=ARENA or path /arena
+        // 2. Must strictly have a non-empty player ID
+        // 3. Origin must match active domain or trusted Arena host
+        const isTrustedHost =
+          typeof window !== 'undefined' &&
+          (url.hostname === window.location.hostname ||
+            url.hostname === 'arena.bmiil.com' ||
+            url.hostname === 'localhost' ||
+            url.hostname.endsWith('.bmiil.com'));
+
+        if (isTrustedHost && playerParam && (appParam === 'ARENA' || url.pathname.includes('/arena'))) {
+          const parsedOrb = parseInt(params.get('orb'), 10);
+          payload = {
+            app: 'ARENA',
+            gid: String(playerParam).trim(),
+            orb: isNaN(parsedOrb) || parsedOrb < 1 ? 1 : parsedOrb,
+            name: String(params.get('name') || playerParam).trim(),
+            avatar: String(params.get('avatar') || '1').trim(),
+          };
+        }
+      } catch { }
+    }
+
+    // Sanity validation: must have non-empty gid between 3 and 32 characters
+    if (payload && payload.gid && payload.gid.length >= 3 && payload.gid.length <= 32) {
+      return payload;
+    }
+
+    return null;
+  };
 
   // Fully awaits stopping and clearing any running instance
   const teardown = async () => {
@@ -108,63 +180,37 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
       const qrCodeSuccessCallback = (decodedText) => {
         if (!isMountedRef.current || runId !== runIdRef.current || hasScannedRef.current) return;
 
-        try {
-          let parsed = null;
-          // Case 1: JSON payload format
-          if (decodedText.startsWith('{') && decodedText.endsWith('}')) {
-            parsed = JSON.parse(decodedText);
-          }
-          // Case 2: URL payload format (e.g., https://arena.bmiil.com/arena?player=GUEST006&orb=6&name=aman&avatar=1)
-          else if (decodedText.includes('player=') || decodedText.includes('gid=')) {
-            let searchParams;
-            try {
-              const url = new URL(decodedText);
-              searchParams = url.searchParams;
-            } catch {
-              searchParams = new URLSearchParams(decodedText.includes('?') ? decodedText.split('?')[1] : decodedText);
-            }
+        const parsed = parseArenaQRPayload(decodedText);
 
-            parsed = {
-              app: searchParams.get('app') || 'ARENA',
-              gid: searchParams.get('player') || searchParams.get('gid'),
-              orb: searchParams.get('orb') ? parseInt(searchParams.get('orb'), 10) : 1,
-              name: searchParams.get('name') || searchParams.get('player'),
-              avatar: searchParams.get('avatar') || '1',
-            };
+        if (parsed) {
+          hasScannedRef.current = true;
+          setInvalidBanner('');
+          setScannedPlayer(parsed);
+          setScannerStatus('success');
+
+          if (navigator?.vibrate) {
+            navigator.vibrate([40, 60, 40]);
           }
 
-          if (parsed && (parsed.app === 'ARENA' || parsed.gid)) {
-            hasScannedRef.current = true;
-            setScannedPlayer(parsed);
-            setScannerStatus('success');
+          // Power down camera immediately upon successful scan so green indicator turns off
+          stopCameraHardwareImmediately('Scan verified successfully');
 
-            if (navigator?.vibrate) {
-              navigator.vibrate([40, 60, 40]);
-            }
-
-            // Power down camera immediately upon successful scan so green indicator turns off
-            stopCameraHardwareImmediately('Scan verified successfully');
-
-            if (typeof onScanSuccess === 'function') {
-              onScanSuccess(parsed);
-            }
-            return;
+          if (typeof onScanSuccess === 'function') {
+            onScanSuccess(parsed);
           }
-        } catch (e) { }
+          return;
+        }
 
-        // Generic text/URL scan fallback
-        hasScannedRef.current = true;
-        setScannedPlayer({
-          rawText: decodedText,
-          gid: 'Scanned Token',
-          name: decodedText.slice(0, 24),
-        });
-        setScannerStatus('success');
-
-        if (scannerRef.current && isScanningRef.current) {
-          try {
-            scannerRef.current.pause(true);
-          } catch { }
+        // Non-Arena QR code detected: DO NOT stop camera or show duel button.
+        // Show subtle non-intrusive banner and keep camera actively scanning.
+        if (lastInvalidCodeRef.current !== decodedText) {
+          lastInvalidCodeRef.current = decodedText;
+          setInvalidBanner('Not an Arena QR code');
+          if (invalidBannerTimerRef.current) clearTimeout(invalidBannerTimerRef.current);
+          invalidBannerTimerRef.current = setTimeout(() => {
+            setInvalidBanner('');
+            lastInvalidCodeRef.current = '';
+          }, 2400);
         }
       };
 
@@ -264,6 +310,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
     return () => {
       isMountedRef.current = false;
+      if (invalidBannerTimerRef.current) clearTimeout(invalidBannerTimerRef.current);
       unsubscribe();
       stopCameraHardwareImmediately('ArenaQRScanner unmounted');
     };
@@ -282,6 +329,8 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
   const handleScanAgain = () => {
     setScannedPlayer(null);
+    setInvalidBanner('');
+    lastInvalidCodeRef.current = '';
     hasScannedRef.current = false;
     setScannerStatus('scanning');
     startCamera(facingMode);
@@ -293,6 +342,14 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
       <div className="relative w-full max-w-[320px] aspect-square rounded-[2rem] bg-black overflow-hidden shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_12px_32px_rgba(197,204,214,0.5)] border-2 border-slate-300/80">
         {/* html5-qrcode video target mount */}
         <div id={containerId} className="w-full h-full object-cover" />
+
+        {/* Floating Non-Intrusive Invalid Code Banner */}
+        {invalidBanner && scannerStatus === 'scanning' && !isCameraDisabledInApp && (
+          <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-950/85 border border-rose-500/60 backdrop-blur-md shadow-lg text-white text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-150">
+            <WarningCircle size={15} weight="bold" className="text-rose-400 shrink-0" />
+            <span className="truncate">{invalidBanner}</span>
+          </div>
+        )}
 
         {/* Viewfinder Target Overlays (while scanning) */}
         {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
