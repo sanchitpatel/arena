@@ -120,16 +120,16 @@ export const DashboardShell = ({
       description: 'Search records',
     },
     {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: SquaresFour,
-      description: 'Daily queues & statistics',
-    },
-    {
       id: 'scanner',
       label: 'Scan QR',
       icon: Scan,
       description: 'QR scanner & battle duels',
+    },
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: SquaresFour,
+      description: 'Daily queues & statistics',
     },
     {
       id: 'profile',
@@ -281,11 +281,12 @@ export const DashboardShell = ({
         </div>
       )}
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#ebedf2]/95 backdrop-blur-lg border-t border-slate-300/60 shadow-[0_-4px_20px_rgba(197,204,214,0.7)] px-2 py-1.5">
-        <div className="flex items-center justify-around max-w-md mx-auto">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#ebedf2]/95 backdrop-blur-lg border-t border-slate-300/60 shadow-[0_-4px_20px_rgba(197,204,214,0.7)] px-1.5 py-1.5">
+        <div className="flex items-end justify-between max-w-md mx-auto w-full">
           {navItems.filter((item) => item.id !== 'notifications').map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const isCenterScanner = item.id === 'scanner';
             return (
               <button
                 key={item.id}
@@ -293,19 +294,27 @@ export const DashboardShell = ({
                   onTabChange(item.id);
                   setMobileProfileOpen(false);
                 }}
-                className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl active:scale-90 transition-transform duration-100 ease-out cursor-pointer ${isActive
+                className={`flex-1 flex flex-col items-center justify-end py-0.5 px-0.5 rounded-2xl active:scale-95 transition-transform duration-100 ease-out cursor-pointer ${
+                  isCenterScanner ? '-mt-1 sm:-mt-2.5' : ''
+                } ${isActive
                     ? 'text-zinc-900 font-bold'
                     : 'text-zinc-500 font-medium hover:text-zinc-800'
                   }`}
               >
                 <div className="relative">
                   <div
-                    className={`p-1.5 rounded-xl mb-0.5 ${isActive
+                    className={`${
+                      isCenterScanner
+                        ? 'p-2 rounded-xl mb-0.5'
+                        : 'p-1.5 rounded-xl mb-0.5'
+                    } ${isActive
                         ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
-                        : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] text-zinc-500 hover:text-zinc-900'
+                        : isCenterScanner
+                          ? 'bg-[#ebedf2] shadow-[3px_3px_6px_#c2c9d4,-3px_-3px_6px_#ffffff] border border-white/80 text-zinc-600 hover:text-zinc-900'
+                          : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] text-zinc-500 hover:text-zinc-900'
                       }`}
                   >
-                    <Icon size={22} weight={isActive ? 'bold' : 'duotone'} />
+                    <Icon size={isCenterScanner ? 29 : 23} weight={isActive ? 'bold' : 'duotone'} />
                   </div>
                   {item.badge > 0 && (
                     <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-white font-extrabold text-[9px] flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.2)]">
@@ -313,7 +322,9 @@ export const DashboardShell = ({
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] tracking-tight">{item.label}</span>
+                <span className={`${isCenterScanner ? 'text-[10.5px] font-bold text-zinc-700' : 'text-[10px]'} tracking-tight truncate`}>
+                  {item.label}
+                </span>
               </button>
             );
           })}
