@@ -142,9 +142,8 @@ export default function PlayerQRBadge({
   return (
     <div className={`flex flex-col items-center select-none font-sans pt-1 sm:pt-1 pb-1 ${className}`}>
       {/* Main QR Card Container */}
-      <div className={`relative pt-2 pb-4 px-3 rounded-[1.25rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] w-full flex flex-col items-center ${
-        isPage ? 'max-w-[375px] sm:max-w-[420px]' : 'max-w-[250px]'
-      }`}>
+      <div className={`relative pt-2 pb-4 px-3 rounded-[1.25rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] w-full flex flex-col items-center ${isPage ? 'max-w-[375px] sm:max-w-[420px]' : 'max-w-[250px]'
+        }`}>
         {/* Subtle Decorative Top Corner Accents */}
         <div className="absolute top-3 left-3 w-3.5 h-3.5 border-t-2 border-l-2 border-zinc-300 rounded-tl" />
         <div className="absolute top-3 right-3 w-3.5 h-3.5 border-t-2 border-r-2 border-zinc-300 rounded-tr" />
@@ -157,9 +156,8 @@ export default function PlayerQRBadge({
         </div>
 
         {/* QR Code Canvas with Embedded Arena Logo Emblem */}
-        <div className={`relative flex items-center justify-center bg-white rounded-2xl overflow-hidden p-2 ${
-          isPage ? 'w-[285px] h-[285px] sm:w-[335px] sm:h-[335px]' : 'w-52 h-52'
-        }`}>
+        <div className={`relative flex items-center justify-center bg-white rounded-2xl overflow-hidden p-2 ${isPage ? 'w-[285px] h-[285px] sm:w-[335px] sm:h-[335px]' : 'w-52 h-52'
+          }`}>
           {isGenerating || !guestId ? (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2">
               <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
@@ -175,9 +173,8 @@ export default function PlayerQRBadge({
 
               {/* Centered Embedded Player Avatar (Level H allows center coverage safely) */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                <div className={`rounded-full bg-white p-0.5 border-2 border-white shadow-[0_2px_10px_rgba(0,0,0,0.3)] flex items-center justify-center overflow-hidden ${
-                  isPage ? 'w-24 h-24 sm:w-20 sm:h-20' : 'w-14 h-14'
-                }`}>
+                <div className={`rounded-full bg-white p-0.5 border-2 border-white shadow-[0_2px_10px_rgba(0,0,0,0.3)] flex items-center justify-center overflow-hidden ${isPage ? 'w-24 h-24 sm:w-20 sm:h-20' : 'w-14 h-14'
+                  }`}>
                   <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
                 </div>
               </div>
@@ -189,18 +186,16 @@ export default function PlayerQRBadge({
       </div>
 
       {/* Helper text explaining the QR Code */}
-      <p className={`text-zinc-600/90 text-center mt-2.5 leading-relaxed ${
-        isPage ? 'max-w-[330px] text-[12px]' : 'max-w-[240px] text-[10.5px]'
-      }`}>
+      <p className={`text-zinc-600/90 text-center mt-2.5 leading-relaxed ${isPage ? 'max-w-[330px] text-[12px]' : 'max-w-[240px] text-[10.5px]'
+        }`}>
         Scan with Arena scanner to verify ID and more...
       </p>
 
       {showScanButton && typeof onScanClick === 'function' && (
         <>
           {/* Break line with "OR" in Center */}
-          <div className={`w-full flex items-center gap-2.5 my-2 select-none ${
-            isPage ? 'max-w-[320px]' : 'max-w-[240px]'
-          }`}>
+          <div className={`w-full flex items-center gap-2.5 my-2 select-none ${isPage ? 'max-w-[320px]' : 'max-w-[240px]'
+            }`}>
             <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
             <span className="text-[11px] font-bold tracking-widest text-zinc-500/80 uppercase font-arena">
               OR
@@ -212,9 +207,8 @@ export default function PlayerQRBadge({
           <button
             type="button"
             onClick={onScanClick}
-            className={`w-full py-2.5 sm:py-3 px-3.5 bg-white active:scale-[0.97] text-zinc-700 text-[14px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group ${
-              isPage ? 'max-w-[320px]' : 'max-w-[250px]'
-            }`}
+            className={`w-full py-2.5 sm:py-3 px-3.5 bg-white active:scale-[0.97] text-zinc-700 text-[14px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group ${isPage ? 'max-w-[320px]' : 'max-w-[250px]'
+              }`}
           >
             <Scan size={24} weight="bold" className="text-zinc-700 scale-105 transition-transform" />
             <span>Scan a QR</span>
