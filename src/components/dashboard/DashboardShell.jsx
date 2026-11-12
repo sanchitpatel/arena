@@ -82,7 +82,13 @@ export const DashboardShell = ({
 
   // Listen for global custom events to open Scanner or QR Badge modal
   useEffect(() => {
-    const handleOpenScanner = () => setQrModalOpen('scanner');
+    const handleOpenScanner = () => {
+      if (typeof onTabChange === 'function') {
+        onTabChange('scanner');
+      } else {
+        setQrModalOpen('scanner');
+      }
+    };
     const handleOpenBadge = () => setQrModalOpen('badge');
     window.addEventListener('arena:open-scanner', handleOpenScanner);
     window.addEventListener('arena:open-badge', handleOpenBadge);
@@ -90,7 +96,7 @@ export const DashboardShell = ({
       window.removeEventListener('arena:open-scanner', handleOpenScanner);
       window.removeEventListener('arena:open-badge', handleOpenBadge);
     };
-  }, []);
+  }, [onTabChange]);
 
   const handleSignOutClick = () => {
     setProfileMenuOpen(false);
@@ -324,12 +330,16 @@ export const DashboardShell = ({
           {/* Scanner Option on the Rightmost Corner (Inward: White on Top, Black at Bottom) */}
           <button
             type="button"
-            onClick={() => setQrModalOpen('scanner')}
+            onClick={() => onTabChange('scanner')}
             title="Scan QR Code"
-            className="flex items-center -mr-1 gap-1.5 px-2 py-1 rounded-xl bg-[#ebedf2] shadow-[inset_0_2px_4px_#ffffff,inset_0_-2px_5px_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] active:scale-95 transition-all text-xs font-bold text-zinc-700 hover:text-zinc-900 border border-white cursor-pointer"
+            className={`flex items-center -mr-1 gap-1.5 px-2 py-1 rounded-xl bg-[#ebedf2] border border-white cursor-pointer transition-all ${
+              activeTab === 'scanner'
+                ? 'shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] text-zinc-900 font-extrabold'
+                : 'shadow-[inset_0_2px_4px_#ffffff,inset_0_-2px_5px_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] active:scale-95 text-zinc-700 hover:text-zinc-900 font-bold'
+            }`}
           >
             <Scan size={20} weight="bold" className="text-zinc-800" />
-            <span className="text-[13px] font-bold text-zinc-800">Scan</span>
+            <span className="text-[13px] text-zinc-800">Scan</span>
           </button>
         </header>
 
@@ -365,7 +375,12 @@ export const DashboardShell = ({
             <div className="relative bg-[#f0f2f5] rounded-[26px] p-3.5 sm:p-3.5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
               <PlayerQRBadge
                 player={player}
-                onScanClick={() => setQrModalOpen('scanner')}
+                onScanClick={() => {
+                  setQrModalOpen(null);
+                  if (typeof onTabChange === 'function') {
+                    onTabChange('scanner');
+                  }
+                }}
               />
             </div>
           </div>

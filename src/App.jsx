@@ -17,6 +17,8 @@ const VALID_APP_PATHS = new Set([
   '/notifications',
   '/records',
   '/profile',
+  '/scanner',
+  '/scan',
 ]);
 
 function resolveRoute() {
