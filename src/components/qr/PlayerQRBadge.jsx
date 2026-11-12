@@ -30,7 +30,13 @@ const safeToString = async (text, options) => {
  * Generates an ultra-crisp, high-density vector QR code badge for the active attendee.
  * Uses Error Correction Level 'H' (30% recovery) allowing the embedded Arena Logo in the center.
  */
-export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
+export default function PlayerQRBadge({
+  player,
+  onScanClick,
+  className = '',
+  variant = 'modal',
+  showScanButton = true,
+}) {
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [isGenerating, setIsGenerating] = useState(true);
 
@@ -131,10 +137,14 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
     };
   }, [qrPayload]);
 
+  const isPage = variant === 'page';
+
   return (
     <div className={`flex flex-col items-center select-none font-sans pt-1 sm:pt-1 pb-1 ${className}`}>
       {/* Main QR Card Container */}
-      <div className="relative pt-2 pb-4 px-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] max-w-[250px] w-full flex flex-col items-center">
+      <div className={`relative pt-2 pb-4 px-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] w-full flex flex-col items-center ${
+        isPage ? 'max-w-[340px] sm:max-w-[360px]' : 'max-w-[250px]'
+      }`}>
         {/* Subtle Decorative Top Corner Accents */}
         <div className="absolute top-3 left-3 w-3 h-3 border-t-2 border-l-2 border-zinc-300 rounded-tl" />
         <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-zinc-300 rounded-tr" />
@@ -147,7 +157,9 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
         </div>
 
         {/* QR Code Canvas with Embedded Arena Logo Emblem */}
-        <div className="relative w-52 h-52 flex items-center justify-center bg-white rounded-2xl overflow-hidden p-2">
+        <div className={`relative flex items-center justify-center bg-white rounded-2xl overflow-hidden p-2 ${
+          isPage ? 'w-64 h-64 sm:w-72 sm:h-72' : 'w-52 h-52'
+        }`}>
           {isGenerating || !guestId ? (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2">
               <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
@@ -163,7 +175,9 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
 
               {/* Centered Embedded Player Avatar (Level H allows center coverage safely) */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                <div className="w-14 h-14 rounded-full bg-white p-0.5 border-2 border-white shadow-[0_2px_10px_rgba(0,0,0,0.3)] flex items-center justify-center overflow-hidden">
+                <div className={`rounded-full bg-white p-0.5 border-2 border-white shadow-[0_2px_10px_rgba(0,0,0,0.3)] flex items-center justify-center overflow-hidden ${
+                  isPage ? 'w-16 h-16 sm:w-18 sm:h-18' : 'w-14 h-14'
+                }`}>
                   <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
                 </div>
               </div>
@@ -175,11 +189,13 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
       </div>
 
       {/* Helper text explaining the QR Code */}
-      <p className="text-[10.5px] text-zinc-600/90 text-center mt-2.5 max-w-[240px] leading-relaxed">
+      <p className={`text-[10.5px] text-zinc-600/90 text-center mt-2.5 leading-relaxed ${
+        isPage ? 'max-w-[300px]' : 'max-w-[240px]'
+      }`}>
         Scan with Arena scanner to verify ID and more...
       </p>
 
-      {typeof onScanClick === 'function' && (
+      {showScanButton && typeof onScanClick === 'function' && (
         <>
           {/* Break line with "OR" in Center */}
           <div className="w-full max-w-[240px] flex items-center gap-2.5 my-2 select-none">

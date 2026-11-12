@@ -138,6 +138,12 @@ export const DashboardShell = ({
       icon: UserCircle,
       description: 'Player identity & avatar',
     },
+    {
+      id: 'scanner',
+      label: 'Scanner',
+      icon: Scan,
+      description: 'QR scanner & battle duels',
+    },
   ];
 
   return (
@@ -277,7 +283,7 @@ export const DashboardShell = ({
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#ebedf2]/95 backdrop-blur-lg border-t border-slate-300/60 shadow-[0_-4px_20px_rgba(197,204,214,0.7)] px-2 py-1.5">
         <div className="flex items-center justify-around max-w-md mx-auto">
-          {navItems.map((item) => {
+          {navItems.filter((item) => item.id !== 'scanner').map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (

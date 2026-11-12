@@ -16,7 +16,14 @@ import { getPlayerId } from '../../utils/playerId';
  * In-browser mobile/desktop camera scanner using html5-qrcode.
  * Safely handles camera lifecycle, desktop fallbacks, and in-app permission overrides.
  */
-export default function ArenaQRScanner({ onScanSuccess, onClose, onMyQrClick, className = '' }) {
+export default function ArenaQRScanner({
+  onScanSuccess,
+  onClose,
+  onMyQrClick,
+  className = '',
+  variant = 'modal',
+  showMyQrButton = true,
+}) {
   const [scannerStatus, setScannerStatus] = useState('initializing'); // 'initializing' | 'scanning' | 'success' | 'error' | 'disabled'
   const [errorMessage, setErrorMessage] = useState('');
   const [scannedPlayer, setScannedPlayer] = useState(null);
@@ -426,10 +433,14 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, onMyQrClick, cl
     }
   };
 
+  const isPage = variant === 'page';
+
   return (
     <div className={`flex flex-col items-center select-none font-sans pt-1 sm:pt-3 pb-1 ${className}`}>
       {/* Main Scanner Card Container */}
-      <div className="relative pt-3 pb-5 px-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] max-w-[250px] w-full flex flex-col items-center">
+      <div className={`relative pt-3 pb-5 px-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] w-full flex flex-col items-center ${
+        isPage ? 'max-w-[340px] sm:max-w-[360px]' : 'max-w-[250px]'
+      }`}>
         {/* Subtle Decorative Top Corner Accents */}
         <div className="absolute top-3 left-3 w-3 h-3 border-t-2 border-l-2 border-zinc-300 rounded-tl" />
         <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-zinc-300 rounded-tr" />
@@ -441,8 +452,10 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, onMyQrClick, cl
           ARENA SCANNER
         </div>
 
-        {/* Viewfinder Canvas (w-52 h-52) */}
-        <div className="relative w-52 h-52 flex items-center justify-center bg-black rounded-2xl overflow-hidden border border-slate-200/80">
+        {/* Viewfinder Canvas */}
+        <div className={`relative flex items-center justify-center bg-black rounded-2xl overflow-hidden border border-slate-200/80 ${
+          isPage ? 'w-64 h-64 sm:w-72 sm:h-72' : 'w-52 h-52'
+        }`}>
           {/* html5-qrcode video target mount */}
           <div id={containerId} className="w-full h-full object-cover [&_video]:w-full [&_video]:h-full [&_video]:object-cover" />
 
@@ -458,7 +471,9 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, onMyQrClick, cl
           {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               {/* Center Reticle Frame */}
-              <div className="relative w-40 h-40 border-2 border-sky-400/80 rounded-xl shadow-[0_0_15px_rgba(56,189,248,0.4)]">
+              <div className={`relative border-2 border-sky-400/80 rounded-xl shadow-[0_0_15px_rgba(56,189,248,0.4)] ${
+                isPage ? 'w-48 h-48 sm:w-56 sm:h-56' : 'w-40 h-40'
+              }`}>
                 {/* Corner brackets */}
                 <div className="absolute -top-1 -left-1 w-4 h-4 border-t-3 border-l-3 border-white rounded-tl" />
                 <div className="absolute -top-1 -right-1 w-4 h-4 border-t-3 border-r-3 border-white rounded-tr" />
@@ -549,7 +564,9 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, onMyQrClick, cl
 
       {/* Scanned Result Discovery Card */}
       {scannerStatus === 'success' && scannedPlayer && (
-        <div className="mt-3 w-full max-w-[250px] p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-[0_8px_24px_rgba(197,204,214,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <div className={`mt-3 w-full p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-[0_8px_24px_rgba(197,204,214,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-200 ${
+          isPage ? 'max-w-[340px] sm:max-w-[360px]' : 'max-w-[250px]'
+        }`}>
           <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold pb-2 mb-2 border-b border-zinc-100">
             <CheckCircle size={15} weight="fill" className="text-emerald-600" />
             <span>Player Found</span>
@@ -613,28 +630,34 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, onMyQrClick, cl
       {scannerStatus !== 'success' && (
         <>
           {/* Helper text explaining */}
-          <p className="text-[10.5px] text-zinc-500 text-center mt-2.5 max-w-[240px] leading-relaxed">
+          <p className={`text-[10.5px] text-zinc-500 text-center mt-2.5 leading-relaxed ${
+            isPage ? 'max-w-[300px]' : 'max-w-[240px]'
+          }`}>
             Align any Arena QR code within the frame to verify.
           </p>
 
-          {/* Break line with "OR" in Center */}
-          <div className="w-full max-w-[240px] flex items-center gap-2.5 my-2 select-none">
-            <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
-            <span className="text-[11px] font-bold tracking-widest text-zinc-500/80 uppercase font-arena">
-              OR
-            </span>
-            <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
-          </div>
+          {showMyQrButton && (
+            <>
+              {/* Break line with "OR" in Center */}
+              <div className="w-full max-w-[240px] flex items-center gap-2.5 my-2 select-none">
+                <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
+                <span className="text-[11px] font-bold tracking-widest text-zinc-500/80 uppercase font-arena">
+                  OR
+                </span>
+                <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
+              </div>
 
-          {/* My QR Option Button */}
-          <button
-            type="button"
-            onClick={handleOpenMyQr}
-            className="w-full max-w-[250px] py-2.5 px-3.5 bg-white active:scale-[0.97] text-zinc-700 text-[14px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group"
-          >
-            <QrCode size={20} weight="bold" className="text-zinc-700 scale-105 transition-transform" />
-            <span>My QR</span>
-          </button>
+              {/* My QR Option Button */}
+              <button
+                type="button"
+                onClick={handleOpenMyQr}
+                className="w-full max-w-[250px] py-2.5 px-3.5 bg-white active:scale-[0.97] text-zinc-700 text-[14px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group"
+              >
+                <QrCode size={20} weight="bold" className="text-zinc-700 scale-105 transition-transform" />
+                <span>My QR</span>
+              </button>
+            </>
+          )}
         </>
       )}
     </div>
