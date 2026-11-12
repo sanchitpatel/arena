@@ -126,11 +126,10 @@ export const DashboardShell = ({
       description: 'Daily queues & statistics',
     },
     {
-      id: 'notifications',
-      label: 'Notification',
-      icon: Bell,
-      description: 'WhatsApp reminders',
-      badge: pendingCount,
+      id: 'scanner',
+      label: 'Scan QR',
+      icon: Scan,
+      description: 'QR scanner & battle duels',
     },
     {
       id: 'profile',
@@ -139,10 +138,11 @@ export const DashboardShell = ({
       description: 'Player identity & avatar',
     },
     {
-      id: 'scanner',
-      label: 'Scanner',
-      icon: Scan,
-      description: 'QR scanner & battle duels',
+      id: 'notifications',
+      label: 'Notification',
+      icon: Bell,
+      description: 'WhatsApp reminders',
+      badge: pendingCount,
     },
   ];
 
@@ -283,7 +283,7 @@ export const DashboardShell = ({
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#ebedf2]/95 backdrop-blur-lg border-t border-slate-300/60 shadow-[0_-4px_20px_rgba(197,204,214,0.7)] px-2 py-1.5">
         <div className="flex items-center justify-around max-w-md mx-auto">
-          {navItems.filter((item) => item.id !== 'scanner').map((item) => {
+          {navItems.filter((item) => item.id !== 'notifications').map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
@@ -333,19 +333,26 @@ export const DashboardShell = ({
             ARENA
           </span>
 
-          {/* Scanner Option on the Rightmost Corner (Inward: White on Top, Black at Bottom) */}
+          {/* Notification Option on the Rightmost Corner */}
           <button
             type="button"
-            onClick={() => onTabChange('scanner')}
-            title="Scan QR Code"
-            className={`flex items-center -mr-1 gap-1.5 px-2 py-1 rounded-xl bg-[#ebedf2] border border-white cursor-pointer transition-all ${
-              activeTab === 'scanner'
+            onClick={() => onTabChange('notifications')}
+            title="WhatsApp Notifications"
+            className={`relative flex items-center -mr-1 gap-1.5 px-2.5 py-1 rounded-xl bg-[#ebedf2] border border-white cursor-pointer transition-all ${
+              activeTab === 'notifications'
                 ? 'shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] text-zinc-900 font-extrabold'
                 : 'shadow-[inset_0_2px_4px_#ffffff,inset_0_-2px_5px_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] active:scale-95 text-zinc-700 hover:text-zinc-900 font-bold'
             }`}
           >
-            <Scan size={20} weight="bold" className="text-zinc-800" />
-            <span className="text-[13px] text-zinc-800">Scan</span>
+            <div className="relative flex items-center justify-center">
+              <Bell size={19} weight={activeTab === 'notifications' ? 'fill' : 'bold'} className="text-zinc-800" />
+              {pendingCount > 0 && (
+                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
+                  {pendingCount > 99 ? '99+' : pendingCount}
+                </span>
+              )}
+            </div>
+            <span className="text-[13px] text-zinc-800">Notification</span>
           </button>
         </header>
 
