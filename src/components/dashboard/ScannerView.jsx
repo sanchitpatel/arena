@@ -16,7 +16,7 @@ export const ScannerView = ({ player, onNavigate, isActive = true }) => {
   };
 
   return (
-    <div className="w-full flex flex-col items-center justify-center min-h-[calc(100vh-130px)] py-4 select-none font-sans">
+    <div className="w-full flex flex-col items-center pt-4 sm:pt-2 pb-8 select-none font-sans">
       {viewMode === 'scanner' ? (
         isActive ? (
           <ArenaQRScanner
