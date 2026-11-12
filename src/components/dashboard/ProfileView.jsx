@@ -334,10 +334,16 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       }
     } catch (err) {
       setCameraGranted(false);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      const errStr = String(err?.message || err?.name || err || '');
+      const isPermissionDenied =
+        err?.name === 'NotAllowedError' ||
+        err?.name === 'PermissionDeniedError' ||
+        /notallowed|permission/i.test(errStr);
+
+      if (isPermissionDenied) {
         setCameraError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
       } else {
-        setCameraError(err.message || 'Unable to access camera.');
+        setCameraError(err?.message || 'Unable to access camera.');
       }
       setInAppPermission('camera', 'denied');
     } finally {
@@ -400,10 +406,16 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       }
     } catch (err) {
       setMicGranted(false);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      const errStr = String(err?.message || err?.name || err || '');
+      const isPermissionDenied =
+        err?.name === 'NotAllowedError' ||
+        err?.name === 'PermissionDeniedError' ||
+        /notallowed|permission/i.test(errStr);
+
+      if (isPermissionDenied) {
         setMicError('Permission blocked in browser settings. Tap the lock icon in your address bar to enable.');
       } else {
-        setMicError(err.message || 'Unable to access microphone.');
+        setMicError(err?.message || 'Unable to access microphone.');
       }
       setInAppPermission('mic', 'denied');
     } finally {

@@ -251,13 +251,18 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
             await teardown();
             return;
           }
-          // Ultimate fallback to default camera without constraint
-          await html5QrCode.start(
-            true,
-            config,
-            qrCodeSuccessCallback,
-            qrCodeErrorCallback
-          );
+          // Ultimate fallback: Enumerate available cameras and bind directly to the first available camera ID
+          const cams = await Html5Qrcode.getCameras();
+          if (cams && cams.length > 0) {
+            await html5QrCode.start(
+              cams[0].id,
+              config,
+              qrCodeSuccessCallback,
+              qrCodeErrorCallback
+            );
+          } else {
+            throw new Error('No camera device found on this system.');
+          }
         }
       }
 
@@ -271,8 +276,14 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
     } catch (err) {
       if (runId === runIdRef.current && isMountedRef.current) {
         setScannerStatus('error');
+        const errStr = String(err?.message || err?.name || err || '');
+        const isPermissionDenied =
+          err?.name === 'NotAllowedError' ||
+          err?.name === 'PermissionDeniedError' ||
+          /notallowed|permission/i.test(errStr);
+
         setErrorMessage(
-          err?.name === 'NotAllowedError' || err?.message?.includes('Permission')
+          isPermissionDenied
             ? 'Camera permission was denied. Please allow camera access in your browser.'
             : 'Unable to access device camera. Please check your camera permissions.'
         );
