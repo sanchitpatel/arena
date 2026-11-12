@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash } from '../icons';
+import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash, QrCode } from '../icons';
 import { Sword } from '@phosphor-icons/react/dist/icons/Sword';
 import {
   killAllMediaTracks,
@@ -16,7 +16,7 @@ import { getPlayerId } from '../../utils/playerId';
  * In-browser mobile/desktop camera scanner using html5-qrcode.
  * Safely handles camera lifecycle, desktop fallbacks, and in-app permission overrides.
  */
-export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' }) {
+export default function ArenaQRScanner({ onScanSuccess, onClose, onMyQrClick, className = '' }) {
   const [scannerStatus, setScannerStatus] = useState('initializing'); // 'initializing' | 'scanning' | 'success' | 'error' | 'disabled'
   const [errorMessage, setErrorMessage] = useState('');
   const [scannedPlayer, setScannedPlayer] = useState(null);
@@ -418,131 +418,153 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
     }
   };
 
+  const handleOpenMyQr = () => {
+    if (typeof onMyQrClick === 'function') {
+      onMyQrClick();
+    } else if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('arena:open-badge'));
+    }
+  };
+
   return (
-    <div className={`flex flex-col items-center select-none font-sans ${className}`}>
-      {/* Scanner Viewfinder Box */}
-      <div className="relative w-full max-w-[320px] aspect-square rounded-[2rem] bg-black overflow-hidden shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_12px_32px_rgba(197,204,214,0.5)] border-2 border-slate-300/80">
-        {/* html5-qrcode video target mount */}
-        <div id={containerId} className="w-full h-full object-cover" />
+    <div className={`flex flex-col items-center select-none font-sans pt-1 sm:pt-3 pb-1 ${className}`}>
+      {/* Main Scanner Card Container */}
+      <div className="relative pt-3 pb-5 px-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] max-w-[250px] w-full flex flex-col items-center">
+        {/* Subtle Decorative Top Corner Accents */}
+        <div className="absolute top-3 left-3 w-3 h-3 border-t-2 border-l-2 border-zinc-300 rounded-tl" />
+        <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-zinc-300 rounded-tr" />
+        <div className="absolute bottom-3 left-3 w-3 h-3 border-b-2 border-l-2 border-zinc-300 rounded-bl" />
+        <div className="absolute bottom-3 right-3 w-3 h-3 border-b-2 border-r-2 border-zinc-300 rounded-br" />
 
-        {/* Floating Non-Intrusive Invalid Code Banner */}
-        {invalidBanner && scannerStatus === 'scanning' && !isCameraDisabledInApp && (
-          <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-950/85 border border-rose-500/60 backdrop-blur-md shadow-lg text-white text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-150">
-            <WarningCircle size={15} weight="bold" className="text-rose-400 shrink-0" />
-            <span className="truncate">{invalidBanner}</span>
-          </div>
-        )}
+        {/* Header on top in the middle (Arena Font) */}
+        <div className="font-arena text-[13px] font-black tracking-widest text-zinc-800 uppercase text-center select-none pt-0.5 pb-1">
+          ARENA SCANNER
+        </div>
 
-        {/* Viewfinder Target Overlays (while scanning) */}
-        {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            {/* Center Reticle Frame */}
-            <div className="relative w-52 h-52 border-2 border-sky-400/80 rounded-2xl shadow-[0_0_15px_rgba(56,189,248,0.4)]">
-              {/* Corner brackets */}
-              <div className="absolute -top-1 -left-1 w-5 h-5 border-t-4 border-l-4 border-white rounded-tl-lg" />
-              <div className="absolute -top-1 -right-1 w-5 h-5 border-t-4 border-r-4 border-white rounded-tr-lg" />
-              <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-4 border-l-4 border-white rounded-bl-lg" />
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-4 border-r-4 border-white rounded-br-lg" />
+        {/* Viewfinder Canvas (w-52 h-52) */}
+        <div className="relative w-52 h-52 flex items-center justify-center bg-black rounded-2xl overflow-hidden border border-slate-200/80">
+          {/* html5-qrcode video target mount */}
+          <div id={containerId} className="w-full h-full object-cover [&_video]:w-full [&_video]:h-full [&_video]:object-cover" />
 
-              {/* Animated Laser Scanning Line */}
+          {/* Floating Non-Intrusive Invalid Code Banner */}
+          {invalidBanner && scannerStatus === 'scanning' && !isCameraDisabledInApp && (
+            <div className="absolute top-2 left-2 right-2 z-20 flex items-center justify-center gap-1 px-2.5 py-1 rounded-full bg-rose-950/85 border border-rose-500/60 backdrop-blur-md shadow-lg text-white text-[10.5px] font-semibold animate-in fade-in slide-in-from-top-2 duration-150">
+              <WarningCircle size={13} weight="bold" className="text-rose-400 shrink-0" />
+              <span className="truncate">{invalidBanner}</span>
+            </div>
+          )}
+
+          {/* Viewfinder Target Overlays (while scanning) */}
+          {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              {/* Center Reticle Frame */}
+              <div className="relative w-40 h-40 border-2 border-sky-400/80 rounded-xl shadow-[0_0_15px_rgba(56,189,248,0.4)]">
+                {/* Corner brackets */}
+                <div className="absolute -top-1 -left-1 w-4 h-4 border-t-3 border-l-3 border-white rounded-tl" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 border-t-3 border-r-3 border-white rounded-tr" />
+                <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-3 border-l-3 border-white rounded-bl" />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-3 border-r-3 border-white rounded-br" />
+
+                {/* Animated Laser Scanning Line */}
+                <div
+                  className="absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-sky-400 to-transparent shadow-[0_0_8px_#38bdf8] animate-pulse"
+                  style={{
+                    top: '50%',
+                    animationDuration: '1.8s',
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Initializing Spinner Overlay */}
+          {scannerStatus === 'initializing' && !isCameraDisabledInApp && (
+            <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-white">
+              <CircleNotch size={28} className="animate-spin text-sky-400" />
+              <span className="text-[11px] font-semibold text-zinc-300">Starting Camera...</span>
+            </div>
+          )}
+
+          {/* Paused by User Preference in App */}
+          {isCameraDisabledInApp && (
+            <div className="absolute inset-0 bg-[#09090B]/95 backdrop-blur-md p-4 flex flex-col items-center justify-center text-center gap-2 text-white z-30 animate-in fade-in duration-200">
+              <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-700/80 shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] flex items-center justify-center text-zinc-400">
+                <CameraSlash size={20} weight="bold" />
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-white">Camera Access Paused</h4>
+                <p className="text-[10px] text-zinc-400 mt-0.5 max-w-[180px] leading-relaxed">
+                  Turned off in settings. Toggle below to resume.
+                </p>
+              </div>
+
+              {/* Toggle Switch */}
               <div
-                className="absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-sky-400 to-transparent shadow-[0_0_8px_#38bdf8] animate-pulse"
-                style={{
-                  top: '50%',
-                  animationDuration: '1.8s',
-                }}
-              />
+                onClick={handleEnableCameraInScanner}
+                className="mt-0.5 flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.5)] cursor-pointer hover:bg-zinc-800/80 active:scale-95 transition-all select-none"
+              >
+                <span className="text-[11px] font-semibold text-zinc-300">Enable</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={false}
+                  className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out bg-[#cbd2de]"
+                >
+                  <span className="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ease-in-out translate-x-0" />
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Initializing Spinner Overlay */}
-        {scannerStatus === 'initializing' && !isCameraDisabledInApp && (
-          <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2.5 text-white">
-            <CircleNotch size={32} className="animate-spin text-sky-400" />
-            <span className="text-xs font-semibold text-zinc-300">Starting Camera...</span>
-          </div>
-        )}
-
-        {/* Paused by User Preference in App (Re-enable directly via identical toggle) */}
-        {isCameraDisabledInApp && (
-          <div className="absolute inset-0 bg-[#09090B]/95 backdrop-blur-md p-6 flex flex-col items-center justify-center text-center gap-3.5 text-white z-30 animate-in fade-in duration-200">
-            <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-700/80 shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)] flex items-center justify-center text-zinc-400">
-              <CameraSlash size={22} weight="bold" />
-            </div>
-
-            <div>
-              <h4 className="text-sm font-bold text-white">Camera Access Paused</h4>
-              <p className="text-[11px] text-zinc-400 mt-1 max-w-[210px] leading-relaxed">
-                You turned off camera access in settings. Toggle below to resume scanning.
-              </p>
-            </div>
-
-            {/* Custom Exact Same Neumorphic iOS Toggle Switch */}
-            <div
-              onClick={handleEnableCameraInScanner}
-              className="mt-1 flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-zinc-900/80 border border-zinc-800 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.5)] cursor-pointer hover:bg-zinc-800/80 active:scale-95 transition-all select-none"
-            >
-              <span className="text-xs font-semibold text-zinc-300">Enable Camera</span>
+          {/* Error Fallback Overlay */}
+          {scannerStatus === 'error' && !isCameraDisabledInApp && (
+            <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-sm p-4 flex flex-col items-center justify-center text-center gap-2 text-white">
+              <WarningCircle size={30} weight="bold" className="text-rose-500" />
+              <p className="text-[11px] text-zinc-300 leading-snug px-1">{errorMessage}</p>
               <button
                 type="button"
-                role="switch"
-                aria-checked={false}
-                className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out bg-[#cbd2de] shadow-[inset_2px_2px_4px_#b3bac6,inset_-2px_-2px_4px_#ffffff]"
+                onClick={() => startCamera(facingMode)}
+                className="mt-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-[11px] font-bold rounded-lg border border-zinc-700 shadow flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
-                <span className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-[1px_2px_4px_rgba(0,0,0,0.25)] transition duration-200 ease-in-out translate-x-0" />
+                <ArrowClockwise size={13} weight="bold" />
+                <span>Try Again</span>
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Error Fallback Overlay */}
-        {scannerStatus === 'error' && !isCameraDisabledInApp && (
-          <div className="absolute inset-0 bg-zinc-950/90 backdrop-blur-sm p-6 flex flex-col items-center justify-center text-center gap-3 text-white">
-            <WarningCircle size={36} weight="bold" className="text-rose-500" />
-            <p className="text-xs text-zinc-300 leading-relaxed">{errorMessage}</p>
+          {/* Camera Flip Button (Top Right Floating) */}
+          {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
             <button
               type="button"
-              onClick={() => startCamera(facingMode)}
-              className="mt-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded-xl border border-zinc-700 shadow flex items-center gap-2 cursor-pointer active:scale-95"
+              onClick={handleFlipCamera}
+              className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md cursor-pointer active:scale-90 transition-all z-20"
+              title="Flip Camera"
             >
-              <ArrowClockwise size={14} weight="bold" />
-              <span>Try Again</span>
+              <ArrowClockwise size={15} weight="bold" />
             </button>
-          </div>
-        )}
-
-        {/* Camera Flip Button (Top Right Floating) */}
-        {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
-          <button
-            type="button"
-            onClick={handleFlipCamera}
-            className="absolute top-3 right-3 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md cursor-pointer active:scale-90 transition-all z-20"
-            title="Flip Camera"
-          >
-            <ArrowClockwise size={18} weight="bold" />
-          </button>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Scanned Result Discovery Card */}
       {scannerStatus === 'success' && scannedPlayer && (
-        <div className="mt-4 w-full max-w-[320px] p-4 rounded-2xl bg-white border border-slate-200/80 shadow-[0_8px_24px_rgba(197,204,214,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold pb-2.5 mb-2.5 border-b border-zinc-100">
-            <CheckCircle size={16} weight="fill" className="text-emerald-600" />
+        <div className="mt-3 w-full max-w-[250px] p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-[0_8px_24px_rgba(197,204,214,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold pb-2 mb-2 border-b border-zinc-100">
+            <CheckCircle size={15} weight="fill" className="text-emerald-600" />
             <span>Player Found</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full border-2 border-white shadow overflow-hidden shrink-0 bg-[#F2F7FC]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-full border-2 border-white shadow overflow-hidden shrink-0 bg-[#F2F7FC]">
               <ArenaAvatar id={scannedPlayer.avatar || '1'} size="badge" className="w-full h-full" />
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold text-zinc-900 truncate">
+              <div className="text-xs font-bold text-zinc-900 truncate">
                 {scannedPlayer.name || scannedPlayer.gid}
               </div>
-              <div className="text-[11px] font-arena text-zinc-500 font-semibold tracking-wider flex items-center gap-1.5 mt-0.5">
+              <div className="text-[10.5px] font-arena text-zinc-500 font-semibold tracking-wider flex items-center gap-1.5 mt-0.5">
                 <span>{scannedPlayer.gid}</span>
                 {scannedPlayer.orb && (
                   <>
@@ -554,20 +576,20 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
             </div>
           </div>
 
-          {/* In-Card Duel Status Feedback (Replaces freezing browser alert) */}
+          {/* In-Card Duel Status Feedback */}
           {duelStatus === 'sent' && (
-            <div className="mt-3 py-2 px-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11.5px] font-semibold flex items-center justify-center gap-1.5 animate-in fade-in duration-150">
-              <CheckCircle size={15} weight="fill" className="text-emerald-600 shrink-0" />
+            <div className="mt-2.5 py-1.5 px-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center justify-center gap-1 animate-in fade-in duration-150">
+              <CheckCircle size={14} weight="fill" className="text-emerald-600 shrink-0" />
               <span className="truncate">Challenge request sent to {scannedPlayer.name || scannedPlayer.gid}!</span>
             </div>
           )}
 
           {/* Action Row */}
-          <div className="mt-4 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
               onClick={handleScanAgain}
-              className="flex-1 py-2 px-3 bg-[#ebedf2] hover:bg-[#e2e6ec] text-zinc-800 text-xs font-bold rounded-xl border border-white/80 shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] transition-all cursor-pointer active:scale-95"
+              className="flex-1 py-1.5 px-2 bg-[#ebedf2] hover:bg-[#e2e6ec] text-zinc-800 text-[11px] font-bold rounded-xl border border-white/80 shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] transition-all cursor-pointer active:scale-95"
             >
               Scan Another
             </button>
@@ -575,24 +597,46 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
               type="button"
               onClick={handleInitiateDuel}
               disabled={duelStatus === 'sent'}
-              className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 px-2 text-[11px] font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1 ${
                 duelStatus === 'sent'
                   ? 'bg-emerald-600 text-white border border-emerald-500 opacity-90'
                   : 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800'
               }`}
             >
-              <Sword size={14} weight="bold" />
+              <Sword size={13} weight="bold" />
               <span>{duelStatus === 'sent' ? 'Challenge Sent' : 'Duel'}</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Sub-instruction */}
-      {scannerStatus === 'scanning' && !isCameraDisabledInApp && (
-        <p className="text-[11px] text-zinc-500 text-center mt-3 font-medium">
-          Align any Arena QR code within the frame to verify.
-        </p>
+      {/* Sub-instruction, Break Line, and "My QR" Button */}
+      {scannerStatus !== 'success' && (
+        <>
+          {/* Helper text explaining */}
+          <p className="text-[10.5px] text-zinc-500 text-center mt-2.5 max-w-[240px] leading-relaxed">
+            Align any Arena QR code within the frame to verify.
+          </p>
+
+          {/* Break line with "OR" in Center */}
+          <div className="w-full max-w-[240px] flex items-center gap-2.5 my-2 select-none">
+            <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
+            <span className="text-[11px] font-bold tracking-widest text-zinc-500/80 uppercase font-arena">
+              OR
+            </span>
+            <div className="flex-1 h-[1px] bg-zinc-300/80 shadow-[0_1px_0_#ffffff]" />
+          </div>
+
+          {/* My QR Option Button */}
+          <button
+            type="button"
+            onClick={handleOpenMyQr}
+            className="w-full max-w-[250px] py-2.5 px-3.5 bg-white active:scale-[0.97] text-zinc-700 text-[14px] font-bold rounded-xl border border-slate shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer group"
+          >
+            <QrCode size={20} weight="bold" className="text-zinc-700 scale-105 transition-transform" />
+            <span>My QR</span>
+          </button>
+        </>
       )}
     </div>
   );
