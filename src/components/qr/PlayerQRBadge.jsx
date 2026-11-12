@@ -134,12 +134,17 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
   return (
     <div className={`flex flex-col items-center select-none font-sans pt-1 sm:pt-3 pb-1 ${className}`}>
       {/* Main QR Card Container */}
-      <div className="relative p-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] max-w-[250px] w-full flex flex-col items-center">
+      <div className="relative pt-2 pb-3 px-3 rounded-[1rem] bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45),inset_0_1px_1px_rgba(255,255,255,0.8)] max-w-[250px] w-full flex flex-col items-center">
         {/* Subtle Decorative Top Corner Accents */}
         <div className="absolute top-3 left-3 w-3 h-3 border-t-2 border-l-2 border-zinc-300 rounded-tl" />
         <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-zinc-300 rounded-tr" />
         <div className="absolute bottom-3 left-3 w-3 h-3 border-b-2 border-l-2 border-zinc-300 rounded-bl" />
         <div className="absolute bottom-3 right-3 w-3 h-3 border-b-2 border-r-2 border-zinc-300 rounded-br" />
+
+        {/* Guest ID on top in the middle (Arena Font) */}
+        <div className="font-arena text-[14px] tracking-widest text-zinc-500 uppercase text-center select-none pt-1 -mb-0.5">
+          {guestId || 'GUEST001'}
+        </div>
 
         {/* QR Code Canvas with Embedded Arena Logo Emblem */}
         <div className="relative w-52 h-52 flex items-center justify-center bg-white rounded-2xl overflow-hidden p-2">
@@ -158,7 +163,7 @@ export default function PlayerQRBadge({ player, onScanClick, className = '' }) {
 
               {/* Centered Embedded Player Avatar (Level H allows center coverage safely) */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                <div className="w-11 h-11 rounded-full bg-white p-0.5 border-2 border-white shadow-[0_2px_8px_rgba(0,0,0,0.3)] flex items-center justify-center overflow-hidden">
+                <div className="w-14 h-14 rounded-full bg-white p-0.5 border-2 border-white shadow-[0_2px_10px_rgba(0,0,0,0.3)] flex items-center justify-center overflow-hidden">
                   <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
                 </div>
               </div>
