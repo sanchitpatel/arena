@@ -597,11 +597,10 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, onMyQrClick, cl
               type="button"
               onClick={handleInitiateDuel}
               disabled={duelStatus === 'sent'}
-              className={`flex-1 py-1.5 px-2 text-[11px] font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1 ${
-                duelStatus === 'sent'
+              className={`flex-1 py-1.5 px-2 text-[11px] font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1 ${duelStatus === 'sent'
                   ? 'bg-emerald-600 text-white border border-emerald-500 opacity-90'
                   : 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800'
-              }`}
+                }`}
             >
               <Sword size={13} weight="bold" />
               <span>{duelStatus === 'sent' ? 'Challenge Sent' : 'Duel'}</span>
