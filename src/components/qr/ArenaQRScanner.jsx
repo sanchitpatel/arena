@@ -8,6 +8,7 @@ import {
   setInAppPermission,
   subscribeToPermissionChanges,
 } from '../../utils/mediaGuard';
+import { getPlayerId } from '../../utils/playerId';
 
 /**
  * ArenaQRScanner Component:
@@ -20,6 +21,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
   const [scannedPlayer, setScannedPlayer] = useState(null);
   const [facingMode, setFacingMode] = useState('environment'); // 'environment' | 'user'
   const [invalidBanner, setInvalidBanner] = useState('');
+  const [duelStatus, setDuelStatus] = useState(null); // 'sent' | null
 
   // Track if attendee explicitly paused camera access in Arena settings
   const [isCameraDisabledInApp, setIsCameraDisabledInApp] = useState(() => {
@@ -34,6 +36,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
   const hasScannedRef = useRef(false);
   const invalidBannerTimerRef = useRef(null);
   const lastInvalidCodeRef = useRef('');
+  const stopPromiseRef = useRef(Promise.resolve());
 
   // Generate unique DOM container ID per mount to avoid collision
   const containerId = useRef(`arena-qr-reader-${Math.random().toString(36).substring(2, 9)}`).current;
@@ -113,11 +116,8 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
     return null;
   };
 
-  // Fully awaits stopping and clearing any running instance
-  const teardown = async () => {
-    const s = scannerRef.current;
-    scannerRef.current = null;
-    isScanningRef.current = false;
+  // Tears down a specific Html5Qrcode instance without touching scannerRef (prevents race conditions)
+  const teardownInstance = async (s) => {
     if (!s) return;
     try {
       await s.stop();
@@ -127,9 +127,17 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
     } catch { }
   };
 
-  // Forcefully stop all camera tracks immediately on unmount or pause
-  const stopCameraHardwareImmediately = async (reason = 'Manual stop') => {
-    runIdRef.current++;
+  // Fully awaits stopping and clearing the current active scanner instance
+  const teardown = async () => {
+    const s = scannerRef.current;
+    scannerRef.current = null;
+    isScanningRef.current = false;
+    await teardownInstance(s);
+  };
+
+  // Forcefully stop all camera tracks immediately on unmount or pause (returns a chainable promise)
+  const stopCameraHardwareImmediately = (reason = 'Manual stop') => {
+    const myRun = ++runIdRef.current;
     isScanningRef.current = false;
 
     // 1. Direct hardware track termination on DOM video elements:
@@ -153,11 +161,16 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
       }
     } catch { }
 
-    // 2. Await clean teardown of Html5Qrcode instance
-    await teardown();
+    // 2. Chained async teardown: prevents new startCamera from colliding with pending stop/clear
+    const p = teardown().then(() => {
+      // Only execute global media kill if a newer run hasn't already started
+      if (runIdRef.current === myRun) {
+        killAllMediaTracks(`Scanner stop: ${reason}`, 'video');
+      }
+    });
 
-    // 3. Global MediaGuard kill to guarantee NO orphaned stream remains in memory (camera video only, preserving audio/mic):
-    killAllMediaTracks(`Scanner stop: ${reason}`, 'video');
+    stopPromiseRef.current = p;
+    return p;
   };
 
   // Initialize and start camera scanner
@@ -171,6 +184,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
       setScannedPlayer(null);
 
       // Clean up previous running instance completely before mounting new one
+      await stopPromiseRef.current;
       await teardown();
       if (runId !== runIdRef.current || !isMountedRef.current) return;
 
@@ -189,6 +203,21 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         const parsed = parseArenaQRPayload(decodedText);
 
         if (parsed) {
+          // Self-scan prevention: prevent an attendee from dueling or scanning themselves
+          const myId = getPlayerId();
+          if (myId && parsed.gid && parsed.gid.toUpperCase() === myId.toUpperCase()) {
+            if (lastInvalidCodeRef.current !== decodedText) {
+              lastInvalidCodeRef.current = decodedText;
+              setInvalidBanner("You can't duel yourself!");
+              if (invalidBannerTimerRef.current) clearTimeout(invalidBannerTimerRef.current);
+              invalidBannerTimerRef.current = setTimeout(() => {
+                setInvalidBanner('');
+                lastInvalidCodeRef.current = '';
+              }, 2500);
+            }
+            return;
+          }
+
           hasScannedRef.current = true;
           setInvalidBanner('');
           setScannedPlayer(parsed);
@@ -240,7 +269,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         );
       } catch (firstErr) {
         if (runId !== runIdRef.current || !isMountedRef.current) {
-          await teardown();
+          await teardownInstance(html5QrCode);
           return;
         }
 
@@ -265,7 +294,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
           );
         } catch (secondErr) {
           if (runId !== runIdRef.current || !isMountedRef.current) {
-            await teardown();
+            await teardownInstance(html5QrCode);
             return;
           }
 
@@ -290,7 +319,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
       }
 
       if (runId !== runIdRef.current || !isMountedRef.current) {
-        await teardown();
+        await teardownInstance(html5QrCode);
         return;
       }
 
@@ -367,11 +396,18 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
 
   const handleScanAgain = () => {
     setScannedPlayer(null);
+    setDuelStatus(null);
     setInvalidBanner('');
     lastInvalidCodeRef.current = '';
     hasScannedRef.current = false;
-    setScannerStatus('scanning');
     startCamera(facingMode);
+  };
+
+  const handleInitiateDuel = () => {
+    setDuelStatus('sent');
+    if (navigator?.vibrate) {
+      navigator.vibrate([30, 40, 30]);
+    }
   };
 
   return (
@@ -486,7 +522,7 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
         <div className="mt-4 w-full max-w-[320px] p-4 rounded-2xl bg-white border border-slate-200/80 shadow-[0_8px_24px_rgba(197,204,214,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-200">
           <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold pb-2.5 mb-2.5 border-b border-zinc-100">
             <CheckCircle size={16} weight="fill" className="text-emerald-600" />
-            <span>Player Verified!</span>
+            <span>Player Found</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -510,6 +546,14 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
             </div>
           </div>
 
+          {/* In-Card Duel Status Feedback (Replaces freezing browser alert) */}
+          {duelStatus === 'sent' && (
+            <div className="mt-3 py-2 px-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11.5px] font-semibold flex items-center justify-center gap-1.5 animate-in fade-in duration-150">
+              <CheckCircle size={15} weight="fill" className="text-emerald-600 shrink-0" />
+              <span className="truncate">Challenge request sent to {scannedPlayer.name || scannedPlayer.gid}!</span>
+            </div>
+          )}
+
           {/* Action Row */}
           <div className="mt-4 flex items-center gap-2">
             <button
@@ -521,13 +565,16 @@ export default function ArenaQRScanner({ onScanSuccess, onClose, className = '' 
             </button>
             <button
               type="button"
-              onClick={() => {
-                alert(`Challenge request initiated for ${scannedPlayer.name || scannedPlayer.gid}!`);
-              }}
-              className="flex-1 py-2 px-3 bg-gradient-to-b from-zinc-900 to-black text-white text-xs font-bold rounded-xl border border-zinc-800 shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+              onClick={handleInitiateDuel}
+              disabled={duelStatus === 'sent'}
+              className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5 ${
+                duelStatus === 'sent'
+                  ? 'bg-emerald-600 text-white border border-emerald-500 opacity-90'
+                  : 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800'
+              }`}
             >
               <Sword size={14} weight="bold" />
-              <span>Duel</span>
+              <span>{duelStatus === 'sent' ? 'Challenge Sent' : 'Duel'}</span>
             </button>
           </div>
         </div>

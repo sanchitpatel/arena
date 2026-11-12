@@ -42,7 +42,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   const [savedField, setSavedField] = useState(null);   // 'username' | 'avatar' | null
   const [errorMessage, setErrorMessage] = useState('');
   const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [nameFocused, setNameFocused] = useState(false);
+  const nameFocusedRef = useRef(false);
   const debounceTimerRef = useRef(null);
   const savedTimerRef = useRef(null);
   const saveSeqRef = useRef(0);
@@ -170,15 +170,20 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     };
   }, []);
 
-  // Sync state if player prop updates (only when user is not actively editing)
+  // Sync username only when player.name changes from backend and user is not actively typing
   useEffect(() => {
-    if (!nameFocused && player?.name && player.name !== guestId) {
+    if (nameFocusedRef.current) return;
+    if (player?.name && player.name !== guestId) {
       setPlayerName(player.name);
     }
+  }, [player?.name, guestId]);
+
+  // Sync avatar only when player.avatar changes from backend
+  useEffect(() => {
     if (player?.avatar) {
       setSelectedAvatar(String(player.avatar));
     }
-  }, [player, guestId, nameFocused]);
+  }, [player?.avatar]);
 
   // Cleanup debounce & saved timers on unmount
   useEffect(() => {
@@ -281,7 +286,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   };
 
   const handleNameBlur = () => {
-    setNameFocused(false);
+    nameFocusedRef.current = false;
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -546,7 +551,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                 type="text"
                 value={playerName}
                 onChange={handleNameChange}
-                onFocus={() => setNameFocused(true)}
+                onFocus={() => { nameFocusedRef.current = true; }}
                 onBlur={handleNameBlur}
                 placeholder={guestId || 'Player Name'}
                 maxLength={16}
