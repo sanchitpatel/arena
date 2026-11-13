@@ -296,7 +296,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   };
 
   // Zoom helpers
-  const handleZoomIn = () => setZoom((prev) => Math.min(Number((prev + 0.25).toFixed(2)), 2.2));
+  const handleZoomIn = () => setZoom((prev) => Math.min(Number((prev + 0.25).toFixed(2)), 2.5));
   const handleZoomOut = () => {
     setZoom((prev) => {
       const next = Math.max(Number((prev - 0.25).toFixed(2)), 1.0);
@@ -317,6 +317,157 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
       y: (50 - orbPosition.y) * 2.2,
     });
   };
+
+  // Active state refs for non-stale touch and gesture callbacks
+  const zoomRef = useRef(zoom);
+  const panRef = useRef(pan);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+  useEffect(() => {
+    panRef.current = pan;
+  }, [pan]);
+
+  const touchStateRef = useRef({
+    initialDist: 0,
+    initialZoom: 1,
+    initialPan: { x: 0, y: 0 },
+    touchStartPos: { x: 0, y: 0 },
+    lastTapTime: 0,
+    hasMoved: false,
+    isPinching: false,
+    isPanning: false,
+  });
+
+  // Touch & Wheel gesture handling (Thumb drag, 2-finger/thumb pinch-to-zoom, double-tap zoom)
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container) return;
+
+    // 1. Touch Start: detect single thumb or two-thumb pinch
+    const handleTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        // Pinch-to-zoom gesture
+        touchStateRef.current.isPinching = true;
+        touchStateRef.current.isPanning = false;
+        touchStateRef.current.hasMoved = true;
+        isDraggingRef.current = true;
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        touchStateRef.current.initialDist = dist || 1;
+        touchStateRef.current.initialZoom = zoomRef.current;
+        touchStateRef.current.initialPan = { ...panRef.current };
+      } else if (e.touches.length === 1) {
+        // Single thumb touch
+        touchStateRef.current.isPinching = false;
+        touchStateRef.current.isPanning = true;
+        touchStateRef.current.hasMoved = false;
+        touchStateRef.current.touchStartPos = {
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+        };
+        touchStateRef.current.initialPan = { ...panRef.current };
+        isDraggingRef.current = false;
+
+        // Double-tap with thumb for quick zoom-in
+        const now = Date.now();
+        if (now - touchStateRef.current.lastTapTime < 300) {
+          e.preventDefault();
+          touchStateRef.current.hasMoved = true;
+          isDraggingRef.current = true;
+          setZoom((prev) => {
+            const next = prev >= 1.8 ? 1.0 : Number((prev + 0.45).toFixed(2));
+            if (next === 1.0) setPan({ x: 0, y: 0 });
+            return next;
+          });
+          touchStateRef.current.lastTapTime = 0;
+          return;
+        }
+        touchStateRef.current.lastTapTime = now;
+      }
+    };
+
+    // 2. Touch Move: live pinch scaling and thumb panning
+    const handleTouchMove = (e) => {
+      if (touchStateRef.current.isPinching && e.touches.length === 2) {
+        e.preventDefault(); // Prevent native browser viewport zoom
+        isDraggingRef.current = true;
+        const currentDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const factor = currentDist / touchStateRef.current.initialDist;
+        const newZoom = Math.min(2.5, Math.max(1.0, Number((touchStateRef.current.initialZoom * factor).toFixed(2))));
+        setZoom(newZoom);
+        if (newZoom === 1.0) {
+          setPan({ x: 0, y: 0 });
+        }
+      } else if (touchStateRef.current.isPanning && e.touches.length === 1) {
+        const dx = e.touches[0].clientX - touchStateRef.current.touchStartPos.x;
+        const dy = e.touches[0].clientY - touchStateRef.current.touchStartPos.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist > 8) {
+          touchStateRef.current.hasMoved = true;
+          isDraggingRef.current = true;
+
+          // Pan smoothly when zoomed in
+          if (zoomRef.current > 1.0) {
+            e.preventDefault(); // Prevent page scroll during map pan
+            const maxOffset = (zoomRef.current - 1) * 180;
+            const nextX = Math.max(-maxOffset, Math.min(maxOffset, touchStateRef.current.initialPan.x + dx));
+            const nextY = Math.max(-maxOffset, Math.min(maxOffset, touchStateRef.current.initialPan.y + dy));
+            setPan({ x: nextX, y: nextY });
+          }
+        }
+      }
+    };
+
+    // 3. Touch End: cleanup gestures cleanly
+    const handleTouchEnd = () => {
+      if (touchStateRef.current.isPinching) {
+        touchStateRef.current.isPinching = false;
+        setTimeout(() => {
+          isDraggingRef.current = false;
+        }, 50);
+      }
+      if (touchStateRef.current.hasMoved) {
+        setTimeout(() => {
+          isDraggingRef.current = false;
+        }, 50);
+      } else {
+        isDraggingRef.current = false;
+      }
+      touchStateRef.current.isPanning = false;
+    };
+
+    // 4. Mouse Wheel Zoom (Trackpad pinch & mouse wheel)
+    const handleWheel = (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.15 : 0.15;
+      setZoom((prev) => {
+        const next = Math.min(2.5, Math.max(1.0, Number((prev + delta).toFixed(2))));
+        if (next === 1.0) setPan({ x: 0, y: 0 });
+        return next;
+      });
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
 
   // Move Orb on direct map click/tap
   const handleMapClick = (e) => {
@@ -342,7 +493,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
     }
   };
 
-  // Drag-to-pan handlers for zoom
+  // Drag-to-pan handlers for mouse
   const handleMouseDown = (e) => {
     if (zoom <= 1.0) return;
     isDraggingRef.current = false;
@@ -436,7 +587,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
         <div
           ref={mapContainerRef}
           onMouseDown={handleMouseDown}
-          className="relative w-full aspect-[1:1] max-h-[76vh] overflow-hidden rounded-[12px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] cursor-crosshair touch-manipulation"
+          className="relative w-full aspect-[1:1] max-h-[76vh] overflow-hidden rounded-[12px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] cursor-grab active:cursor-grabbing touch-none select-none"
         >
           {/* Inward Shadow Overlay Layer (Ensures crisp inward shadow on top of floorplan edges) */}
           <div className="pointer-events-none absolute inset-0 rounded-[12px] shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff] z-20" />
