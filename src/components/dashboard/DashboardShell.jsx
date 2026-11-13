@@ -348,38 +348,38 @@ export const DashboardShell = ({
           ======================================================== */}
       <main className="flex-1 flex flex-col min-w-0 h-full bg-[#f0f2f5] overflow-y-scroll [scrollbar-gutter:stable] pb-20 md:pb-0">
         {/* ========================================================
-            TOP TRANSPARENT APP BAR (Constant across all pages, no border)
+            TOP TRANSPARENT APP BAR (Fixed height, zero jump / zero scale on click)
             ======================================================== */}
-        <header className="sticky top-0 z-30 w-full bg-[#f0f2f5]/80 backdrop-blur-md border-none px-4 sm:px-6 py-2 flex items-center justify-between select-none">
+        <header className="sticky top-0 z-30 w-full bg-[#f0f2f5]/80 backdrop-blur-md border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
           {/* Brand Name */}
-          <span className="font-arena text-lg -ml-1 sm:text-lg font-black tracking-wider text-zinc-900">
+          <span className="font-arena text-lg -ml-1 sm:text-lg font-black tracking-wider text-zinc-900 shrink-0">
             ARENA
           </span>
 
           {/* Top Actions: Notification on left, Prizes in middle, Map on rightmost end */}
-          <div className="flex items-center gap-2 -mr-1">
-            {/* Notification Option (Direct bare icon, color-only state change) */}
+          <div className="flex items-center gap-2 sm:gap-2">
+            {/* Notification Option (Dimensions strictly locked, zero jump) */}
             <button
               type="button"
               onClick={() => onTabChange('notifications')}
               title="WhatsApp Notifications"
-              className="relative flex items-center justify-center p-1 active:scale-95 transition-all cursor-pointer"
+              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer"
             >
               <Bell
-                size={28}
+                size={26}
                 weight={activeTab === 'notifications' ? 'fill' : 'regular'}
-                className={`transition-colors ${
+                className={`transition-colors duration-150 ${
                   activeTab === 'notifications' ? 'text-black' : 'text-zinc-500 hover:text-black'
                 }`}
               />
               {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1.5 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
                   {pendingCount > 99 ? '99+' : pendingCount}
                 </span>
               )}
             </button>
 
-            {/* Prizes / Dollar Option (Direct bare icon in the middle, color-only state change) */}
+            {/* Prizes / Dollar Option (Dimensions strictly locked, zero jump) */}
             <button
               type="button"
               onClick={() => {
@@ -387,18 +387,18 @@ export const DashboardShell = ({
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-prizes'));
               }}
               title="Prizes"
-              className="flex items-center justify-center p-1 active:scale-95 transition-all cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer"
             >
               <CurrencyCircleDollar
-                size={30}
+                size={26}
                 weight={activeTab === 'prizes' ? 'fill' : 'regular'}
-                className={`transition-colors ${
+                className={`transition-colors duration-150 ${
                   activeTab === 'prizes' ? 'text-black' : 'text-zinc-500 hover:text-black'
                 }`}
               />
             </button>
 
-            {/* Map Icon on the Rightmost End (Persistent container: transparent when inactive, black gradient with white map when active) */}
+            {/* Map Icon on the Rightmost End (Persistent container, strictly locked size, zero jump) */}
             <button
               type="button"
               onClick={() => {
@@ -406,7 +406,7 @@ export const DashboardShell = ({
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-map'));
               }}
               title="Tactical Map"
-              className={`w-9 h-9 flex items-center justify-center rounded-xl shrink-0 transition-all duration-150 active:scale-95 cursor-pointer ${
+              className={`w-9 h-9 flex items-center justify-center rounded-xl shrink-0 transition-[background-color,border-color,box-shadow,color] duration-150 cursor-pointer ${
                 activeTab === 'map'
                   ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
                   : 'bg-transparent text-zinc-800 hover:text-black border border-transparent shadow-none'
@@ -414,7 +414,7 @@ export const DashboardShell = ({
             >
               <ArenaMapIcon
                 size={24}
-                className={activeTab === 'map' ? 'text-white' : 'text-zinc-800 hover:text-black transition-colors'}
+                className={activeTab === 'map' ? 'text-white' : 'text-zinc-800 hover:text-black transition-colors duration-150'}
               />
             </button>
           </div>
