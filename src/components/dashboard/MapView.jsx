@@ -422,42 +422,6 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center select-none font-sans pb-12 pt-1">
-      {/* 1. Tactical HUD Header Bar */}
-      <div className="w-full mb-3 flex flex-wrap items-center justify-between gap-2.5 bg-[#ebedf2] border border-white/80 rounded-2xl p-3 sm:px-4 shadow-[3px_3px_8px_#c6ced9,-3px_-3px_8px_#ffffff]">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-zinc-900 to-black text-white flex items-center justify-center shadow-[inset_0_-2px_4px_rgba(0,0,0,0.3),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] shrink-0">
-            <ArenaMapIcon size={24} className="text-white" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="font-arena text-sm sm:text-base font-black tracking-wider text-zinc-900 truncate">
-              INCUBATION LAB MAP
-            </h2>
-            <div className="text-[11px] text-zinc-500 font-semibold tracking-wide flex items-center gap-1.5 truncate">
-              <span>Floor 1</span>
-              <span>•</span>
-              <span className="text-sky-700 font-bold truncate">Orb in {orbPosition.room}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Live Score & Quests Pills */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="px-3 py-1.5 rounded-xl bg-[#f0f2f5] border border-white shadow-[inset_2px_2px_4px_#cbd2de,inset_-2px_-2px_4px_#ffffff] flex items-center gap-1.5">
-            <span className="text-amber-500 text-xs font-black">★</span>
-            <span className="font-arena text-xs font-black text-zinc-800 tracking-tight">
-              {totalPointsEarned} <span className="text-[10px] font-sans text-zinc-500">PTS</span>
-            </span>
-          </div>
-
-          <div className="px-3 py-1.5 rounded-xl bg-[#f0f2f5] border border-white shadow-[inset_2px_2px_4px_#cbd2de,inset_-2px_-2px_4px_#ffffff] flex items-center gap-1.5">
-            <CheckCircle size={14} weight="bold" className="text-emerald-600" />
-            <span className="text-xs font-bold text-zinc-700">
-              {completedQuestIds.length} / {MAP_TASKS.length}
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* Floating Celebration Toast */}
       {celebrationMessage && (
         <div className="fixed top-16 z-50 animate-in fade-in slide-in-from-top-3 duration-200 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs font-bold shadow-2xl border border-emerald-400 flex items-center gap-2">
@@ -466,50 +430,53 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
         </div>
       )}
 
-      {/* 2. Main Floorplan Canvas Frame (Neumorphic Card) */}
-      <div className="relative w-full max-w-[420px] sm:max-w-[460px] bg-[#ebedf2] border-2 sm:border-4 border-white rounded-[32px] p-2.5 sm:p-3 shadow-[8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] flex flex-col items-center">
-        {/* Floating Zoom & Locate Toolbar (Top Right of Floorplan) */}
-        <div className="absolute top-4 right-4 z-30 flex flex-col gap-1.5 bg-white/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/80 shadow-lg">
-          <button
-            type="button"
-            onClick={handleZoomIn}
-            title="Zoom In"
-            className="w-8 h-8 rounded-xl bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
-          >
-            <Plus size={16} weight="bold" />
-          </button>
-          <button
-            type="button"
-            onClick={handleZoomOut}
-            title="Zoom Out"
-            className="w-8 h-8 rounded-xl bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
-          >
-            <Minus size={16} weight="bold" />
-          </button>
-          <button
-            type="button"
-            onClick={handleResetZoom}
-            title="Reset View"
-            className="w-8 h-8 rounded-xl bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
-          >
-            <ArrowClockwise size={15} weight="bold" />
-          </button>
-          <button
-            type="button"
-            onClick={handleLocateOrb}
-            title="Center on My Orb"
-            className="w-8 h-8 rounded-xl bg-sky-100 hover:bg-sky-200 active:scale-90 text-sky-700 flex items-center justify-center transition-all cursor-pointer shadow-sm border border-sky-300"
-          >
-            <Crosshair size={16} weight="bold" />
-          </button>
-        </div>
-
+      {/* Main Floorplan Canvas Frame (Outer Thick White Wall with Inward Shadow & Inside White Background) */}
+      <div className="relative w-full max-w-[420px] sm:max-w-[460px] flex flex-col items-center">
         {/* Interactive Floorplan Window */}
         <div
           ref={mapContainerRef}
           onMouseDown={handleMouseDown}
-          className="relative w-full aspect-[24.4/42] max-h-[72vh] overflow-hidden rounded-[24px] bg-white border border-slate-300/80 shadow-[inset_2px_2px_6px_#c2c9d4,inset_-2px_-2px_6px_#ffffff] cursor-crosshair touch-manipulation"
+          className="relative w-full aspect-[24.4/42] max-h-[76vh] overflow-hidden rounded-[32px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] cursor-crosshair touch-manipulation"
         >
+          {/* Inward Shadow Overlay Layer (Ensures crisp inward shadow on top of floorplan edges) */}
+          <div className="pointer-events-none absolute inset-0 rounded-[28px] shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff] z-20" />
+
+          {/* Floating Zoom & Locate Toolbar (Top Right of Floorplan) */}
+          <div className="absolute top-3.5 right-3.5 z-30 flex flex-col gap-1.5 bg-white/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/80 shadow-md">
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              title="Zoom In"
+              className="w-8 h-8 rounded-xl bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+            >
+              <Plus size={16} weight="bold" />
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              title="Zoom Out"
+              className="w-8 h-8 rounded-xl bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+            >
+              <Minus size={16} weight="bold" />
+            </button>
+            <button
+              type="button"
+              onClick={handleResetZoom}
+              title="Reset View"
+              className="w-8 h-8 rounded-xl bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+            >
+              <ArrowClockwise size={15} weight="bold" />
+            </button>
+            <button
+              type="button"
+              onClick={handleLocateOrb}
+              title="Center on My Orb"
+              className="w-8 h-8 rounded-xl bg-sky-100 hover:bg-sky-200 active:scale-90 text-sky-700 flex items-center justify-center transition-all cursor-pointer shadow-sm border border-sky-300"
+            >
+              <Crosshair size={16} weight="bold" />
+            </button>
+          </div>
+
           {/* Scalable & Pannable Floorplan Layer */}
           <div
             onClick={handleMapClick}
@@ -602,7 +569,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                 <ChatGPTOrb
                   orbNumber={orbNumber}
                   avatar={avatar}
-                  size="w-12 h-12 sm:w-14 sm:h-14"
+                  size="w-16 h-16 sm:w-14 sm:h-14"
                   badge={null}
                   speed={0.8}
                 />
