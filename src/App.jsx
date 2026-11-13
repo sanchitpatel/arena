@@ -20,6 +20,7 @@ const VALID_APP_PATHS = new Set([
   '/scanner',
   '/scan',
   '/prizes',
+  '/map',
 ]);
 
 function resolveRoute() {

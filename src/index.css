@@ -252,6 +252,52 @@ html.lenis body {
   pointer-events: none !important;
 }
 
+/* 8. 2D Map Tactical Animations (Floating Gems & Levitating Orb) */
+@keyframes gemFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes orbFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.03);
+  }
+}
+
+@keyframes beaconPulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.animate-gem-float {
+  animation: gemFloat 3.2s ease-in-out infinite;
+}
+
+.animate-orb-float {
+  animation: orbFloat 4s ease-in-out infinite;
+}
+
+.animate-beacon-pulse {
+  animation: beaconPulse 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

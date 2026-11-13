@@ -11,6 +11,7 @@ const DoctorDashboardView = lazy(() => import('./DoctorDashboardView').then(m =>
 const NotificationView = lazy(() => import('./NotificationView').then(m => ({ default: m.NotificationView })));
 const ProfileView = lazy(() => import('./ProfileView').then(m => ({ default: m.ProfileView })));
 const ScannerView = lazy(() => import('./ScannerView').then(m => ({ default: m.ScannerView })));
+const MapView = lazy(() => import('./MapView').then(m => ({ default: m.MapView })));
 
 // Pre-fetch dashboard views in background after onboarding page has loaded
 const prefetchDashboard = () => {
@@ -24,6 +25,7 @@ const prefetchDashboard = () => {
     import('./NotificationView');
     import('./ProfileView');
     import('./ScannerView');
+    import('./MapView');
   }, { timeout: 1000 });
 };
 
@@ -57,6 +59,7 @@ const TAB_TO_PATH = {
   'profile': '/profile',
   'scanner': '/scanner',
   'prizes': '/prizes',
+  'map': '/map',
 };
 
 const PATH_TO_TAB = {
@@ -69,6 +72,7 @@ const PATH_TO_TAB = {
   '/scanner': 'scanner',
   '/scan': 'scanner',
   '/prizes': 'prizes',
+  '/map': 'map',
   '/': 'new-patient',
 };
 
@@ -261,6 +265,13 @@ export default function DashboardApp() {
             player={player}
             onNavigate={handleTabChange}
             isActive={activeTab === 'scanner'}
+          />
+        </div>
+        <div className={activeTab === 'map' ? 'block' : 'hidden'}>
+          <MapView
+            player={player}
+            onNavigate={handleTabChange}
+            isActive={activeTab === 'map'}
           />
         </div>
       </DashboardShell>

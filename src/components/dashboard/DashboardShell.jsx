@@ -88,11 +88,19 @@ export const DashboardShell = ({
       }
     };
     const handleOpenBadge = () => setQrModalOpen('badge');
+    const handleOpenMap = () => {
+      setQrModalOpen(null);
+      if (typeof onTabChange === 'function') {
+        onTabChange('map');
+      }
+    };
     window.addEventListener('arena:open-scanner', handleOpenScanner);
     window.addEventListener('arena:open-badge', handleOpenBadge);
+    window.addEventListener('arena:open-map', handleOpenMap);
     return () => {
       window.removeEventListener('arena:open-scanner', handleOpenScanner);
       window.removeEventListener('arena:open-badge', handleOpenBadge);
+      window.removeEventListener('arena:open-map', handleOpenMap);
     };
   }, [onTabChange]);
 
@@ -134,6 +142,12 @@ export const DashboardShell = ({
       label: 'Profile',
       icon: UserCircle,
       description: 'Player identity & avatar',
+    },
+    {
+      id: 'map',
+      label: '2D Map',
+      icon: ArenaMapIcon,
+      description: 'Lab floorplan & gem quests',
     },
     {
       id: 'notifications',
@@ -281,7 +295,7 @@ export const DashboardShell = ({
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#ebedf2]/95 backdrop-blur-lg border-t border-slate-300/60 shadow-[0_-4px_20px_rgba(197,204,214,0.7)] px-1.5 py-1.5">
         <div className="flex items-end justify-between max-w-md mx-auto w-full">
-          {navItems.filter((item) => item.id !== 'notifications').map((item) => {
+          {navItems.filter((item) => item.id !== 'notifications' && item.id !== 'map').map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             const isCenterScanner = item.id === 'scanner';
@@ -376,15 +390,19 @@ export const DashboardShell = ({
               />
             </button>
 
-            {/* Map Icon on the Rightmost End (Direct bare icon, no container/border/bg) */}
+            {/* Map Icon on the Rightmost End (Direct bare icon, highlights when active) */}
             <button
               type="button"
               onClick={() => {
                 if (typeof onTabChange === 'function') onTabChange('map');
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-map'));
               }}
-              title="Map"
-              className="flex items-center justify-center p-1 text-zinc-800 hover:text-black active:scale-95 transition-all cursor-pointer"
+              title="Tactical Map"
+              className={`flex items-center justify-center p-1 transition-all cursor-pointer ${
+                activeTab === 'map'
+                  ? 'text-zinc-800 hover:text-black active:scale-95'
+                  : 'text-zinc-800 hover:text-black active:scale-95'
+              }`}
             >
               <ArenaMapIcon size={32} className="text-zinc-800" />
             </button>
