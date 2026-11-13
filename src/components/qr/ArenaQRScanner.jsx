@@ -233,8 +233,12 @@ export default function ArenaQRScanner({
             navigator.vibrate([40, 60, 40]);
           }
 
-          // Power down camera immediately upon successful scan so green indicator turns off
-          stopCameraHardwareImmediately('Scan verified successfully');
+          // Freeze video frame on screen under the frosted glass overlay without blacking out the screen
+          if (scannerRef.current) {
+            try {
+              scannerRef.current.pause(true);
+            } catch { }
+          }
 
           if (typeof onScanSuccess === 'function') {
             onScanSuccess(parsed);
@@ -429,6 +433,12 @@ export default function ArenaQRScanner({
   };
 
   const handleTogglePause = () => {
+    // If a player was successfully scanned, tapping the first action button resumes scanning
+    if (scannerStatus === 'success') {
+      handleScanAgain();
+      return;
+    }
+
     if (isPaused) {
       isPausedRef.current = false;
       setIsPaused(false);
@@ -455,6 +465,9 @@ export default function ArenaQRScanner({
   const handleFlipCamera = () => {
     isPausedRef.current = false;
     setIsPaused(false);
+    setScannedPlayer(null);
+    setDuelStatus(null);
+    hasScannedRef.current = false;
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
   };
 
@@ -466,7 +479,16 @@ export default function ArenaQRScanner({
     setInvalidBanner('');
     lastInvalidCodeRef.current = '';
     hasScannedRef.current = false;
-    startCamera(facingMode);
+    setScannerStatus('scanning');
+    if (scannerRef.current) {
+      try {
+        scannerRef.current.resume();
+      } catch {
+        startCamera(facingMode);
+      }
+    } else {
+      startCamera(facingMode);
+    }
   };
 
   const handleInitiateDuel = () => {
@@ -558,6 +580,25 @@ export default function ArenaQRScanner({
             </div>
           )}
 
+          {/* Success Frosted Glass Overlay (Freezes frame with blur instead of turning screen black) */}
+          {scannerStatus === 'success' && !isCameraDisabledInApp && (
+            <div
+              onClick={handleScanAgain}
+              className="absolute inset-0 bg-black/55 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2 text-white z-20 animate-in fade-in duration-200 cursor-pointer select-none"
+              title="Tap to scan another"
+            >
+              <div className="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-emerald-400/80 shadow-[0_0_20px_rgba(52,211,153,0.4)] flex items-center justify-center text-emerald-400 animate-in zoom-in-75 duration-200">
+                <CheckCircle size={32} weight="fill" className="text-emerald-400" />
+              </div>
+              <span className="font-arena text-[12px] font-black tracking-widest text-emerald-300 uppercase">
+                QR Code Scanned
+              </span>
+              <span className="text-[10.5px] text-zinc-300 font-medium -mt-0.5">
+                Tap to scan another
+              </span>
+            </div>
+          )}
+
           {/* Initializing Spinner Overlay */}
           {scannerStatus === 'initializing' && !isCameraDisabledInApp && (
             <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-white">
@@ -627,129 +668,126 @@ export default function ArenaQRScanner({
           )}
         </div>
 
-        {/* Scanned Result Discovery Card */}
-        {scannerStatus === 'success' && scannedPlayer && (
-          <div className={`mt-3 w-full p-4 rounded-2xl bg-white border border-slate-200/80 shadow-[0_8px_24px_rgba(197,204,214,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-200 ${
-            isPage ? 'max-w-[340px] sm:max-w-[420px]' : 'max-w-[240px]'
-          }`}>
-            <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold pb-2 mb-2 border-b border-zinc-100">
-              <CheckCircle size={15} weight="fill" className="text-emerald-600" />
-              <span>Player Found</span>
-            </div>
+        {/* Sub-instruction (Always inside white card) */}
+        <p className={`text-zinc-500/80 text-center mt-2 leading-relaxed ${
+          isPage ? 'max-w-[320px] text-[11px]' : 'max-w-[230px] text-[10.5px]'
+        }`}>
+          {scannerStatus === 'success'
+            ? 'Player verified. Challenge or scan another below.'
+            : 'Align any Arena QR code within the frame to verify.'}
+        </p>
 
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-full border-2 border-white shadow overflow-hidden shrink-0 bg-[#F2F7FC]">
-                <ArenaAvatar id={scannedPlayer.avatar || '1'} size="badge" className="w-full h-full" />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold text-zinc-900 truncate">
-                  {scannedPlayer.name || scannedPlayer.gid}
-                </div>
-                <div className="text-[10.5px] font-arena text-zinc-500 font-semibold tracking-wider flex items-center gap-1.5 mt-0.5">
-                  <span>{scannedPlayer.gid}</span>
-                  {scannedPlayer.orb && (
-                    <>
-                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                      <span>Orb #{scannedPlayer.orb}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* In-Card Duel Status Feedback */}
-            {duelStatus === 'sent' && (
-              <div className="mt-2.5 py-1.5 px-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center justify-center gap-1 animate-in fade-in duration-150">
-                <CheckCircle size={14} weight="fill" className="text-emerald-600 shrink-0" />
-                <span className="truncate">Challenge request sent to {scannedPlayer.name || scannedPlayer.gid}!</span>
-              </div>
+        {/* 3 Action Buttons: Pause/Resume, Flip, QR (Always Visible inside White Card) */}
+        <div className={`w-full flex items-center gap-2 sm:gap-2.5 mt-2.5 select-none ${
+          isPage ? 'max-w-[325px] sm:max-w-[420px]' : 'max-w-[240px]'
+        }`}>
+          {/* Button 1: Pause / Resume / Scan Another */}
+          <button
+            type="button"
+            onClick={handleTogglePause}
+            className="flex-1 py-2.5 sm:py-3 px-2 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-[13px] font-bold rounded-xl border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] active:scale-[0.96] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+            title={scannerStatus === 'success' ? "Scan Another QR" : isPaused ? "Resume Camera" : "Pause Camera"}
+          >
+            {scannerStatus === 'success' || isPaused ? (
+              <>
+                <Play size={18} weight="fill" className="text-sky-400 scale-105 shrink-0" />
+                <span className="truncate">{scannerStatus === 'success' ? 'Scan' : 'Resume'}</span>
+              </>
+            ) : (
+              <>
+                <Pause size={18} weight="fill" className="text-white scale-105 shrink-0" />
+                <span className="truncate">Pause</span>
+              </>
             )}
+          </button>
 
-            {/* Action Row */}
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleScanAgain}
-                className="flex-1 py-1.5 px-2 bg-[#ebedf2] hover:bg-[#e2e6ec] text-zinc-800 text-[11px] font-bold rounded-xl border border-white/80 shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] transition-all cursor-pointer active:scale-95"
-              >
-                Scan Another
-              </button>
-              <button
-                type="button"
-                onClick={handleInitiateDuel}
-                disabled={duelStatus === 'sent'}
-                className={`flex-1 py-1.5 px-2 text-[11px] font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1 ${duelStatus === 'sent'
-                    ? 'bg-emerald-600 text-white border border-emerald-500 opacity-90'
-                    : 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800'
-                  }`}
-              >
-                <Sword size={13} weight="bold" />
-                <span>{duelStatus === 'sent' ? 'Challenge Sent' : 'Duel'}</span>
-              </button>
-            </div>
+          {/* Button 2: Flip Camera */}
+          <button
+            type="button"
+            onClick={handleFlipCamera}
+            className="flex-1 py-2.5 sm:py-3 px-2 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-[13px] font-bold rounded-xl border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] active:scale-[0.96] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+            title="Flip Front / Rear Camera"
+          >
+            <FlipHorizontalIcon size={20} className="text-white scale-105 shrink-0" />
+            <span className="truncate">Flip</span>
+          </button>
+
+          {/* Button 3: QR Code Opening */}
+          <button
+            type="button"
+            onClick={handleOpenMyQr}
+            className="flex-1 py-2.5 sm:py-3 px-2 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-[13px] font-bold rounded-xl border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] active:scale-[0.96] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
+            title="Open My QR Code"
+          >
+            <BootstrapQrCode size={20} className="text-white scale-105 shrink-0" />
+            <span className="truncate">QR</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Scanned Result Discovery Card (Displayed at the bottom outside the white card) */}
+      {scannerStatus === 'success' && scannedPlayer && (
+        <div className={`mt-3.5 w-full p-4 rounded-2xl bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-200 ${
+          isPage ? 'max-w-[380px] sm:max-w-[480px]' : 'max-w-[250px]'
+        }`}>
+          <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold pb-2 mb-2 border-b border-zinc-100">
+            <CheckCircle size={15} weight="fill" className="text-emerald-600" />
+            <span>Player Found</span>
           </div>
-        )}
 
-        {/* Sub-instruction and 3 Action Buttons in the Same Horizontal Row (Inside White Card) */}
-        {scannerStatus !== 'success' && (
-          <>
-            {/* Helper text explaining */}
-            <p className={`text-zinc-500/80 text-center mt-2 leading-relaxed ${
-              isPage ? 'max-w-[320px] text-[11px]' : 'max-w-[230px] text-[10.5px]'
-            }`}>
-              Align any Arena QR code within the frame to verify.
-            </p>
+          <div className="flex items-center gap-2.5">
+            <div className="w-11 h-11 rounded-full border-2 border-white shadow overflow-hidden shrink-0 bg-[#F2F7FC]">
+              <ArenaAvatar id={scannedPlayer.avatar || '1'} size="badge" className="w-full h-full" />
+            </div>
 
-            {/* 3 Action Buttons: Pause/Resume, Flip, QR (Within the Same Horizontal Row) */}
-            <div className={`w-full flex items-center gap-2 sm:gap-2.5 mt-2.5 select-none ${
-              isPage ? 'max-w-[325px] sm:max-w-[420px]' : 'max-w-[240px]'
-            }`}>
-              {/* Button 1: Pause / Resume */}
-              <button
-                type="button"
-                onClick={handleTogglePause}
-                className="flex-1 py-2.5 sm:py-3 px-2 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-[13px] font-bold rounded-xl border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] active:scale-[0.96] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
-                title={isPaused ? "Resume Camera" : "Pause Camera"}
-              >
-                {isPaused ? (
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-bold text-zinc-900 truncate">
+                {scannedPlayer.name || scannedPlayer.gid}
+              </div>
+              <div className="text-[10.5px] font-arena text-zinc-500 font-semibold tracking-wider flex items-center gap-1.5 mt-0.5">
+                <span>{scannedPlayer.gid}</span>
+                {scannedPlayer.orb && (
                   <>
-                    <Play size={18} weight="fill" className="text-sky-400 scale-105 shrink-0" />
-                    <span className="truncate">Resume</span>
-                  </>
-                ) : (
-                  <>
-                    <Pause size={18} weight="fill" className="text-white scale-105 shrink-0" />
-                    <span className="truncate">Pause</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                    <span>Orb #{scannedPlayer.orb}</span>
                   </>
                 )}
-              </button>
-
-              {/* Button 2: Flip Camera */}
-              <button
-                type="button"
-                onClick={handleFlipCamera}
-                className="flex-1 py-2.5 sm:py-3 px-2 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-[13px] font-bold rounded-xl border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] active:scale-[0.96] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
-                title="Flip Front / Rear Camera"
-              >
-                <FlipHorizontalIcon size={20} className="text-white scale-105 shrink-0" />
-                <span className="truncate">Flip</span>
-              </button>
-
-              {/* Button 3: QR Code Opening */}
-              <button
-                type="button"
-                onClick={handleOpenMyQr}
-                className="flex-1 py-2.5 sm:py-3 px-2 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-[13px] font-bold rounded-xl border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] active:scale-[0.96] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
-                title="Open My QR Code"
-              >
-                <BootstrapQrCode size={20} className="text-white scale-105 shrink-0" />
-                <span className="truncate">QR</span>
-              </button>
+              </div>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+
+          {/* In-Card Duel Status Feedback */}
+          {duelStatus === 'sent' && (
+            <div className="mt-2.5 py-1.5 px-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center justify-center gap-1 animate-in fade-in duration-150">
+              <CheckCircle size={14} weight="fill" className="text-emerald-600 shrink-0" />
+              <span className="truncate">Challenge request sent to {scannedPlayer.name || scannedPlayer.gid}!</span>
+            </div>
+          )}
+
+          {/* Action Row */}
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleScanAgain}
+              className="flex-1 py-2 px-2 bg-[#ebedf2] hover:bg-[#e2e6ec] text-zinc-800 text-[11.5px] font-bold rounded-xl border border-white/80 shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] transition-all cursor-pointer active:scale-95"
+            >
+              Scan Another
+            </button>
+            <button
+              type="button"
+              onClick={handleInitiateDuel}
+              disabled={duelStatus === 'sent'}
+              className={`flex-1 py-2 px-2 text-[11.5px] font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1 ${duelStatus === 'sent'
+                  ? 'bg-emerald-600 text-white border border-emerald-500 opacity-90'
+                  : 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800'
+                }`}
+            >
+              <Sword size={14} weight="bold" />
+              <span>{duelStatus === 'sent' ? 'Challenge Sent' : 'Duel'}</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
