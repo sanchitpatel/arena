@@ -344,26 +344,19 @@ export const DashboardShell = ({
 
           {/* Top Actions: Notification on left, Map on rightmost end */}
           <div className="flex items-center gap-2 -mr-1">
-            {/* Notification Option */}
+            {/* Notification Option (Direct bare icon, no container/border/bg) */}
             <button
               type="button"
               onClick={() => onTabChange('notifications')}
               title="WhatsApp Notifications"
-              className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#ebedf2] border border-white cursor-pointer transition-all ${
-                activeTab === 'notifications'
-                  ? 'shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] text-zinc-900 font-extrabold'
-                  : 'shadow-[inset_0_2px_4px_#ffffff,inset_0_-2px_5px_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] active:scale-95 text-zinc-700 hover:text-zinc-900 font-bold'
-              }`}
+              className="relative flex items-center justify-center p-1 text-zinc-800 hover:text-black active:scale-95 transition-all cursor-pointer"
             >
-              <div className="relative flex items-center justify-center">
-                <Bell size={19} weight={activeTab === 'notifications' ? 'fill' : 'bold'} className="text-zinc-800" />
-                {pendingCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
-                    {pendingCount > 99 ? '99+' : pendingCount}
-                  </span>
-                )}
-              </div>
-              <span className="text-[13px] text-zinc-800">Notification</span>
+              <Bell size={26} weight={activeTab === 'notifications' ? 'fill' : 'regular'} className="text-zinc-800 hover:text-black transition-colors" />
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1.5 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
+                  {pendingCount > 99 ? '99+' : pendingCount}
+                </span>
+              )}
             </button>
 
             {/* Map Icon on the Rightmost End (Direct bare icon, no container/border/bg) */}
