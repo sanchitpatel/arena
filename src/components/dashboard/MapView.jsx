@@ -436,44 +436,44 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
         <div
           ref={mapContainerRef}
           onMouseDown={handleMouseDown}
-          className="relative w-full aspect-[24.4/42] max-h-[76vh] overflow-hidden rounded-[32px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] cursor-crosshair touch-manipulation"
+          className="relative w-full aspect-[24.4/42] max-h-[76vh] overflow-hidden rounded-[12px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] cursor-crosshair touch-manipulation"
         >
           {/* Inward Shadow Overlay Layer (Ensures crisp inward shadow on top of floorplan edges) */}
-          <div className="pointer-events-none absolute inset-0 rounded-[28px] shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff] z-20" />
+          <div className="pointer-events-none absolute inset-0 rounded-[12px] shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff] z-20" />
 
           {/* Floating Zoom & Locate Toolbar (Top Right of Floorplan) */}
-          <div className="absolute top-3.5 right-3.5 z-30 flex flex-col gap-1.5 bg-white/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/80 shadow-md">
+          <div className="absolute top-0.5 right-0.5 z-10 flex flex-col gap-1.5 bg-white/90 backdrop-blur-md p-1 rounded-lg border border-slate-200/80 shadow-md">
             <button
               type="button"
               onClick={handleZoomIn}
               title="Zoom In"
-              className="w-8 h-8 rounded-xl bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+              className="w-7 h-7 rounded-lg bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
             >
-              <Plus size={16} weight="bold" />
+              <Plus size={17} weight="bold" />
             </button>
             <button
               type="button"
               onClick={handleZoomOut}
               title="Zoom Out"
-              className="w-8 h-8 rounded-xl bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+              className="w-7 h-7 rounded-lg bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
             >
-              <Minus size={16} weight="bold" />
+              <Minus size={17} weight="bold" />
             </button>
             <button
               type="button"
               onClick={handleResetZoom}
               title="Reset View"
-              className="w-8 h-8 rounded-xl bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+              className="w-7 h-7 rounded-lg bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
             >
-              <ArrowClockwise size={15} weight="bold" />
+              <ArrowClockwise size={16} weight="bold" />
             </button>
             <button
               type="button"
               onClick={handleLocateOrb}
               title="Center on My Orb"
-              className="w-8 h-8 rounded-xl bg-sky-100 hover:bg-sky-200 active:scale-90 text-sky-700 flex items-center justify-center transition-all cursor-pointer shadow-sm border border-sky-300"
+              className="w-7 h-7 rounded-lg bg-sky-100 hover:bg-sky-200 active:scale-90 text-sky-700 flex items-center justify-center transition-all cursor-pointer shadow-sm border border-sky-300"
             >
-              <Crosshair size={16} weight="bold" />
+              <Crosshair size={19} weight="bold" />
             </button>
           </div>
 
