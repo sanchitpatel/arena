@@ -587,13 +587,13 @@ export default function ArenaQRScanner({
               className="absolute inset-0 bg-black/55 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2 text-white z-20 animate-in fade-in duration-200 cursor-pointer select-none"
               title="Tap to scan another"
             >
-              <div className="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-emerald-400/80 shadow-[0_0_20px_rgba(52,211,153,0.4)] flex items-center justify-center text-emerald-400 animate-in zoom-in-75 duration-200">
-                <CheckCircle size={32} weight="fill" className="text-emerald-400" />
+              <div className="w-14 h-14 rounded-full bg-sky-500/10 border-2 border-sky-400/80 shadow-[0_0_20px_rgba(52,211,153,0.4)] flex items-center justify-center text-sky-400 animate-in zoom-in-75 duration-200">
+                <CheckCircle size={32} weight="fill" className="text-sky-400" />
               </div>
-              <span className="font-arena text-[12px] font-black tracking-widest text-emerald-300 uppercase">
+              <span className="font-arena text-[13px] font-black tracking-widest text-white uppercase">
                 QR Code Scanned
               </span>
-              <span className="text-[10.5px] text-zinc-300 font-medium -mt-0.5">
+              <span className="text-[11px] text-zinc-300 font-medium -mt-2">
                 Tap to scan another
               </span>
             </div>
@@ -727,16 +727,16 @@ export default function ArenaQRScanner({
 
       {/* Scanned Result Discovery Card (Displayed at the bottom outside the white card) */}
       {scannerStatus === 'success' && scannedPlayer && (
-        <div className={`mt-3.5 w-full p-4 rounded-2xl bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-200 ${
+        <div className={`mt-3.5 w-full p-2 pb-3 rounded-2xl bg-white border border-slate-200/80 shadow-[0_12px_32px_rgba(197,204,214,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-200 ${
           isPage ? 'max-w-[380px] sm:max-w-[480px]' : 'max-w-[250px]'
         }`}>
-          <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold pb-2 mb-2 border-b border-zinc-100">
+          <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold pb-1 mb-1 ml-1.5 border-b border-zinc-100">
             <CheckCircle size={15} weight="fill" className="text-emerald-600" />
             <span>Player Found</span>
           </div>
 
           <div className="flex items-center gap-2.5">
-            <div className="w-11 h-11 rounded-full border-2 border-white shadow overflow-hidden shrink-0 bg-[#F2F7FC]">
+            <div className="w-12 h-12 rounded-full border-2 border-white shadow overflow-hidden shrink-0 bg-[#F2F7FC]">
               <ArenaAvatar id={scannedPlayer.avatar || '1'} size="badge" className="w-full h-full" />
             </div>
 
@@ -748,8 +748,8 @@ export default function ArenaQRScanner({
                 <span>{scannedPlayer.gid}</span>
                 {scannedPlayer.orb && (
                   <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                    <span>Orb #{scannedPlayer.orb}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-700/40" />
+                    <span>Orb @{scannedPlayer.orb}</span>
                   </>
                 )}
               </div>
@@ -765,7 +765,7 @@ export default function ArenaQRScanner({
           )}
 
           {/* Action Row */}
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-1 flex items-center gap-2">
             <button
               type="button"
               onClick={handleScanAgain}
@@ -778,7 +778,7 @@ export default function ArenaQRScanner({
               onClick={handleInitiateDuel}
               disabled={duelStatus === 'sent'}
               className={`flex-1 py-2 px-2 text-[11.5px] font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1 ${duelStatus === 'sent'
-                  ? 'bg-emerald-600 text-white border border-emerald-500 opacity-90'
+                  ? 'bg-sky-600 text-white border border-emerald-500 opacity-90'
                   : 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800'
                 }`}
             >
