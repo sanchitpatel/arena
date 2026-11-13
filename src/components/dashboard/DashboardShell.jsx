@@ -352,7 +352,7 @@ export const DashboardShell = ({
             ======================================================== */}
         <header className="sticky top-0 z-30 w-full bg-[#f0f2f5]/80 backdrop-blur-md border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
           {/* Brand Name */}
-          <span className="font-arena text-lg -ml-1 sm:text-lg font-black tracking-wider text-zinc-900 shrink-0">
+          <span className="font-arena text-xl -ml-1 sm:text-lg font-black tracking-wider text-zinc-900 shrink-0">
             ARENA
           </span>
 
@@ -398,7 +398,7 @@ export const DashboardShell = ({
               />
             </button>
 
-            {/* Map Icon on the Rightmost End (Persistent container, strictly locked size, zero jump) */}
+            {/* Map Icon on the Rightmost End (Persistent container: bottom-bar neumorphic styling when default, black gradient when active) */}
             <button
               type="button"
               onClick={() => {
@@ -409,12 +409,12 @@ export const DashboardShell = ({
               className={`w-9 h-9 flex items-center justify-center rounded-xl shrink-0 transition-[background-color,border-color,box-shadow,color] duration-150 cursor-pointer ${
                 activeTab === 'map'
                   ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
-                  : 'bg-transparent text-zinc-800 hover:text-black border border-transparent shadow-none'
+                  : 'bg-[#ebedf2] text-zinc-600 hover:text-zinc-900 border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
               }`}
             >
               <ArenaMapIcon
                 size={24}
-                className={activeTab === 'map' ? 'text-white' : 'text-zinc-800 hover:text-black transition-colors duration-150'}
+                className={activeTab === 'map' ? 'text-white' : 'text-zinc-600 hover:text-zinc-900 transition-colors duration-50'}
               />
             </button>
           </div>
