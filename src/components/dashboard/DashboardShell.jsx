@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X } from '../icons';
+import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X, ArenaMapIcon } from '../icons';
 import Logo from '../Logo';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
-import ArenaQRScanner from '../qr/ArenaQRScanner';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import {
   getPendingNotificationCount,
@@ -21,7 +20,7 @@ export const DashboardShell = ({
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
-  const [qrModalOpen, setQrModalOpen] = useState(null); // 'badge' | 'scanner' | null
+  const [qrModalOpen, setQrModalOpen] = useState(null); // 'badge' | null
   const profileRef = useRef(null);
   const mobileProfileRef = useRef(null);
   const mobileProfileBtnRef = useRef(null);
@@ -83,10 +82,9 @@ export const DashboardShell = ({
   // Listen for global custom events to open Scanner or QR Badge modal
   useEffect(() => {
     const handleOpenScanner = () => {
+      setQrModalOpen(null);
       if (typeof onTabChange === 'function') {
         onTabChange('scanner');
-      } else {
-        setQrModalOpen('scanner');
       }
     };
     const handleOpenBadge = () => setQrModalOpen('badge');
@@ -344,27 +342,47 @@ export const DashboardShell = ({
             ARENA
           </span>
 
-          {/* Notification Option on the Rightmost Corner */}
-          <button
-            type="button"
-            onClick={() => onTabChange('notifications')}
-            title="WhatsApp Notifications"
-            className={`relative flex items-center -mr-1 gap-1.5 px-2.5 py-1 rounded-xl bg-[#ebedf2] border border-white cursor-pointer transition-all ${
-              activeTab === 'notifications'
-                ? 'shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] text-zinc-900 font-extrabold'
-                : 'shadow-[inset_0_2px_4px_#ffffff,inset_0_-2px_5px_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] active:scale-95 text-zinc-700 hover:text-zinc-900 font-bold'
-            }`}
-          >
-            <div className="relative flex items-center justify-center">
-              <Bell size={19} weight={activeTab === 'notifications' ? 'fill' : 'bold'} className="text-zinc-800" />
-              {pendingCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
-                  {pendingCount > 99 ? '99+' : pendingCount}
-                </span>
-              )}
-            </div>
-            <span className="text-[13px] text-zinc-800">Notification</span>
-          </button>
+          {/* Top Actions: Notification on left, Map on rightmost end */}
+          <div className="flex items-center gap-2 -mr-1">
+            {/* Notification Option */}
+            <button
+              type="button"
+              onClick={() => onTabChange('notifications')}
+              title="WhatsApp Notifications"
+              className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#ebedf2] border border-white cursor-pointer transition-all ${
+                activeTab === 'notifications'
+                  ? 'shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] text-zinc-900 font-extrabold'
+                  : 'shadow-[inset_0_2px_4px_#ffffff,inset_0_-2px_5px_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] active:scale-95 text-zinc-700 hover:text-zinc-900 font-bold'
+              }`}
+            >
+              <div className="relative flex items-center justify-center">
+                <Bell size={19} weight={activeTab === 'notifications' ? 'fill' : 'bold'} className="text-zinc-800" />
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
+                    {pendingCount > 99 ? '99+' : pendingCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[13px] text-zinc-800">Notification</span>
+            </button>
+
+            {/* Map Icon on the Rightmost End */}
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof onTabChange === 'function') onTabChange('map');
+                if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-map'));
+              }}
+              title="Map"
+              className={`flex items-center justify-center w-8 h-8 rounded-xl bg-[#ebedf2] border border-white cursor-pointer transition-all ${
+                activeTab === 'map'
+                  ? 'shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] text-zinc-900 font-extrabold'
+                  : 'shadow-[inset_0_2px_4px_#ffffff,inset_0_-2px_5px_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] active:scale-95 text-zinc-700 hover:text-zinc-900'
+              }`}
+            >
+              <ArenaMapIcon size={20} className="text-zinc-800" />
+            </button>
+          </div>
         </header>
 
         {/* View Container */}
@@ -404,42 +422,6 @@ export const DashboardShell = ({
                   if (typeof onTabChange === 'function') {
                     onTabChange('scanner');
                   }
-                }}
-              />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {qrModalOpen === 'scanner' && typeof document !== 'undefined' && createPortal(
-        <div
-          onClick={() => setQrModalOpen(null)}
-          className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150 cursor-pointer"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[310px] bg-[#ebedf2] rounded-[36px] p-3 sm:p-3 border-4 border-white animate-in zoom-in-95 duration-150 cursor-default"
-          >
-            {/* Close button positioned in the top-right corner OUT of the card frame */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setQrModalOpen(null);
-              }}
-              className="absolute -top-3 -right-2.5 w-8 h-8 rounded-full bg-[#ebedf2] shadow-[2px_2px_6px_rgba(0,0,0,0.3),-1px_-1px_3px_#ffffff] flex items-center justify-center text-rose-500 hover:text-rose-700 border-2 border-white transition-all cursor-pointer z-30 active:scale-90"
-              title="Close Scanner"
-            >
-              <X size={16} weight="bold" />
-            </button>
-
-            <div className="relative bg-[#f0f2f5] rounded-[26px] p-3.5 sm:p-3.5 shadow-[inset_2px_2px_6px_#cbd2de,inset_-2px_-2px_6px_#ffffff]">
-              <ArenaQRScanner
-                onClose={() => setQrModalOpen(null)}
-                onMyQrClick={() => setQrModalOpen('badge')}
-                onScanSuccess={(scanned) => {
-                  console.log('[TopNav] QR Scanned:', scanned);
                 }}
               />
             </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ArenaQRScanner from '../qr/ArenaQRScanner';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
 
@@ -10,6 +10,13 @@ import PlayerQRBadge from '../qr/PlayerQRBadge';
 export const ScannerView = ({ player, onNavigate, isActive = true }) => {
   const [viewMode, setViewMode] = useState('scanner'); // 'scanner' | 'badge'
   const [lastScanned, setLastScanned] = useState(null);
+
+  // Automatically reset to camera scanner whenever attendee returns to the Scanner tab
+  useEffect(() => {
+    if (isActive) {
+      setViewMode('scanner');
+    }
+  }, [isActive]);
 
   const handleScanSuccess = (scannedPlayer) => {
     setLastScanned(scannedPlayer);

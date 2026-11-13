@@ -63,9 +63,6 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     let camQuery = null;
     let micQuery = null;
 
-    // Release any lingering camera media tracks from previous scanner mounts immediately
-    killAllMediaTracks('ProfileView mount cleanup', 'video');
-
     const checkExistingPermissions = async () => {
       // 1. Camera permission check:
       try {

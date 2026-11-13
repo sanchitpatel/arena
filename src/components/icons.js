@@ -202,3 +202,45 @@ export const FlipHorizontalIcon = ({ size = 20, className = '', ...props }) =>
       d: 'M15 21h2v-2h-2m4-10h2V7h-2M3 5v14c0 1.1.9 2 2 2h4v-2H5V5h4V3H5c-1.1 0-2 .9-2 2m16-2v2h2c0-1.1-.9-2-2-2m-8 20h2V1h-2m8 16h2v-2h-2M15 5h2V3h-2m4 10h2v-2h-2m0 10c1.1 0 2-.9 2-2h-2Z',
     })
   );
+
+// Official Arena Folded Route Map Icon
+export const ArenaMapIcon = ({ size = 20, className = '', ...props }) =>
+  React.createElement(
+    'svg',
+    {
+      xmlns: 'http://www.w3.org/2000/svg',
+      viewBox: '0 0 512 512',
+      width: size,
+      height: size,
+      role: 'img',
+      'aria-label': 'Map',
+      className,
+      ...props,
+    },
+    React.createElement(
+      'g',
+      { fill: 'currentColor' },
+      React.createElement('path', { d: 'M32 120 L168 88 V456 L32 424 Z' }),
+      React.createElement('path', { d: 'M184 88 L328 128 V424 L184 456 Z' }),
+      React.createElement('path', { d: 'M344 128 L480 96 V456 L344 424 Z' })
+    ),
+    React.createElement('path', {
+      fill: '#ffffff',
+      d: 'M100 186a38 38 0 0 0-38 38c0 32 38 70 38 70s38-38 38-70a38 38 0 0 0-38-38z',
+    }),
+    React.createElement('circle', { cx: '100', cy: '224', r: '13', fill: 'currentColor' }),
+    React.createElement('path', {
+      d: 'M240 400C204 360 200 250 244 206c18-16 42-10 54 8',
+      fill: 'none',
+      stroke: '#ffffff',
+      strokeWidth: '12',
+      strokeLinecap: 'round',
+      strokeDasharray: '1 26',
+    }),
+    React.createElement('path', {
+      d: 'M396 290l44 44M440 290l-44 44',
+      stroke: '#ffffff',
+      strokeWidth: '14',
+      strokeLinecap: 'round',
+    })
+  );

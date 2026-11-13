@@ -45,6 +45,7 @@ export default function ArenaQRScanner({
   const invalidBannerTimerRef = useRef(null);
   const lastInvalidCodeRef = useRef('');
   const stopPromiseRef = useRef(Promise.resolve());
+  const isPausedRef = useRef(false);
 
   // Generate unique DOM container ID per mount to avoid collision
   const containerId = useRef(`arena-qr-reader-${Math.random().toString(36).substring(2, 9)}`).current;
@@ -76,31 +77,28 @@ export default function ArenaQRScanner({
     }
 
     // Case 2: Official URL format (e.g. https://arena.bmiil.com/arena?app=ARENA&player=Guest008&orb=8&name=Guest008&avatar=1)
-    if (!payload && (rawText.includes('/arena') || rawText.includes('app=ARENA') || rawText.includes('player='))) {
+    if (!payload && (rawText.startsWith('http://') || rawText.startsWith('https://'))) {
       try {
-        let url;
-        try {
-          url = new URL(rawText);
-        } catch {
-          url = new URL(`https://arena.bmiil.com${rawText.startsWith('/') ? '' : '/'}${rawText}`);
-        }
-
+        const url = new URL(rawText);
         const params = url.searchParams;
         const appParam = params.get('app');
         const playerParam = params.get('player') || params.get('gid');
 
         // Security validation:
-        // 1. Must explicitly have app=ARENA or path /arena
-        // 2. Must strictly have a non-empty player ID
-        // 3. Origin must match active domain or trusted Arena host
+        // 1. Strict protocol: http or https
+        // 2. Strict path: /arena or /arena/
+        // 3. Origin must match active domain or trusted Arena host (localhost gated to DEV)
+        const isDev = Boolean(typeof import.meta !== 'undefined' && import.meta.env?.DEV);
         const isTrustedHost =
           typeof window !== 'undefined' &&
           (url.hostname === window.location.hostname ||
             url.hostname === 'arena.bmiil.com' ||
-            url.hostname === 'localhost' ||
-            url.hostname.endsWith('.bmiil.com'));
+            url.hostname.endsWith('.bmiil.com') ||
+            (isDev && (url.hostname === 'localhost' || url.hostname === '127.0.0.1')));
 
-        if (isTrustedHost && playerParam && (appParam === 'ARENA' || url.pathname.includes('/arena'))) {
+        const isArenaPath = url.pathname === '/arena' || url.pathname === '/arena/';
+
+        if (isTrustedHost && playerParam && (appParam === 'ARENA' || isArenaPath)) {
           const parsedOrb = parseInt(params.get('orb'), 10);
           const rawGid = String(playerParam).trim();
           const gidMatch = rawGid.match(/^guest(\d+)$/i);
@@ -391,8 +389,32 @@ export default function ArenaQRScanner({
       }
     });
 
+    // Handle document visibility change (phone screen lock, switching browser tabs)
+    const handleVisibilityChange = () => {
+      if (!isMountedRef.current) return;
+      if (document.hidden) {
+        // Tab backgrounded or screen locked: stop hardware tracks to save battery and avoid iOS WebKit frozen stream
+        if (isScanningRef.current) {
+          stopCameraHardwareImmediately('Tab backgrounded / screen locked');
+        }
+      } else {
+        // Tab returned to foreground: restart camera if active, not disabled in settings, and not paused
+        const currentPref = getInAppPermission('camera');
+        if (currentPref !== 'disabled' && !hasScannedRef.current && !isPausedRef.current) {
+          startCamera(facingMode);
+        }
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
     return () => {
       isMountedRef.current = false;
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
       if (invalidBannerTimerRef.current) clearTimeout(invalidBannerTimerRef.current);
       unsubscribe();
       stopCameraHardwareImmediately('ArenaQRScanner unmounted');
@@ -408,6 +430,7 @@ export default function ArenaQRScanner({
 
   const handleTogglePause = () => {
     if (isPaused) {
+      isPausedRef.current = false;
       setIsPaused(false);
       if (scannerRef.current) {
         try {
@@ -419,6 +442,7 @@ export default function ArenaQRScanner({
         startCamera(facingMode);
       }
     } else {
+      isPausedRef.current = true;
       setIsPaused(true);
       if (scannerRef.current) {
         try {
@@ -429,11 +453,13 @@ export default function ArenaQRScanner({
   };
 
   const handleFlipCamera = () => {
+    isPausedRef.current = false;
     setIsPaused(false);
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
   };
 
   const handleScanAgain = () => {
+    isPausedRef.current = false;
     setIsPaused(false);
     setScannedPlayer(null);
     setDuelStatus(null);
