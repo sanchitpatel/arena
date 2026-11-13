@@ -765,25 +765,36 @@ export default function ArenaQRScanner({
           )}
 
           {/* Action Row */}
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-1.5 flex items-center gap-2">
             <button
               type="button"
               onClick={handleScanAgain}
-              className="flex-1 py-2 px-2 bg-[#ebedf2] hover:bg-[#e2e6ec] text-zinc-800 text-[11.5px] font-bold rounded-xl border border-white/80 shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] transition-all cursor-pointer active:scale-95"
+              className="flex-1 py-2.5 sm:py-3 px-2 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-xs sm:text-[13px] font-bold rounded-xl border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] active:scale-[0.96] transition-all flex items-center justify-center gap-2 cursor-pointer group"
             >
-              Scan Another
+              <ArrowClockwise size={16} weight="bold" className="text-white scale-105 shrink-0" />
+              <span className="truncate">Scan Another</span>
             </button>
             <button
               type="button"
               onClick={handleInitiateDuel}
               disabled={duelStatus === 'sent'}
-              className={`flex-1 py-2.5 px-2 text-[11.5px] font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1 ${duelStatus === 'sent'
-                  ? 'bg-sky-600 text-white border border-sky-700 opacity-90'
-                  : 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800'
-                }`}
+              className={`flex-1 py-2 sm:py-3 px-2 text-[13px] sm:text-[13px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.96] group ${
+                duelStatus === 'sent'
+                  ? 'bg-gradient-to-b from-emerald-600 to-emerald-700 text-white border border-emerald-500/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] opacity-95'
+                  : 'bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)]'
+              }`}
             >
-              <Sword size={16} weight="bold" />
-              <span>{duelStatus === 'sent' ? 'Challenge Sent' : 'Duel'}</span>
+              {duelStatus === 'sent' ? (
+                <>
+                  <CheckCircle size={16} weight="fill" className="text-white shrink-0" />
+                  <span className="truncate">Challenge Sent</span>
+                </>
+              ) : (
+                <>
+                  <Sword size={18} weight="bold" className="text-white scale-105 shrink-0" />
+                  <span className="truncate">Duel</span>
+                </>
+              )}
             </button>
           </div>
         </div>
