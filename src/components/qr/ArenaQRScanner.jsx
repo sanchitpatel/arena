@@ -690,7 +690,7 @@ export default function ArenaQRScanner({
           >
             {scannerStatus === 'success' || isPaused ? (
               <>
-                <Play size={18} weight="fill" className="text-sky-400 scale-105 shrink-0" />
+                <Play size={18} weight="fill" className="text-sky-500 scale-105 shrink-0" />
                 <span className="truncate">{scannerStatus === 'success' ? 'Scan' : 'Resume'}</span>
               </>
             ) : (
@@ -758,8 +758,8 @@ export default function ArenaQRScanner({
 
           {/* In-Card Duel Status Feedback */}
           {duelStatus === 'sent' && (
-            <div className="mt-1 py-1 px-2.5 rounded-lg text-emerald-800 text-[11px] font-semibold flex items-center justify-center gap-1 animate-in fade-in duration-150">
-              <CheckCircle size={14} weight="fill" className="text-emerald-600 shrink-0" />
+            <div className="mt-1 py-1 px-2.5 rounded-lg text-sky-800 text-[11px] font-semibold flex items-center justify-center gap-1 animate-in fade-in duration-150">
+              <CheckCircle size={14} weight="fill" className="text-sky-600 shrink-0" />
               <span className="truncate">Challenge request sent to {scannedPlayer.name || scannedPlayer.gid}!</span>
             </div>
           )}
@@ -769,29 +769,29 @@ export default function ArenaQRScanner({
             <button
               type="button"
               onClick={handleScanAgain}
-              className="flex-1 py-2.5 sm:py-3 px-2 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-xs sm:text-[13px] font-bold rounded-xl border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] active:scale-[0.96] transition-all flex items-center justify-center gap-2 cursor-pointer group"
+              className="flex-1 py-2.5 sm:py-3 px-2 bg-white hover:bg-slate-50 active:scale-[0.96] text-zinc-700 hover:text-zinc-900 text-xs sm:text-[13px] font-bold rounded-xl border border-slate-200/90 shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.18)] hover:shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.22)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.22)] transition-all flex items-center justify-center gap-1.5 cursor-pointer group"
             >
-              <ArrowClockwise size={16} weight="bold" className="text-white scale-105 shrink-0" />
+              <ArrowClockwise size={16} weight="bold" className="text-zinc-700 group-hover:text-zinc-900 scale-105 shrink-0 transition-colors" />
               <span className="truncate">Scan Another</span>
             </button>
             <button
               type="button"
               onClick={handleInitiateDuel}
               disabled={duelStatus === 'sent'}
-              className={`flex-1 py-2 sm:py-3 px-2 text-[13px] sm:text-[13px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.96] group ${
+              className={`flex-1 py-2.5 sm:py-3 px-2 text-xs sm:text-[13px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.96] group ${
                 duelStatus === 'sent'
-                  ? 'bg-gradient-to-b from-emerald-600 to-emerald-700 text-white border border-emerald-500/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] opacity-95'
+                  ? 'bg-gradient-to-b from-sky-500 to-blue-600 text-white border border-sky-400/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.25),inset_0_2px_5px_rgba(255,255,255,0.45)] opacity-95'
                   : 'bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)]'
               }`}
             >
               {duelStatus === 'sent' ? (
                 <>
                   <CheckCircle size={16} weight="fill" className="text-white shrink-0" />
-                  <span className="truncate">Challenge Sent</span>
+                  <span className="truncate">Challenge Again</span>
                 </>
               ) : (
                 <>
-                  <Sword size={18} weight="bold" className="text-white scale-105 shrink-0" />
+                  <Sword size={16} weight="bold" className="text-white scale-105 shrink-0" />
                   <span className="truncate">Duel</span>
                 </>
               )}
