@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {
   ArenaMapIcon,
   CheckCircle,
@@ -248,9 +249,14 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   const displayName = player?.name || guestId;
   const avatar = player?.avatar || '1';
 
-  // Zoom & Pan state
-  const [zoom, setZoom] = useState(1.0);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  // Gesture & Transform state
+  const transformRef = useRef(null);
+  const scaleRef = useRef(1);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [gemScale, setGemScale] = useState(1);
+  const gestureRef = useRef(false);
+  const gestureTimeoutRef = useRef(null);
+
   const [selectedQuest, setSelectedQuest] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'active' | 'completed'
 
@@ -273,9 +279,6 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   });
 
   const [celebrationMessage, setCelebrationMessage] = useState('');
-  const mapContainerRef = useRef(null);
-  const isDraggingRef = useRef(false);
-  const dragStartRef = useRef({ x: 0, y: 0 });
 
   // Compute total points earned
   const totalPointsEarned = useMemo(() => {
@@ -295,183 +298,45 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
     return 'Central Corridor';
   };
 
-  // Zoom helpers
-  const handleZoomIn = () => setZoom((prev) => Math.min(Number((prev + 0.25).toFixed(2)), 2.5));
-  const handleZoomOut = () => {
-    setZoom((prev) => {
-      const next = Math.max(Number((prev - 0.25).toFixed(2)), 1.0);
-      if (next === 1.0) setPan({ x: 0, y: 0 });
-      return next;
-    });
-  };
-  const handleResetZoom = () => {
-    setZoom(1.0);
-    setPan({ x: 0, y: 0 });
+  // Gesture tracking (tap vs drag discrimination)
+  const markGesture = () => {
+    if (gestureTimeoutRef.current) {
+      clearTimeout(gestureTimeoutRef.current);
+      gestureTimeoutRef.current = null;
+    }
+    gestureRef.current = true;
   };
 
-  const handleLocateOrb = () => {
-    // Center view on attendee's orb
-    setZoom(1.4);
-    setPan({
-      x: (50 - orbPosition.x) * 2.2,
-      y: (50 - orbPosition.y) * 2.2,
-    });
+  const endGesture = () => {
+    if (gestureTimeoutRef.current) {
+      clearTimeout(gestureTimeoutRef.current);
+    }
+    gestureTimeoutRef.current = setTimeout(() => {
+      gestureRef.current = false;
+      gestureTimeoutRef.current = null;
+    }, 80);
   };
 
-  // Active state refs for non-stale touch and gesture callbacks
-  const zoomRef = useRef(zoom);
-  const panRef = useRef(pan);
+  // Scale change handler (scroll fix & counter-scaling)
+  const handleScaleChange = (scale) => {
+    if (typeof scale !== 'number' || isNaN(scale)) return;
+    scaleRef.current = scale;
+    const rounded = Number(scale.toFixed(1));
+    setGemScale((prev) => (Math.abs(prev - rounded) >= 0.1 ? rounded : prev));
+    const zoomed = scale > 1.01;
+    setIsZoomed((prev) => (prev !== zoomed ? zoomed : prev));
+  };
+
+  // Reset transform when tab becomes inactive
   useEffect(() => {
-    zoomRef.current = zoom;
-  }, [zoom]);
-  useEffect(() => {
-    panRef.current = pan;
-  }, [pan]);
+    if (!isActive) {
+      transformRef.current?.resetTransform();
+    }
+  }, [isActive]);
 
-  const touchStateRef = useRef({
-    initialDist: 0,
-    initialZoom: 1,
-    initialPan: { x: 0, y: 0 },
-    touchStartPos: { x: 0, y: 0 },
-    lastTapTime: 0,
-    hasMoved: false,
-    isPinching: false,
-    isPanning: false,
-  });
-
-  // Touch & Wheel gesture handling (Thumb drag, 2-finger/thumb pinch-to-zoom, double-tap zoom)
-  useEffect(() => {
-    const container = mapContainerRef.current;
-    if (!container) return;
-
-    // 1. Touch Start: detect single thumb or two-thumb pinch
-    const handleTouchStart = (e) => {
-      if (e.touches.length === 2) {
-        // Pinch-to-zoom gesture
-        touchStateRef.current.isPinching = true;
-        touchStateRef.current.isPanning = false;
-        touchStateRef.current.hasMoved = true;
-        isDraggingRef.current = true;
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        touchStateRef.current.initialDist = dist || 1;
-        touchStateRef.current.initialZoom = zoomRef.current;
-        touchStateRef.current.initialPan = { ...panRef.current };
-      } else if (e.touches.length === 1) {
-        // Single thumb touch
-        touchStateRef.current.isPinching = false;
-        touchStateRef.current.isPanning = true;
-        touchStateRef.current.hasMoved = false;
-        touchStateRef.current.touchStartPos = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY,
-        };
-        touchStateRef.current.initialPan = { ...panRef.current };
-        isDraggingRef.current = false;
-
-        // Double-tap with thumb for quick zoom-in
-        const now = Date.now();
-        if (now - touchStateRef.current.lastTapTime < 300) {
-          e.preventDefault();
-          touchStateRef.current.hasMoved = true;
-          isDraggingRef.current = true;
-          setZoom((prev) => {
-            const next = prev >= 1.8 ? 1.0 : Number((prev + 0.45).toFixed(2));
-            if (next === 1.0) setPan({ x: 0, y: 0 });
-            return next;
-          });
-          touchStateRef.current.lastTapTime = 0;
-          return;
-        }
-        touchStateRef.current.lastTapTime = now;
-      }
-    };
-
-    // 2. Touch Move: live pinch scaling and thumb panning
-    const handleTouchMove = (e) => {
-      if (touchStateRef.current.isPinching && e.touches.length === 2) {
-        e.preventDefault(); // Prevent native browser viewport zoom
-        isDraggingRef.current = true;
-        const currentDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const factor = currentDist / touchStateRef.current.initialDist;
-        const newZoom = Math.min(2.5, Math.max(1.0, Number((touchStateRef.current.initialZoom * factor).toFixed(2))));
-        setZoom(newZoom);
-        if (newZoom === 1.0) {
-          setPan({ x: 0, y: 0 });
-        }
-      } else if (touchStateRef.current.isPanning && e.touches.length === 1) {
-        const dx = e.touches[0].clientX - touchStateRef.current.touchStartPos.x;
-        const dy = e.touches[0].clientY - touchStateRef.current.touchStartPos.y;
-        const dist = Math.hypot(dx, dy);
-
-        if (dist > 8) {
-          touchStateRef.current.hasMoved = true;
-          isDraggingRef.current = true;
-
-          // Pan smoothly when zoomed in
-          if (zoomRef.current > 1.0) {
-            e.preventDefault(); // Prevent page scroll during map pan
-            const maxOffset = (zoomRef.current - 1) * 180;
-            const nextX = Math.max(-maxOffset, Math.min(maxOffset, touchStateRef.current.initialPan.x + dx));
-            const nextY = Math.max(-maxOffset, Math.min(maxOffset, touchStateRef.current.initialPan.y + dy));
-            setPan({ x: nextX, y: nextY });
-          }
-        }
-      }
-    };
-
-    // 3. Touch End: cleanup gestures cleanly
-    const handleTouchEnd = () => {
-      if (touchStateRef.current.isPinching) {
-        touchStateRef.current.isPinching = false;
-        setTimeout(() => {
-          isDraggingRef.current = false;
-        }, 50);
-      }
-      if (touchStateRef.current.hasMoved) {
-        setTimeout(() => {
-          isDraggingRef.current = false;
-        }, 50);
-      } else {
-        isDraggingRef.current = false;
-      }
-      touchStateRef.current.isPanning = false;
-    };
-
-    // 4. Mouse Wheel Zoom (Trackpad pinch & mouse wheel)
-    const handleWheel = (e) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.15 : 0.15;
-      setZoom((prev) => {
-        const next = Math.min(2.5, Math.max(1.0, Number((prev + delta).toFixed(2))));
-        if (next === 1.0) setPan({ x: 0, y: 0 });
-        return next;
-      });
-    };
-
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd, { passive: true });
-    container.addEventListener('touchcancel', handleTouchEnd, { passive: true });
-    container.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('touchcancel', handleTouchEnd);
-      container.removeEventListener('wheel', handleWheel);
-    };
-  }, []);
-
-  // Move Orb on direct map click/tap
+  // Move Orb on direct map click/tap (guarded against dragging gestures)
   const handleMapClick = (e) => {
-    if (isDraggingRef.current) return;
+    if (gestureRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
@@ -493,33 +358,9 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
     }
   };
 
-  // Drag-to-pan handlers for mouse
-  const handleMouseDown = (e) => {
-    if (zoom <= 1.0) return;
-    isDraggingRef.current = false;
-    dragStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const handleMouseMove = (e) => {
-    isDraggingRef.current = true;
-    const maxOffset = (zoom - 1) * 180;
-    const nextX = Math.max(-maxOffset, Math.min(maxOffset, e.clientX - dragStartRef.current.x));
-    const nextY = Math.max(-maxOffset, Math.min(maxOffset, e.clientY - dragStartRef.current.y));
-    setPan({ x: nextX, y: nextY });
-  };
-
-  const handleMouseUp = () => {
-    window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('mouseup', handleMouseUp);
-    setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 50);
-  };
-
   // Move Orb smoothly to a Gem location when tapped
   const handleGemClick = (e, quest) => {
+    if (gestureRef.current) return;
     e.stopPropagation();
     setSelectedQuest(quest);
 
@@ -585,152 +426,197 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
       <div className="relative w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] flex flex-col items-center">
         {/* Interactive Floorplan Window */}
         <div
-          ref={mapContainerRef}
-          onMouseDown={handleMouseDown}
-          className="relative w-full aspect-[1:1] max-h-[76vh] overflow-hidden rounded-[16px] sm:rounded-[20px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] cursor-grab active:cursor-grabbing touch-none select-none"
+          className="relative w-full aspect-square max-h-[76vh] overflow-hidden rounded-[16px] sm:rounded-[20px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] select-none"
+          style={{ touchAction: isZoomed ? 'none' : 'pan-y' }}
         >
           {/* Inward Shadow Overlay Layer (Ensures crisp inward shadow on top of floorplan edges) */}
           <div className="pointer-events-none absolute inset-0 rounded-[12px] shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff] z-20" />
 
-          {/* Floating Zoom & Locate Toolbar (Top Right of Floorplan) */}
-          <div className="absolute top-0.5 right-0.5 z-10 flex flex-col gap-1.5 bg-white/90 backdrop-blur-md p-1 rounded-lg border border-slate-200/80 shadow-md">
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              title="Zoom In"
-              className="w-7 h-7 rounded-lg bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
-            >
-              <Plus size={17} weight="bold" />
-            </button>
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              title="Zoom Out"
-              className="w-7 h-7 rounded-lg bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
-            >
-              <Minus size={17} weight="bold" />
-            </button>
-            <button
-              type="button"
-              onClick={handleResetZoom}
-              title="Reset View"
-              className="w-7 h-7 rounded-lg bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
-            >
-              <ArrowClockwise size={16} weight="bold" />
-            </button>
-            <button
-              type="button"
-              onClick={handleLocateOrb}
-              title="Center on My Orb"
-              className="w-7 h-7 rounded-lg bg-sky-100 hover:bg-sky-200 active:scale-90 text-sky-700 flex items-center justify-center transition-all cursor-pointer shadow-sm border border-sky-300"
-            >
-              <Crosshair size={19} weight="bold" />
-            </button>
-          </div>
-
-          {/* Scalable & Pannable Floorplan Layer */}
-          <div
-            onClick={handleMapClick}
-            className="relative h-full aspect-[1:1] mx-auto select-none"
-            style={{
-              transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-              transformOrigin: 'center center',
-              transition: isDraggingRef.current ? 'none' : 'transform 0.25s ease-out',
-            }}
+          <TransformWrapper
+            ref={transformRef}
+            initialScale={1}
+            minScale={1}
+            maxScale={3}
+            centerOnInit
+            limitToBounds
+            centerZoomedOut
+            doubleClick={{ mode: 'zoomIn', step: 0.7 }}
+            pinch={{ step: 5 }}
+            wheel={{ step: 0.15 }}
+            panning={{ excluded: ['map-control'] }}
+            onTransformed={(_, s) => handleScaleChange(s?.scale ?? _?.state?.scale)}
+            onTransform={(_, s) => handleScaleChange(s?.scale ?? _?.state?.scale)}
+            onPanningStart={markGesture}
+            onPanningStop={endGesture}
+            onPinchingStart={markGesture}
+            onPinchingStop={endGesture}
+            onPinchStart={markGesture}
+            onPinchStop={endGesture}
           >
-            {/* The 2D Floorplan Image */}
-            <img
-              src="/map/floorplan.jpg"
-              alt="Incubation Lab 2D Floor Plan"
-              className="w-full h-full object-contain pointer-events-none"
-              draggable={false}
-            />
-
-            {/* ========================================================
-                A. FLOATING GEMS (Tasks Pinned to Specific Rooms)
-                ======================================================== */}
-            {MAP_TASKS.map((quest) => {
-              const isCompleted = completedQuestIds.includes(quest.id);
-              const isSelected = selectedQuest?.id === quest.id;
-
-              return (
-                <div
-                  key={quest.id}
-                  onClick={(e) => handleGemClick(e, quest)}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 z-20 cursor-pointer group flex flex-col items-center"
-                  style={{
-                    left: `${quest.x}%`,
-                    top: `${quest.y}%`,
-                  }}
-                  title={`${quest.title} (${quest.room})`}
-                >
-                  {/* Beacon Sonar Ground Pulse */}
-                  {!isCompleted && (
-                    <div
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full animate-beacon-pulse pointer-events-none"
-                      style={{ backgroundColor: quest.glowColor }}
-                    />
-                  )}
-
-                  {/* Multifaceted Gemstone with Smooth Hover & Float Animation */}
-                  <div
-                    className={`relative z-10 transition-transform duration-200 group-hover:scale-125 ${isCompleted ? '' : 'animate-gem-float'
-                      }`}
+            {({ zoomIn, zoomOut, resetTransform, zoomToElement }) => (
+              <>
+                {/* Floating Zoom & Locate Toolbar (Top Right of Floorplan) */}
+                <div className="map-control absolute top-0.5 right-0.5 z-30 flex flex-col gap-1.5 bg-white/90 backdrop-blur-md p-1 rounded-lg border border-slate-200/80 shadow-md">
+                  <button
+                    type="button"
+                    onClick={() => zoomIn(0.5)}
+                    title="Zoom In"
+                    className="map-control w-7 h-7 rounded-lg bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
                   >
-                    <FloatingGemIcon
-                      color={quest.gemColor}
-                      gradient={quest.gradient}
-                      isCompleted={isCompleted}
-                    />
-                  </div>
-
-                  {/* Compact floating points pill */}
-                  <div
-                    className={`mt-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight border shadow-sm backdrop-blur-md transition-all group-hover:scale-110 ${isCompleted
-                        ? 'bg-emerald-500/90 text-white border-emerald-300'
-                        : isSelected
-                          ? 'bg-zinc-900 text-white border-white scale-105'
-                          : 'bg-white/95 text-zinc-800 border-slate-300/80'
-                      }`}
+                    <Plus size={17} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => zoomOut(0.5)}
+                    title="Zoom Out"
+                    className="map-control w-7 h-7 rounded-lg bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
                   >
-                    {isCompleted ? '✓ Done' : `+${quest.points}`}
-                  </div>
+                    <Minus size={17} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => resetTransform()}
+                    title="Reset View"
+                    className="map-control w-7 h-7 rounded-lg bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-800 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                  >
+                    <ArrowClockwise size={16} weight="bold" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => zoomToElement('attendee-orb', 1.6, 300)}
+                    title="Center on My Orb"
+                    className="map-control w-7 h-7 rounded-lg bg-sky-100 hover:bg-sky-200 active:scale-90 text-sky-700 flex items-center justify-center transition-all cursor-pointer shadow-sm border border-sky-300"
+                  >
+                    <Crosshair size={19} weight="bold" />
+                  </button>
                 </div>
-              );
-            })}
 
-            {/* ========================================================
-                B. ATTENDEE'S FLOATING ORB (Interactive on the Map)
-                ======================================================== */}
-            <div
-              className="absolute -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none flex flex-col items-center"
-              style={{
-                left: `${orbPosition.x}%`,
-                top: `${orbPosition.y}%`,
-                transition: 'left 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              }}
-            >
-              {/* Ground Shadow & Atmospheric Glow Aura */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-sky-400/40 blur-lg pointer-events-none animate-pulse" />
+                <TransformComponent
+                  wrapperClass="!w-full !h-full"
+                  contentClass="!w-full !h-full"
+                  wrapperStyle={{ touchAction: isZoomed ? 'none' : 'pan-y' }}
+                >
+                  {/* Scalable & Pannable Floorplan Layer */}
+                  <div
+                    onClick={handleMapClick}
+                    className="relative w-full h-full select-none"
+                  >
+                    {/* The 2D Floorplan Image */}
+                    <img
+                      src="/map/floorplan.jpg"
+                      alt="Incubation Lab 2D Floor Plan"
+                      className="w-full h-full object-contain pointer-events-none"
+                      draggable={false}
+                    />
 
-              {/* The Actual Attendee Orb Component */}
-              <div className="relative animate-orb-float">
-                <ChatGPTOrb
-                  orbNumber={orbNumber}
-                  avatar={avatar}
-                  size="w-16 h-16 sm:w-14 sm:h-14"
-                  badge={null}
-                  speed={0.8}
-                />
-              </div>
+                    {/* ========================================================
+                        A. FLOATING GEMS (Tasks Pinned to Specific Rooms)
+                        ======================================================== */}
+                    {MAP_TASKS.map((quest) => {
+                      const isCompleted = completedQuestIds.includes(quest.id);
+                      const isSelected = selectedQuest?.id === quest.id;
 
-              {/* Player Floating Identity Tag */}
-              <div className="mt-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-zinc-900 to-black border border-white text-white text-[9.5px] font-black tracking-wider uppercase shadow-md flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
-                <span className="truncate max-w-[80px]">{displayName}</span>
-              </div>
-            </div>
-          </div>
+                      return (
+                        <div
+                          key={quest.id}
+                          onClick={(e) => handleGemClick(e, quest)}
+                          className="absolute -translate-x-1/2 -translate-y-1/2 z-20 cursor-pointer group flex flex-col items-center"
+                          style={{
+                            left: `${quest.x}%`,
+                            top: `${quest.y}%`,
+                          }}
+                          title={`${quest.title} (${quest.room})`}
+                        >
+                          <div
+                            style={{
+                              transform: `scale(${1 / gemScale})`,
+                              transformOrigin: 'center center',
+                            }}
+                            className="flex flex-col items-center"
+                          >
+                            {/* Beacon Sonar Ground Pulse */}
+                            {!isCompleted && (
+                              <div
+                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full animate-beacon-pulse pointer-events-none"
+                                style={{ backgroundColor: quest.glowColor }}
+                              />
+                            )}
+
+                            {/* Multifaceted Gemstone with Smooth Hover & Float Animation */}
+                            <div
+                              className={`relative z-10 transition-transform duration-200 group-hover:scale-125 ${
+                                isCompleted ? '' : 'animate-gem-float'
+                              }`}
+                            >
+                              <FloatingGemIcon
+                                color={quest.gemColor}
+                                gradient={quest.gradient}
+                                isCompleted={isCompleted}
+                              />
+                            </div>
+
+                            {/* Compact floating points pill */}
+                            <div
+                              className={`mt-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight border shadow-sm backdrop-blur-md transition-all group-hover:scale-110 ${
+                                isCompleted
+                                  ? 'bg-emerald-500/90 text-white border-emerald-300'
+                                  : isSelected
+                                    ? 'bg-zinc-900 text-white border-white scale-105'
+                                    : 'bg-white/95 text-zinc-800 border-slate-300/80'
+                              }`}
+                            >
+                              {isCompleted ? '✓ Done' : `+${quest.points}`}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* ========================================================
+                        B. ATTENDEE'S FLOATING ORB (Interactive on the Map)
+                        ======================================================== */}
+                    <div
+                      id="attendee-orb"
+                      className="absolute -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none flex flex-col items-center"
+                      style={{
+                        left: `${orbPosition.x}%`,
+                        top: `${orbPosition.y}%`,
+                        transition: 'left 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          transform: `scale(${1 / gemScale})`,
+                          transformOrigin: 'center center',
+                        }}
+                        className="flex flex-col items-center"
+                      >
+                        {/* Ground Shadow & Atmospheric Glow Aura */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-sky-400/40 blur-lg pointer-events-none animate-pulse" />
+
+                        {/* The Actual Attendee Orb Component */}
+                        <div className="relative animate-orb-float">
+                          <ChatGPTOrb
+                            orbNumber={orbNumber}
+                            avatar={avatar}
+                            size="w-16 h-16 sm:w-14 sm:h-14"
+                            badge={null}
+                            speed={0.8}
+                          />
+                        </div>
+
+                        {/* Player Floating Identity Tag */}
+                        <div className="mt-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-zinc-900 to-black border border-white text-white text-[9.5px] font-black tracking-wider uppercase shadow-md flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+                          <span className="truncate max-w-[80px]">{displayName}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TransformComponent>
+              </>
+            )}
+          </TransformWrapper>
         </div>
 
         {/* Floorplan Tap Tip */}
