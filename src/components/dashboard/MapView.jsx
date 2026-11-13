@@ -576,23 +576,19 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                         <OrbHeadingBeam heading={heading} isActive={isCompassActive} />
 
                         {/* Ground Shadow & Atmospheric Glow Aura */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-sky-400/40 blur-lg pointer-events-none animate-pulse" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-sky-400/40 blur-md pointer-events-none animate-pulse" />
 
                         {/* The Actual Attendee Orb Component */}
                         <div className="relative animate-orb-float">
                           <ChatGPTOrb
                             orbNumber={orbNumber}
                             avatar={avatar}
-                            size="w-16 h-16 sm:w-14 sm:h-14"
+                            size="w-11 h-11 sm:w-11 sm:h-11"
+                            numberSize="text-xl sm:text-[22px]"
+                            labelSize="text-[7px] sm:text-[8.5px]"
                             badge={null}
                             speed={0.8}
                           />
-                        </div>
-
-                        {/* Player Floating Identity Tag */}
-                        <div className="mt-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-zinc-900 to-black border border-white text-white text-[9.5px] font-black tracking-wider uppercase shadow-md flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
-                          <span className="truncate max-w-[80px]">{displayName}</span>
                         </div>
                       </div>
                     </div>
