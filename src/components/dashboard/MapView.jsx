@@ -515,21 +515,23 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                             }}
                             className="relative pointer-events-auto cursor-pointer flex flex-col items-center"
                           >
-                            {/* Beacon Sonar Ground Pulse */}
-                            {!isCompleted && (
-                              <div
-                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full animate-beacon-pulse pointer-events-none"
-                                style={{ backgroundColor: quest.glowColor }}
-                              />
-                            )}
+                            {/* Multifaceted Gemstone with Smooth Hover & Perfectly Concentric Glowing Base */}
+                            <div className="relative z-10 w-8 h-8 flex items-center justify-center transition-transform duration-200 group-hover:scale-125">
+                              {/* Beacon Sonar Ground Pulse (Concentric behind the diamond) */}
+                              {!isCompleted && (
+                                <div
+                                  className="absolute inset-0 rounded-full animate-beacon-pulse pointer-events-none z-0"
+                                  style={{ backgroundColor: quest.glowColor }}
+                                />
+                              )}
 
-                            {/* Multifaceted Gemstone with Smooth Hover */}
-                            <div className="relative z-10 transition-transform duration-200 group-hover:scale-125">
-                              <FloatingGemIcon
-                                color={quest.gemColor}
-                                gradient={quest.gradient}
-                                isCompleted={isCompleted}
-                              />
+                              <div className="relative z-10">
+                                <FloatingGemIcon
+                                  color={quest.gemColor}
+                                  gradient={quest.gradient}
+                                  isCompleted={isCompleted}
+                                />
+                              </div>
                             </div>
 
                             {/* Compact floating points pill */}
