@@ -358,28 +358,44 @@ export const DashboardShell = ({
 
           {/* Top Actions: Notification on left, Prizes in middle, Map on rightmost end */}
           <div className="flex items-center gap-2 sm:gap-2">
-            {/* Notification Option (Dimensions strictly locked, zero jump) */}
+            {/* Notification Option (Two-layer GPU opacity cross-fade: zero flicker, instant & butter-smooth) */}
             <button
               type="button"
               onClick={() => onTabChange('notifications')}
               title="WhatsApp Notifications"
-              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
+              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
             >
-              <Bell
-                size={26}
-                weight={activeTab === 'notifications' ? 'fill' : 'regular'}
-                className={`transition-colors duration-150 ${
-                  activeTab === 'notifications' ? 'text-black' : 'text-zinc-500 hover:text-black'
+              {/* Default / Inactive State Layer (Fades out when active) */}
+              <span
+                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                  activeTab === 'notifications' ? 'opacity-0' : 'opacity-100'
                 }`}
               />
+
+              {/* Active State Layer (Fades in when active) */}
+              <span
+                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                  activeTab === 'notifications' ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+
+              {/* Bell Icon (Smoothly transitions color on top) */}
+              <Bell
+                size={23}
+                weight={activeTab === 'notifications' ? 'fill' : 'regular'}
+                className={`relative z-10 transition-colors duration-150 ${
+                  activeTab === 'notifications' ? 'text-white' : 'text-zinc-600 hover:text-zinc-900'
+                }`}
+              />
+
               {pendingCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
+                <span className="absolute -top-0.5 -right-0.5 z-20 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
                   {pendingCount > 99 ? '99+' : pendingCount}
                 </span>
               )}
             </button>
 
-            {/* Prizes / Dollar Option (Dimensions strictly locked, zero jump) */}
+            {/* Prizes / Dollar Option (Two-layer GPU opacity cross-fade: zero flicker, instant & butter-smooth) */}
             <button
               type="button"
               onClick={() => {
@@ -387,13 +403,28 @@ export const DashboardShell = ({
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-prizes'));
               }}
               title="Prizes"
-              className="w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
+              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
             >
+              {/* Default / Inactive State Layer (Fades out when active) */}
+              <span
+                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                  activeTab === 'prizes' ? 'opacity-0' : 'opacity-100'
+                }`}
+              />
+
+              {/* Active State Layer (Fades in when active) */}
+              <span
+                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                  activeTab === 'prizes' ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+
+              {/* CurrencyCircleDollar Icon (Smoothly transitions color on top) */}
               <CurrencyCircleDollar
-                size={26}
+                size={25}
                 weight={activeTab === 'prizes' ? 'fill' : 'regular'}
-                className={`transition-colors duration-150 ${
-                  activeTab === 'prizes' ? 'text-black' : 'text-zinc-500 hover:text-black'
+                className={`relative z-10 transition-colors duration-150 ${
+                  activeTab === 'prizes' ? 'text-white' : 'text-zinc-600 hover:text-zinc-900'
                 }`}
               />
             </button>
