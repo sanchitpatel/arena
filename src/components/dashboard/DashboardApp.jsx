@@ -12,6 +12,7 @@ const NotificationView = lazy(() => import('./NotificationView').then(m => ({ de
 const ProfileView = lazy(() => import('./ProfileView').then(m => ({ default: m.ProfileView })));
 const ScannerView = lazy(() => import('./ScannerView').then(m => ({ default: m.ScannerView })));
 const MapView = lazy(() => import('./MapView').then(m => ({ default: m.MapView })));
+const IdeasPitchWallView = lazy(() => import('./IdeasPitchWallView').then(m => ({ default: m.IdeasPitchWallView })));
 
 // Pre-fetch dashboard views in background after onboarding page has loaded
 const prefetchDashboard = () => {
@@ -26,6 +27,7 @@ const prefetchDashboard = () => {
     import('./ProfileView');
     import('./ScannerView');
     import('./MapView');
+    import('./IdeasPitchWallView');
   }, { timeout: 1000 });
 };
 
@@ -54,11 +56,12 @@ const ROOT_PATH = '/arena';
 const TAB_TO_PATH = {
   'new-patient': '/arena',
   'existing-patient': '/leaderboard',
-  'dashboard': '/live',
+  'dashboard': '/wallet',
   'notifications': '/notifications',
   'profile': '/profile',
   'scanner': '/scanner',
-  'prizes': '/prizes',
+  'ideas': '/ideas',
+  'prizes': '/ideas',
   'map': '/map',
 };
 
@@ -66,12 +69,15 @@ const PATH_TO_TAB = {
   '/arena': 'new-patient',
   '/leaderboard': 'existing-patient',
   '/live': 'dashboard',
+  '/wallet': 'dashboard',
   '/notifications': 'notifications',
   '/records': 'existing-patient',
   '/profile': 'profile',
   '/scanner': 'scanner',
   '/scan': 'scanner',
-  '/prizes': 'prizes',
+  '/ideas': 'ideas',
+  '/pitch-wall': 'ideas',
+  '/prizes': 'ideas',
   '/map': 'map',
   '/': 'new-patient',
 };
@@ -272,6 +278,11 @@ export default function DashboardApp() {
             player={player}
             onNavigate={handleTabChange}
             isActive={activeTab === 'map'}
+          />
+        </div>
+        <div className={(activeTab === 'ideas' || activeTab === 'prizes') ? 'block' : 'hidden'}>
+          <IdeasPitchWallView
+            player={player}
           />
         </div>
       </DashboardShell>

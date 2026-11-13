@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { SquaresFour, UsersThree, CalendarBlank, HourglassHigh, ClockAfternoon, CheckCircle, Ticket, CaretLeft, CaretRight, Eye, ArrowLeft, ArrowRight, DeviceMobile, User, MagnifyingGlass, X, Stethoscope, Check, UserList, CircleNotch, ArrowClockwise, WarningCircle } from '../icons';
+import { SquaresFour, CurrencyCircleDollar, UsersThree, CalendarBlank, HourglassHigh, ClockAfternoon, CheckCircle, Ticket, CaretLeft, CaretRight, Eye, ArrowLeft, ArrowRight, DeviceMobile, User, MagnifyingGlass, X, Stethoscope, Check, UserList, CircleNotch, ArrowClockwise, WarningCircle } from '../icons';
 import {
   fetchDashboardMetrics,
   fetchMonthDateRecords,
@@ -565,10 +565,10 @@ export const DoctorDashboardView = ({
             <div>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 flex items-center gap-2.5 sm:gap-3">
                 <span className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#e6ebf2] shadow-[4px_4px_8px_#c2c9d4,-4px_-4px_8px_#ffffff] border border-white/70 flex items-center justify-center text-emerald-700 shrink-0">
-                  <SquaresFour size={26} className="sm:hidden" weight="duotone" />
-                  <SquaresFour size={30} className="hidden sm:block" weight="duotone" />
+                  <CurrencyCircleDollar size={26} className="sm:hidden" weight="duotone" />
+                  <CurrencyCircleDollar size={30} className="hidden sm:block" weight="duotone" />
                 </span>
-                <span>Dashboard & Daily Queue</span>
+                <span>Wallet & Leaderboard</span>
               </h2>
               <p className="text-xs sm:text-sm text-zinc-500 mt-1 sm:mt-0.5 ml-[50px] sm:ml-14">
                 Overview of today's visits, daily queues, and patient records.

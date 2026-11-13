@@ -20,6 +20,9 @@ const VALID_APP_PATHS = new Set([
   '/scanner',
   '/scan',
   '/prizes',
+  '/ideas',
+  '/pitch-wall',
+  '/wallet',
   '/map',
 ]);
 

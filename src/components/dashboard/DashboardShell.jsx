@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X, ArenaMapIcon, CurrencyCircleDollar } from '../icons';
+import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X, ArenaMapIcon, CurrencyCircleDollar, Lightbulb } from '../icons';
 import Logo from '../Logo';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
@@ -133,9 +133,9 @@ export const DashboardShell = ({
     },
     {
       id: 'dashboard',
-      label: 'Dashboard',
-      icon: SquaresFour,
-      description: 'Daily queues & statistics',
+      label: 'Wallet',
+      icon: CurrencyCircleDollar,
+      description: 'Player wallet & credits',
     },
     {
       id: 'profile',
@@ -357,7 +357,7 @@ export const DashboardShell = ({
           </span>
 
           {/* Top Actions: Notification on left, Prizes in middle, Map on rightmost end */}
-          <div className="flex items-center gap-2 sm:gap-2">
+          <div className="flex items-center gap-3 sm:gap-2">
             {/* Notification Option (Two-layer GPU opacity cross-fade: zero flicker, instant & butter-smooth) */}
             <button
               type="button"
@@ -395,36 +395,39 @@ export const DashboardShell = ({
               )}
             </button>
 
-            {/* Prizes / Dollar Option (Two-layer GPU opacity cross-fade: zero flicker, instant & butter-smooth) */}
+            {/* Bulb Option: Ideas Pitch Wall (Two-layer GPU opacity cross-fade: zero flicker, instant & butter-smooth) */}
             <button
               type="button"
               onClick={() => {
-                if (typeof onTabChange === 'function') onTabChange('prizes');
-                if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-prizes'));
+                if (typeof onTabChange === 'function') onTabChange('ideas');
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('arena:open-ideas'));
+                  window.dispatchEvent(new CustomEvent('arena:open-prizes'));
+                }
               }}
-              title="Prizes"
+              title="Ideas Pitch Wall"
               className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
             >
               {/* Default / Inactive State Layer (Fades out when active) */}
               <span
                 className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 pointer-events-none ${
-                  activeTab === 'prizes' ? 'opacity-0' : 'opacity-100'
+                  (activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-0' : 'opacity-100'
                 }`}
               />
 
               {/* Active State Layer (Fades in when active) */}
               <span
                 className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 pointer-events-none ${
-                  activeTab === 'prizes' ? 'opacity-100' : 'opacity-0'
+                  (activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-100' : 'opacity-0'
                 }`}
               />
 
-              {/* CurrencyCircleDollar Icon (Smoothly transitions color on top) */}
-              <CurrencyCircleDollar
-                size={25}
-                weight={activeTab === 'prizes' ? 'fill' : 'regular'}
+              {/* Lightbulb Icon (Smoothly transitions color on top) */}
+              <Lightbulb
+                size={23}
+                weight={(activeTab === 'ideas' || activeTab === 'prizes') ? 'fill' : 'regular'}
                 className={`relative z-10 transition-colors duration-150 ${
-                  activeTab === 'prizes' ? 'text-white' : 'text-zinc-600 hover:text-zinc-900'
+                  (activeTab === 'ideas' || activeTab === 'prizes') ? 'text-white' : 'text-zinc-600 hover:text-zinc-900'
                 }`}
               />
             </button>

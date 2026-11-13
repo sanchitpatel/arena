@@ -619,7 +619,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
         {/* Floorplan Tap Tip */}
         <p className="text-[11px] text-zinc-500 font-semibold text-center mt-2.5 leading-snug">
-          Tap any room to glide your Orb • Tap any floating gem to view quest
+          Tap any floating Gem to view quest
         </p>
       </div>
 
