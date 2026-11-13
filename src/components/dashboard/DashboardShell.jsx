@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X, ArenaMapIcon } from '../icons';
+import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X, ArenaMapIcon, CurrencyDollar } from '../icons';
 import Logo from '../Logo';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
@@ -342,7 +342,7 @@ export const DashboardShell = ({
             ARENA
           </span>
 
-          {/* Top Actions: Notification on left, Map on rightmost end */}
+          {/* Top Actions: Notification on left, Prizes in middle, Map on rightmost end */}
           <div className="flex items-center gap-2 -mr-1">
             {/* Notification Option (Direct bare icon, no container/border/bg) */}
             <button
@@ -351,12 +351,29 @@ export const DashboardShell = ({
               title="WhatsApp Notifications"
               className="relative flex items-center justify-center p-1 text-zinc-800 hover:text-black active:scale-95 transition-all cursor-pointer"
             >
-              <Bell size={26} weight={activeTab === 'notifications' ? 'fill' : 'regular'} className="text-zinc-800 hover:text-black transition-colors" />
+              <Bell size={28} weight={activeTab === 'notifications' ? 'fill' : 'regular'} className="text-zinc-800 hover:text-black transition-colors" />
               {pendingCount > 0 && (
                 <span className="absolute -top-1 -right-1.5 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
                   {pendingCount > 99 ? '99+' : pendingCount}
                 </span>
               )}
+            </button>
+
+            {/* Prizes / Dollar Option (Direct bare icon in the middle) */}
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof onTabChange === 'function') onTabChange('prizes');
+                if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-prizes'));
+              }}
+              title="Prizes"
+              className="flex items-center justify-center p-1 text-zinc-800 hover:text-black active:scale-95 transition-all cursor-pointer"
+            >
+              <CurrencyDollar
+                size={28}
+                weight={activeTab === 'prizes' ? 'bold' : 'regular'}
+                className="text-zinc-800 hover:text-black transition-colors"
+              />
             </button>
 
             {/* Map Icon on the Rightmost End (Direct bare icon, no container/border/bg) */}

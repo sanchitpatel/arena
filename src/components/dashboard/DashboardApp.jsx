@@ -56,6 +56,7 @@ const TAB_TO_PATH = {
   'notifications': '/notifications',
   'profile': '/profile',
   'scanner': '/scanner',
+  'prizes': '/prizes',
 };
 
 const PATH_TO_TAB = {
@@ -67,6 +68,7 @@ const PATH_TO_TAB = {
   '/profile': 'profile',
   '/scanner': 'scanner',
   '/scan': 'scanner',
+  '/prizes': 'prizes',
   '/': 'new-patient',
 };
 

@@ -19,6 +19,7 @@ const VALID_APP_PATHS = new Set([
   '/profile',
   '/scanner',
   '/scan',
+  '/prizes',
 ]);
 
 function resolveRoute() {

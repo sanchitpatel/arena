@@ -44,6 +44,8 @@ export { Code } from '@phosphor-icons/react/dist/icons/Code';
 export { Compass } from '@phosphor-icons/react/dist/icons/Compass';
 export { Copy } from '@phosphor-icons/react/dist/icons/Copy';
 export { Crown } from '@phosphor-icons/react/dist/icons/Crown';
+export { CurrencyCircleDollar } from '@phosphor-icons/react/dist/icons/CurrencyCircleDollar';
+export { CurrencyDollar } from '@phosphor-icons/react/dist/icons/CurrencyDollar';
 export { DeviceMobile } from '@phosphor-icons/react/dist/icons/DeviceMobile';
 export { DiscordLogo } from '@phosphor-icons/react/dist/icons/DiscordLogo';
 export { Dna } from '@phosphor-icons/react/dist/icons/Dna';
