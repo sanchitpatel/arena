@@ -363,7 +363,7 @@ export const DashboardShell = ({
               type="button"
               onClick={() => onTabChange('notifications')}
               title="WhatsApp Notifications"
-              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer"
+              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
             >
               <Bell
                 size={26}
@@ -387,7 +387,7 @@ export const DashboardShell = ({
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-prizes'));
               }}
               title="Prizes"
-              className="w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
             >
               <CurrencyCircleDollar
                 size={26}
@@ -398,7 +398,7 @@ export const DashboardShell = ({
               />
             </button>
 
-            {/* Map Icon on the Rightmost End (Persistent container: bottom-bar neumorphic styling when default, black gradient when active) */}
+            {/* Map Icon on the Rightmost End (Two-layer GPU opacity cross-fade: zero flicker, instant & butter-smooth) */}
             <button
               type="button"
               onClick={() => {
@@ -406,15 +406,28 @@ export const DashboardShell = ({
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-map'));
               }}
               title="Tactical Map"
-              className={`w-9 h-9 flex items-center justify-center rounded-xl shrink-0 transition-[background-color,border-color,box-shadow,color] duration-150 cursor-pointer ${
-                activeTab === 'map'
-                  ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
-                  : 'bg-[#ebedf2] text-zinc-600 hover:text-zinc-900 border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
-              }`}
+              className="relative w-10 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
             >
+              {/* Default / Inactive State Layer (Fades out when active) */}
+              <span
+                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                  activeTab === 'map' ? 'opacity-0' : 'opacity-100'
+                }`}
+              />
+
+              {/* Active State Layer (Fades in when active) */}
+              <span
+                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                  activeTab === 'map' ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+
+              {/* Map Icon (Smoothly transitions color on top) */}
               <ArenaMapIcon
-                size={24}
-                className={activeTab === 'map' ? 'text-white' : 'text-zinc-600 hover:text-zinc-900 transition-colors duration-50'}
+                size={27}
+                className={`relative z-10 transition-colors duration-150 ${
+                  activeTab === 'map' ? 'text-white' : 'text-zinc-600 hover:text-zinc-900'
+                }`}
               />
             </button>
           </div>
