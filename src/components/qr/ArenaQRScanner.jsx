@@ -758,7 +758,7 @@ export default function ArenaQRScanner({
 
           {/* In-Card Duel Status Feedback */}
           {duelStatus === 'sent' && (
-            <div className="mt-2.5 py-1.5 px-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center justify-center gap-1 animate-in fade-in duration-150">
+            <div className="mt-1 py-1 px-2.5 rounded-lg text-emerald-800 text-[11px] font-semibold flex items-center justify-center gap-1 animate-in fade-in duration-150">
               <CheckCircle size={14} weight="fill" className="text-emerald-600 shrink-0" />
               <span className="truncate">Challenge request sent to {scannedPlayer.name || scannedPlayer.gid}!</span>
             </div>
@@ -777,12 +777,12 @@ export default function ArenaQRScanner({
               type="button"
               onClick={handleInitiateDuel}
               disabled={duelStatus === 'sent'}
-              className={`flex-1 py-2 px-2 text-[11.5px] font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1 ${duelStatus === 'sent'
-                  ? 'bg-sky-600 text-white border border-emerald-500 opacity-90'
+              className={`flex-1 py-2.5 px-2 text-[11.5px] font-bold rounded-xl shadow transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1 ${duelStatus === 'sent'
+                  ? 'bg-sky-600 text-white border border-sky-700 opacity-90'
                   : 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800'
                 }`}
             >
-              <Sword size={14} weight="bold" />
+              <Sword size={16} weight="bold" />
               <span>{duelStatus === 'sent' ? 'Challenge Sent' : 'Duel'}</span>
             </button>
           </div>
