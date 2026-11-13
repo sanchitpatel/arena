@@ -784,7 +784,7 @@ export default function ArenaQRScanner({
               disabled={duelStatus === 'sent'}
               className={`flex-1 py-2.5 sm:py-3 px-2 text-xs sm:text-[13px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.96] group ${
                 duelStatus === 'sent'
-                  ? 'bg-gradient-to-b from-sky-500 to-blue-600 text-white border border-sky-400/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.25),inset_0_2px_5px_rgba(255,255,255,0.45)] opacity-95'
+                  ? 'bg-gradient-to-tr from-sky-500 to-blue-600 text-white border border-sky-400/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.25),inset_0_2px_5px_rgba(255,255,255,0.45)] opacity-95'
                   : 'bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)]'
               }`}
             >
@@ -807,7 +807,7 @@ export default function ArenaQRScanner({
       {/* Top Center Toast Pop-up Notification (Silver / Grey-Black Theme) */}
       {showDuelToast && typeof document !== 'undefined' && createPortal(
         <div className="fixed top-11 sm:top-5 left-1/2 -translate-x-1/2 z-[100] max-w-[92vw] sm:max-w-md pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-200 select-none">
-          <div className="flex items-center gap-2.5 px-2 py-1 rounded-full bg-gradient-to-tr from-zinc-700 to-zinc-850 text-white border border-zinc-300/30 shadow-[0_4px_16px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.25)] backdrop-blur-md">
+          <div className="flex items-center gap-2.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-zinc-700 to-zinc-850 text-white border border-zinc-300/30 shadow-[0_4px_16px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.25)] backdrop-blur-md">
             <div className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
               <Swords size={14} strokeWidth={2.4} className="text-zinc-200" />
             </div>
@@ -817,7 +817,7 @@ export default function ArenaQRScanner({
             <button
               type="button"
               onClick={() => setShowDuelToast(false)}
-              className="ml-1 p-0.5 rounded-full hover:bg-white/10 text-zinc-100 hover:text-white transition-colors cursor-pointer"
+              className="ml-1 p-0.5 rounded-full hover:bg-white/10 text-zinc-500 hover:text-white transition-colors cursor-pointer"
               title="Close notification"
             >
               <X size={14} weight="bold" />

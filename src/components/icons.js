@@ -203,13 +203,16 @@ export const FlipHorizontalIcon = ({ size = 20, className = '', ...props }) =>
     })
   );
 
-// Official Arena Folded Route Map Icon
-export const ArenaMapIcon = ({ size = 20, className = '', ...props }) =>
-  React.createElement(
+// Official Arena Folded Route Map Icon (Mask-based transparent cutouts)
+export const ArenaMapIcon = ({ size = 20, className = '', ...props }) => {
+  const id = `map-${React.useId().replace(/:/g, '')}`;
+  const h = React.createElement;
+
+  return h(
     'svg',
     {
       xmlns: 'http://www.w3.org/2000/svg',
-      viewBox: '0 0 512 512',
+      viewBox: '0 0 320 317',
       width: size,
       height: size,
       role: 'img',
@@ -217,33 +220,50 @@ export const ArenaMapIcon = ({ size = 20, className = '', ...props }) =>
       className,
       ...props,
     },
-    React.createElement(
-      'g',
-      { fill: 'currentColor' },
-      React.createElement('path', { d: 'M32 120 L168 88 V456 L32 424 Z' }),
-      React.createElement('path', { d: 'M184 88 L328 128 V424 L184 456 Z' }),
-      React.createElement('path', { d: 'M344 128 L480 96 V456 L344 424 Z' })
+    h(
+      'defs',
+      null,
+      h(
+        'mask',
+        { id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: 320, height: 317 },
+        // white = visible, black = cut out
+        h('rect', { width: 320, height: 317, fill: '#fff' }),
+        // pin
+        h('path', {
+          fill: '#000',
+          d: 'M47 46A33 33 0 0 0 14 79C14 102 33 120 47 134C61 120 80 102 80 79A33 33 0 0 0 47 46Z',
+        }),
+        h('circle', { cx: 47, cy: 79, r: 12, fill: '#fff' }),
+        // dotted route
+        h('path', {
+          fill: 'none',
+          stroke: '#000',
+          strokeWidth: 12,
+          strokeLinecap: 'round',
+          strokeDasharray: '0.1 25',
+          d: 'M46 160V196C46 236 74 261 108 261C142 261 160 232 160 190V112C160 82 186 62 215 62C246 62 274 84 274 124V190',
+        }),
+        // route start dot (sits on the fold)
+        h('circle', { cx: 103, cy: 261, r: 12, fill: '#000' }),
+        // X
+        h('path', {
+          fill: 'none',
+          stroke: '#000',
+          strokeWidth: 13,
+          strokeLinecap: 'round',
+          d: 'M260 207L288 235M288 207L260 235',
+        })
+      )
     ),
-    React.createElement('path', {
-      fill: '#ffffff',
-      d: 'M100 186a38 38 0 0 0-38 38c0 32 38 70 38 70s38-38 38-70a38 38 0 0 0-38-38z',
-    }),
-    React.createElement('circle', { cx: '100', cy: '224', r: '13', fill: 'currentColor' }),
-    React.createElement('path', {
-      d: 'M240 400C204 360 200 250 244 206c18-16 42-10 54 8',
-      fill: 'none',
-      stroke: '#ffffff',
-      strokeWidth: '12',
-      strokeLinecap: 'round',
-      strokeDasharray: '1 26',
-    }),
-    React.createElement('path', {
-      d: 'M396 290l44 44M440 290l-44 44',
-      stroke: '#ffffff',
-      strokeWidth: '14',
-      strokeLinecap: 'round',
-    })
+    h(
+      'g',
+      { mask: `url(#${id})`, fill: 'currentColor' },
+      h('path', { d: 'M0 0L97 30V317L0 287Z' }),
+      h('path', { d: 'M109 30L211 0V287L109 317Z' }),
+      h('path', { d: 'M223 0L320 30V317L223 287Z' })
+    )
   );
+};
 
 // Two-Tone CheckCircle: Black Circle Fill with White Tick
 export const CheckCircleBW = ({ size = 32, className = '', ...props }) =>
