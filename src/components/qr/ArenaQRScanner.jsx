@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { CheckCircle, CheckCircleBW, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash, FlipHorizontalIcon, BootstrapQrCode, Play, Pause } from '../icons';
-import { Sword } from '@phosphor-icons/react/dist/icons/Sword';
+import { CheckCircle, CheckCircleBW, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash, FlipHorizontalIcon, BootstrapQrCode, Play, Pause, Swords, X } from '../icons';
 import {
   killAllMediaTracks,
   getInAppPermission,
@@ -30,6 +30,7 @@ export default function ArenaQRScanner({
   const [facingMode, setFacingMode] = useState('environment'); // 'environment' | 'user'
   const [invalidBanner, setInvalidBanner] = useState('');
   const [duelStatus, setDuelStatus] = useState(null); // 'sent' | null
+  const [showDuelToast, setShowDuelToast] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
   // Track if attendee explicitly paused camera access in Arena settings
@@ -46,6 +47,7 @@ export default function ArenaQRScanner({
   const lastInvalidCodeRef = useRef('');
   const stopPromiseRef = useRef(Promise.resolve());
   const isPausedRef = useRef(false);
+  const duelToastTimerRef = useRef(null);
 
   // Generate unique DOM container ID per mount to avoid collision
   const containerId = useRef(`arena-qr-reader-${Math.random().toString(36).substring(2, 9)}`).current;
@@ -420,6 +422,7 @@ export default function ArenaQRScanner({
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       }
       if (invalidBannerTimerRef.current) clearTimeout(invalidBannerTimerRef.current);
+      if (duelToastTimerRef.current) clearTimeout(duelToastTimerRef.current);
       unsubscribe();
       stopCameraHardwareImmediately('ArenaQRScanner unmounted');
     };
@@ -463,6 +466,8 @@ export default function ArenaQRScanner({
   };
 
   const handleFlipCamera = () => {
+    if (duelToastTimerRef.current) clearTimeout(duelToastTimerRef.current);
+    setShowDuelToast(false);
     isPausedRef.current = false;
     setIsPaused(false);
     setScannedPlayer(null);
@@ -472,6 +477,8 @@ export default function ArenaQRScanner({
   };
 
   const handleScanAgain = () => {
+    if (duelToastTimerRef.current) clearTimeout(duelToastTimerRef.current);
+    setShowDuelToast(false);
     isPausedRef.current = false;
     setIsPaused(false);
     setScannedPlayer(null);
@@ -493,9 +500,14 @@ export default function ArenaQRScanner({
 
   const handleInitiateDuel = () => {
     setDuelStatus('sent');
+    setShowDuelToast(true);
     if (navigator?.vibrate) {
       navigator.vibrate([30, 40, 30]);
     }
+    if (duelToastTimerRef.current) clearTimeout(duelToastTimerRef.current);
+    duelToastTimerRef.current = setTimeout(() => {
+      setShowDuelToast(false);
+    }, 4500);
   };
 
   const handleOpenMyQr = () => {
@@ -756,14 +768,6 @@ export default function ArenaQRScanner({
             </div>
           </div>
 
-          {/* In-Card Duel Status Feedback */}
-          {duelStatus === 'sent' && (
-            <div className="mt-1 py-1 px-2.5 rounded-lg text-sky-800 text-[11px] font-semibold flex items-center justify-center gap-1 animate-in fade-in duration-150">
-              <CheckCircle size={14} weight="fill" className="text-sky-600 shrink-0" />
-              <span className="truncate">Challenge request sent to {scannedPlayer.name || scannedPlayer.gid}!</span>
-            </div>
-          )}
-
           {/* Action Row */}
           <div className="mt-1.5 flex items-center gap-2">
             <button
@@ -786,18 +790,41 @@ export default function ArenaQRScanner({
             >
               {duelStatus === 'sent' ? (
                 <>
-                  <CheckCircle size={16} weight="fill" className="text-white shrink-0" />
+                  <Swords size={18} strokeWidth={2.2} className="text-white shrink-0" />
                   <span className="truncate">Challenge Again</span>
                 </>
               ) : (
                 <>
-                  <Sword size={16} weight="bold" className="text-white scale-105 shrink-0" />
+                  <Swords size={18} strokeWidth={2.2} className="text-white scale-105 shrink-0" />
                   <span className="truncate">Duel</span>
                 </>
               )}
             </button>
           </div>
         </div>
+      )}
+
+      {/* Top Center Toast Pop-up Notification (Silver / Grey-Black Theme) */}
+      {showDuelToast && typeof document !== 'undefined' && createPortal(
+        <div className="fixed top-10 sm:top-5 left-1/2 -translate-x-1/2 z-[100] max-w-[92vw] sm:max-w-md pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-200 select-none">
+          <div className="flex items-center gap-2.5 px-2 py-1 rounded-full bg-gradient-to-tr from-zinc-700 to-zinc-850 text-white border border-slate-400 shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.25)] backdrop-blur-md">
+            <div className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+              <Swords size={14} strokeWidth={2.4} className="text-zinc-200" />
+            </div>
+            <span className="text-xs font-semibold text-zinc-200 truncate">
+              Challenge request sent to <strong className="text-white font-bold">{scannedPlayer?.name || scannedPlayer?.gid}</strong>!
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowDuelToast(false)}
+              className="ml-1 p-0.5 rounded-full hover:bg-white/10 text-zinc-100 hover:text-white transition-colors cursor-pointer"
+              title="Close notification"
+            >
+              <X size={14} weight="bold" />
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

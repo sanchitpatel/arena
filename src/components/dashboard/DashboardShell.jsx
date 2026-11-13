@@ -380,7 +380,7 @@ export const DashboardShell = ({
                   : 'shadow-[inset_0_2px_4px_#ffffff,inset_0_-2px_5px_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] active:scale-95 text-zinc-700 hover:text-zinc-900'
               }`}
             >
-              <ArenaMapIcon size={20} className="text-zinc-800" />
+              <ArenaMapIcon size={32} className="text-zinc-800" />
             </button>
           </div>
         </header>
