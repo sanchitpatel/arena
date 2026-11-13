@@ -436,7 +436,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
         <div
           ref={mapContainerRef}
           onMouseDown={handleMouseDown}
-          className="relative w-full aspect-[24.4/42] max-h-[76vh] overflow-hidden rounded-[12px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] cursor-crosshair touch-manipulation"
+          className="relative w-full aspect-[1:1] max-h-[76vh] overflow-hidden rounded-[12px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] cursor-crosshair touch-manipulation"
         >
           {/* Inward Shadow Overlay Layer (Ensures crisp inward shadow on top of floorplan edges) */}
           <div className="pointer-events-none absolute inset-0 rounded-[12px] shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff] z-20" />
