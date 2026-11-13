@@ -8,7 +8,7 @@ import { Compass } from '../icons';
  */
 export function useDeviceHeading() {
   const [heading, setHeading] = useState(0);
-  const [isActive, setIsActive] = useState(false);
+  const [isActive, setIsActive] = useState(true);
   const [isSupported, setIsSupported] = useState(true);
   const [permissionState, setPermissionState] = useState('prompt'); // 'prompt' | 'granted' | 'denied' | 'unsupported'
 
@@ -52,17 +52,24 @@ export function useDeviceHeading() {
     } else {
       // Android / standard desktop / older iOS: permission granted implicitly
       setPermissionState('granted');
-      setIsActive((prev) => !prev);
+      setIsActive(true);
       return true;
     }
   }, []);
 
   // Toggle compass beam on/off
   const toggleHeading = useCallback(async () => {
-    if (!isActive) {
-      await requestHeadingPermission();
-    } else {
+    if (isActive) {
       setIsActive(false);
+    } else {
+      if (
+        typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function'
+      ) {
+        await requestHeadingPermission();
+      } else {
+        setIsActive(true);
+      }
     }
   }, [isActive, requestHeadingPermission]);
 
@@ -201,7 +208,7 @@ export function OrbHeadingBeam({ heading = 0, isActive = false, buildingOffset =
 }
 
 /**
- * Toolbar Button for Toggling Compass Direction
+ * Toolbar Button for Toggling Compass Direction (Black & White Theme)
  */
 export function CompassToolbarButton({ isActive = false, onClick, title = "Toggle Facing Direction (Compass)" }) {
   return (
@@ -209,16 +216,29 @@ export function CompassToolbarButton({ isActive = false, onClick, title = "Toggl
       type="button"
       onClick={onClick}
       title={title}
-      className={`map-control w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer shadow-sm border ${
-        isActive
-          ? 'bg-sky-500 text-white border-sky-400 shadow-[0_0_10px_rgba(14,165,233,0.5)] scale-105'
-          : 'bg-[#f0f2f5] hover:bg-slate-200 active:scale-90 text-zinc-700 border-slate-200'
-      }`}
+      className="map-control group relative w-7 h-7 rounded-lg flex items-center justify-center shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
     >
+      {/* Default / Inactive State Layer (Off) */}
+      <span
+        className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+          isActive ? 'opacity-0' : 'opacity-100 group-active:opacity-0'
+        }`}
+      />
+
+      {/* Active State Layer (On - Obsidian Black & White) */}
+      <span
+        className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_1.5px_3px_rgba(255,255,255,0.45),1px_1px_3px_#c5ccd6] transition-opacity duration-150 pointer-events-none ${
+          isActive ? 'opacity-100' : 'opacity-0 group-active:opacity-100'
+        }`}
+      />
+
+      {/* Compass Icon */}
       <Compass
-        size={18}
+        size={17}
         weight={isActive ? "fill" : "bold"}
-        className={isActive ? "text-white animate-spin-slow" : "text-zinc-700"}
+        className={`relative z-10 transition-colors duration-150 ${
+          isActive ? "text-white" : "text-zinc-600 group-hover:text-zinc-900 group-active:text-white"
+        }`}
       />
     </button>
   );

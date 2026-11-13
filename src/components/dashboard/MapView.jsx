@@ -461,7 +461,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                     type="button"
                     onClick={() => zoomToElement('attendee-orb', 1.6, 300)}
                     title="Center on My Orb"
-                    className="map-control w-7 h-7 rounded-lg bg-sky-100 hover:bg-sky-200 active:scale-90 text-sky-700 flex items-center justify-center transition-all cursor-pointer shadow-sm border border-sky-300"
+                    className="map-control w-7 h-7 rounded-lg bg-sky-100 hover:bg-sky-200/80 active:scale-90 text-sky-700 flex items-center justify-center transition-all cursor-pointer shadow-sm border border-sky-300"
                   >
                     <Crosshair size={19} weight="bold" />
                   </button>
