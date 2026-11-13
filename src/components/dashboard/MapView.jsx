@@ -16,6 +16,7 @@ import {
   Scan,
 } from '../icons';
 import ChatGPTOrb from './ChatGPTOrb';
+import { CrystalIcon } from './CrystalIcon';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import { OrbHeadingBeam, CompassToolbarButton, useDeviceHeading } from '../map/OrbHeadingBeam';
 
@@ -168,7 +169,8 @@ const playCrystalChime = () => {
 };
 
 /**
- * 3D Multifaceted Floating Gemstone SVG Icon
+ * 3D Prismatic Quartz Crystal Icon
+ * Exact SVG design built from public/crystal.md
  */
 function FloatingGemIcon({ color = 'amber', gradient = 'from-amber-400 to-yellow-600', isCompleted = false }) {
   if (isCompleted) {
@@ -180,64 +182,8 @@ function FloatingGemIcon({ color = 'amber', gradient = 'from-amber-400 to-yellow
   }
 
   return (
-    <div className={`relative w-8 h-8 flex items-center justify-center filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)]`}>
-      <svg viewBox="0 0 24 24" className="w-8 h-8 transform rotate-0" fill="none">
-        <defs>
-          <linearGradient id={`gem-grad-${color}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            {color === 'amber' && (
-              <>
-                <stop offset="0%" stopColor="#fef08a" />
-                <stop offset="50%" stopColor="#f59e0b" />
-                <stop offset="100%" stopColor="#b45309" />
-              </>
-            )}
-            {color === 'sapphire' && (
-              <>
-                <stop offset="0%" stopColor="#bae6fd" />
-                <stop offset="50%" stopColor="#0ea5e9" />
-                <stop offset="100%" stopColor="#1d4ed8" />
-              </>
-            )}
-            {color === 'emerald' && (
-              <>
-                <stop offset="0%" stopColor="#a7f3d0" />
-                <stop offset="50%" stopColor="#10b981" />
-                <stop offset="100%" stopColor="#047857" />
-              </>
-            )}
-            {color === 'amethyst' && (
-              <>
-                <stop offset="0%" stopColor="#e9d5ff" />
-                <stop offset="50%" stopColor="#a855f7" />
-                <stop offset="100%" stopColor="#6b21a8" />
-              </>
-            )}
-            {color === 'ruby' && (
-              <>
-                <stop offset="0%" stopColor="#fecdd3" />
-                <stop offset="50%" stopColor="#f43f5e" />
-                <stop offset="100%" stopColor="#9f1239" />
-              </>
-            )}
-            {color === 'diamond' && (
-              <>
-                <stop offset="0%" stopColor="#ffffff" />
-                <stop offset="50%" stopColor="#818cf8" />
-                <stop offset="100%" stopColor="#3730a3" />
-              </>
-            )}
-          </linearGradient>
-        </defs>
-
-        {/* Main Crystal Facet Geometry */}
-        <polygon points="6,2 18,2 23,8 12,22 1,8" fill={`url(#gem-grad-${color})`} stroke="#ffffff" strokeWidth="1" strokeLinejoin="round" />
-        <polygon points="6,2 18,2 15,8 9,8" fill="rgba(255,255,255,0.45)" />
-        <polygon points="1,8 9,8 12,22" fill="rgba(0,0,0,0.15)" />
-        <polygon points="23,8 15,8 12,22" fill="rgba(0,0,0,0.22)" />
-        <polygon points="9,8 15,8 12,22" fill="rgba(255,255,255,0.25)" />
-        {/* Specular sparkle gleam */}
-        <circle cx="8" cy="5" r="1" fill="#ffffff" opacity="0.9" />
-      </svg>
+    <div className="relative w-8 h-14 flex items-center justify-center filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.30)]">
+      <CrystalIcon color={color} className="w-full h-full" />
     </div>
   );
 }
@@ -515,17 +461,17 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                             }}
                             className="relative pointer-events-auto cursor-pointer flex flex-col items-center"
                           >
-                            {/* Multifaceted Gemstone with Smooth Hover & Perfectly Concentric Glowing Base */}
-                            <div className="relative z-10 w-8 h-8 flex items-center justify-center transition-transform duration-200 group-hover:scale-125">
-                              {/* Beacon Sonar Ground Pulse (Concentric behind the diamond) */}
+                            {/* Luminous Prismatic Crystal with Perfectly Concentric Glowing Base */}
+                            <div className="relative z-10 w-8 h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-125">
+                              {/* Beacon Sonar Ground Pulse (Concentric behind crystal center) */}
                               {!isCompleted && (
                                 <div
-                                  className="absolute inset-0 rounded-full animate-beacon-pulse pointer-events-none z-0 blur-[2px]"
+                                  className="absolute inset-0 m-auto w-10 h-10 rounded-full animate-beacon-pulse pointer-events-none z-0 blur-[1px]"
                                   style={{ backgroundColor: quest.glowColor }}
                                 />
                               )}
 
-                              <div className="relative z-10">
+                              <div className="relative z-10 w-full h-full flex items-center justify-center">
                                 <FloatingGemIcon
                                   color={quest.gemColor}
                                   gradient={quest.gradient}
@@ -536,13 +482,12 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
                             {/* Compact floating points pill */}
                             <div
-                              className={`mt-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight border shadow-sm backdrop-blur-md transition-all group-hover:scale-110 ${
-                                isCompleted
+                              className={`mt-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight border shadow-sm backdrop-blur-md transition-all group-hover:scale-110 ${isCompleted
                                   ? 'bg-emerald-500/90 text-white border-emerald-300'
                                   : isSelected
                                     ? 'bg-zinc-900 text-white border-white scale-105'
                                     : 'bg-white/95 text-zinc-800 border-slate-300/80'
-                              }`}
+                                }`}
                             >
                               {isCompleted ? '✓ Done' : `+${quest.points}`}
                             </div>
@@ -599,7 +544,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
         {/* Floorplan Tap Tip */}
         <p className="text-[11px] text-zinc-500 font-semibold text-center mt-2.5 leading-snug">
-          Tap any floating Gem to view quest
+          Tap any floating Crystal to view quest
         </p>
       </div>
 
@@ -724,17 +669,17 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                 key={quest.id}
                 onClick={() => selectQuest(quest)}
                 className={`p-3 rounded-2xl bg-[#ebedf2] border transition-all cursor-pointer flex items-center justify-between gap-3 active:scale-[0.99] ${isSelected
-                    ? 'border-sky-500 shadow-[inset_2px_2px_4px_#cbd2de,inset_-2px_-2px_4px_#ffffff]'
-                    : isDone
-                      ? 'border-emerald-300/80 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] opacity-80'
-                      : 'border-white/80 shadow-[3px_3px_6px_#c8d0db,-3px_-3px_6px_#ffffff] hover:shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff]'
+                  ? 'border-sky-500 shadow-[inset_2px_2px_4px_#cbd2de,inset_-2px_-2px_4px_#ffffff]'
+                  : isDone
+                    ? 'border-emerald-300/80 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] opacity-80'
+                    : 'border-white/80 shadow-[3px_3px_6px_#c8d0db,-3px_-3px_6px_#ffffff] hover:shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff]'
                   }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
                     className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-white shadow-sm ${isDone
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-gradient-to-b from-zinc-800 to-zinc-950 text-white'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-gradient-to-b from-zinc-800 to-zinc-950 text-white'
                       }`}
                   >
                     {isDone ? (
