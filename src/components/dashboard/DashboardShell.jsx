@@ -366,7 +366,7 @@ export const DashboardShell = ({
               <span className="text-[13px] text-zinc-800">Notification</span>
             </button>
 
-            {/* Map Icon on the Rightmost End */}
+            {/* Map Icon on the Rightmost End (Direct bare icon, no container/border/bg) */}
             <button
               type="button"
               onClick={() => {
@@ -374,11 +374,7 @@ export const DashboardShell = ({
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-map'));
               }}
               title="Map"
-              className={`flex items-center justify-center w-8 h-8 rounded-xl bg-[#ebedf2] border border-white cursor-pointer transition-all ${
-                activeTab === 'map'
-                  ? 'shadow-[inset_0_2px_6px_#ffffff,inset_0_-4px_7px_rgba(0,0,0,0.24)] text-zinc-900 font-extrabold'
-                  : 'shadow-[inset_0_2px_4px_#ffffff,inset_0_-2px_5px_rgba(0,0,0,0.14)] hover:shadow-[inset_0_2px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.20)] active:shadow-[inset_0_1px_3px_#ffffff,inset_0_-2px_4px_rgba(0,0,0,0.25)] active:scale-95 text-zinc-700 hover:text-zinc-900'
-              }`}
+              className="flex items-center justify-center p-1 text-zinc-800 hover:text-black active:scale-95 transition-all cursor-pointer"
             >
               <ArenaMapIcon size={32} className="text-zinc-800" />
             </button>
