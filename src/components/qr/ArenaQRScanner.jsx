@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { CheckCircle, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash, FlipHorizontalIcon, BootstrapQrCode, Play, Pause } from '../icons';
+import { CheckCircle, CheckCircleBW, WarningCircle, ArrowClockwise, CircleNotch, CameraSlash, FlipHorizontalIcon, BootstrapQrCode, Play, Pause } from '../icons';
 import { Sword } from '@phosphor-icons/react/dist/icons/Sword';
 import {
   killAllMediaTracks,
@@ -587,8 +587,8 @@ export default function ArenaQRScanner({
               className="absolute inset-0 bg-black/55 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2 text-white z-20 animate-in fade-in duration-200 cursor-pointer select-none"
               title="Tap to scan another"
             >
-              <div className="w-14 h-14 rounded-full bg-sky-500/10 border-2 border-sky-400/80 shadow-[0_0_20px_rgba(52,211,153,0.4)] flex items-center justify-center text-sky-400 animate-in zoom-in-75 duration-200">
-                <CheckCircle size={32} weight="fill" className="text-sky-400" />
+              <div className="w-14 h-14 rounded-full bg-white/10 border-2 border-white/70 shadow-[0_0_20px_rgba(255,255,255,0.25)] flex items-center justify-center animate-in zoom-in-75 duration-200">
+                <CheckCircleBW size={37} />
               </div>
               <span className="font-arena text-[13px] font-black tracking-widest text-white uppercase">
                 QR Code Scanned
