@@ -468,7 +468,7 @@ export const DashboardShell = ({
         </header>
 
         {/* View Container */}
-        <div className="flex-1 px-4 pt-3 pb-6 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <div className="flex-1 px-2 pt-3 pb-6 sm:px-6 lg:p-8 max-w-7xl w-full mx-auto">
           {children}
         </div>
       </main>

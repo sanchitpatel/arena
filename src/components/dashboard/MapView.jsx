@@ -582,12 +582,12 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
       )}
 
       {/* Main Floorplan Canvas Frame (Outer Thick White Wall with Inward Shadow & Inside White Background) */}
-      <div className="relative w-full max-w-[420px] sm:max-w-[460px] flex flex-col items-center">
+      <div className="relative w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] flex flex-col items-center">
         {/* Interactive Floorplan Window */}
         <div
           ref={mapContainerRef}
           onMouseDown={handleMouseDown}
-          className="relative w-full aspect-[1:1] max-h-[76vh] overflow-hidden rounded-[12px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] cursor-grab active:cursor-grabbing touch-none select-none"
+          className="relative w-full aspect-[1:1] max-h-[76vh] overflow-hidden rounded-[16px] sm:rounded-[20px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] cursor-grab active:cursor-grabbing touch-none select-none"
         >
           {/* Inward Shadow Overlay Layer (Ensures crisp inward shadow on top of floorplan edges) */}
           <div className="pointer-events-none absolute inset-0 rounded-[12px] shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff] z-20" />
@@ -631,7 +631,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
           {/* Scalable & Pannable Floorplan Layer */}
           <div
             onClick={handleMapClick}
-            className="relative w-full h-full select-none"
+            className="relative h-full aspect-[1:1] mx-auto select-none"
             style={{
               transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
               transformOrigin: 'center center',
@@ -743,7 +743,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
       {/* 3. Quest Details Modal / Bottom Drawer */}
       {selectedQuest && (
-        <div className="w-full max-w-[420px] sm:max-w-[460px] mt-3.5 bg-white border border-slate-200/90 rounded-[28px] p-4 shadow-[0_12px_32px_rgba(197,204,214,0.5)] animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] mt-3.5 bg-white border border-slate-200/90 rounded-[28px] p-4 shadow-[0_12px_32px_rgba(197,204,214,0.5)] animate-in fade-in slide-in-from-bottom-3 duration-200">
           <div className="flex items-start justify-between gap-3 pb-2.5 mb-2.5 border-b border-zinc-100">
             <div className="flex items-center gap-2.5 min-w-0">
               <FloatingGemIcon
@@ -818,7 +818,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
       )}
 
       {/* 4. Filter Pills & Quest Directory */}
-      <div className="w-full max-w-[420px] sm:max-w-[460px] mt-4 flex flex-col gap-2">
+      <div className="w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] mt-4 flex flex-col gap-2">
         <div className="flex items-center justify-between px-1">
           <span className="text-[11px] font-bold tracking-wider text-zinc-500 uppercase">
             Quest Objectives ({MAP_TASKS.length})
