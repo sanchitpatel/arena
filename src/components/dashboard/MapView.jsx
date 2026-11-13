@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {
-  ArenaMapIcon,
   CheckCircle,
   Plus,
   Minus,
@@ -17,7 +16,6 @@ import {
   Scan,
 } from '../icons';
 import ChatGPTOrb from './ChatGPTOrb';
-import ArenaAvatar from '../avatars/ArenaAvatar';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 
 /**
@@ -251,11 +249,10 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
   // Gesture & Transform state
   const transformRef = useRef(null);
+  const layerRef = useRef(null);
+  const downPosRef = useRef({ x: 0, y: 0 });
   const scaleRef = useRef(1);
   const [isZoomed, setIsZoomed] = useState(false);
-  const [gemScale, setGemScale] = useState(1);
-  const gestureRef = useRef(false);
-  const gestureTimeoutRef = useRef(null);
 
   const [selectedQuest, setSelectedQuest] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'active' | 'completed'
@@ -280,13 +277,6 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
   const [celebrationMessage, setCelebrationMessage] = useState('');
 
-  // Compute total points earned
-  const totalPointsEarned = useMemo(() => {
-    return MAP_TASKS.reduce((acc, quest) => {
-      return completedQuestIds.includes(quest.id) ? acc + quest.points : acc;
-    }, 0);
-  }, [completedQuestIds]);
-
   // Determine room name from coordinates
   const resolveRoomName = (x, y) => {
     if (y > 78) return 'Porch / Entry';
@@ -298,33 +288,15 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
     return 'Central Corridor';
   };
 
-  // Gesture tracking (tap vs drag discrimination)
-  const markGesture = () => {
-    if (gestureTimeoutRef.current) {
-      clearTimeout(gestureTimeoutRef.current);
-      gestureTimeoutRef.current = null;
-    }
-    gestureRef.current = true;
-  };
+  const wasDrag = (e) => Math.hypot(e.clientX - downPosRef.current.x, e.clientY - downPosRef.current.y) > 10;
 
-  const endGesture = () => {
-    if (gestureTimeoutRef.current) {
-      clearTimeout(gestureTimeoutRef.current);
-    }
-    gestureTimeoutRef.current = setTimeout(() => {
-      gestureRef.current = false;
-      gestureTimeoutRef.current = null;
-    }, 80);
-  };
-
-  // Scale change handler (scroll fix & counter-scaling)
+  // Scale change handler (scroll fix & CSS variable counter-scaling)
   const handleScaleChange = (scale) => {
     if (typeof scale !== 'number' || isNaN(scale)) return;
     scaleRef.current = scale;
-    const rounded = Number(scale.toFixed(1));
-    setGemScale((prev) => (Math.abs(prev - rounded) >= 0.1 ? rounded : prev));
     const zoomed = scale > 1.01;
     setIsZoomed((prev) => (prev !== zoomed ? zoomed : prev));
+    layerRef.current?.style.setProperty('--inv-scale', String(1 / scale));
   };
 
   // Reset transform when tab becomes inactive
@@ -336,7 +308,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
   // Move Orb on direct map click/tap (guarded against dragging gestures)
   const handleMapClick = (e) => {
-    if (gestureRef.current) return;
+    if (wasDrag(e)) return;
     const rect = e.currentTarget.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
@@ -358,10 +330,8 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
     }
   };
 
-  // Move Orb smoothly to a Gem location when tapped
-  const handleGemClick = (e, quest) => {
-    if (gestureRef.current) return;
-    e.stopPropagation();
+  // Select Quest logic shared by map gem clicks and directory list clicks
+  const selectQuest = (quest) => {
     setSelectedQuest(quest);
 
     // Glide orb adjacent to the gem
@@ -377,6 +347,13 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
     if (navigator?.vibrate) {
       navigator.vibrate([25, 40]);
     }
+  };
+
+  // Move Orb smoothly to a Gem location when tapped on the map
+  const handleGemClick = (e, quest) => {
+    if (wasDrag(e)) return;
+    e.stopPropagation();
+    selectQuest(quest);
   };
 
   // Complete a quest
@@ -426,6 +403,9 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
       <div className="relative w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] flex flex-col items-center">
         {/* Interactive Floorplan Window */}
         <div
+          onPointerDownCapture={(e) => {
+            downPosRef.current = { x: e.clientX, y: e.clientY };
+          }}
           className="relative w-full aspect-square max-h-[76vh] overflow-hidden rounded-[16px] sm:rounded-[20px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] select-none"
           style={{ touchAction: isZoomed ? 'none' : 'pan-y' }}
         >
@@ -444,14 +424,8 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
             pinch={{ step: 5 }}
             wheel={{ step: 0.15 }}
             panning={{ excluded: ['map-control'] }}
-            onTransformed={(_, s) => handleScaleChange(s?.scale ?? _?.state?.scale)}
-            onTransform={(_, s) => handleScaleChange(s?.scale ?? _?.state?.scale)}
-            onPanningStart={markGesture}
-            onPanningStop={endGesture}
-            onPinchingStart={markGesture}
-            onPinchingStop={endGesture}
-            onPinchStart={markGesture}
-            onPinchStop={endGesture}
+            onTransformed={(ref, state) => handleScaleChange(state?.scale ?? ref?.state?.scale)}
+            onTransform={(ref, state) => handleScaleChange(state?.scale ?? ref?.state?.scale)}
           >
             {({ zoomIn, zoomOut, resetTransform, zoomToElement }) => (
               <>
@@ -494,10 +468,10 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                 <TransformComponent
                   wrapperClass="!w-full !h-full"
                   contentClass="!w-full !h-full"
-                  wrapperStyle={{ touchAction: isZoomed ? 'none' : 'pan-y' }}
                 >
                   {/* Scalable & Pannable Floorplan Layer */}
                   <div
+                    ref={layerRef}
                     onClick={handleMapClick}
                     className="relative w-full h-full select-none"
                   >
@@ -529,10 +503,10 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                         >
                           <div
                             style={{
-                              transform: `scale(${1 / gemScale})`,
+                              transform: 'scale(var(--inv-scale, 1))',
                               transformOrigin: 'center center',
                             }}
-                            className="flex flex-col items-center"
+                            className="relative flex flex-col items-center"
                           >
                             {/* Beacon Sonar Ground Pulse */}
                             {!isCompleted && (
@@ -586,10 +560,10 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                     >
                       <div
                         style={{
-                          transform: `scale(${1 / gemScale})`,
+                          transform: 'scale(var(--inv-scale, 1))',
                           transformOrigin: 'center center',
                         }}
-                        className="flex flex-col items-center"
+                        className="relative flex flex-col items-center"
                       >
                         {/* Ground Shadow & Atmospheric Glow Aura */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-sky-400/40 blur-lg pointer-events-none animate-pulse" />
@@ -744,7 +718,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
             return (
               <div
                 key={quest.id}
-                onClick={(e) => handleGemClick(e, quest)}
+                onClick={() => selectQuest(quest)}
                 className={`p-3 rounded-2xl bg-[#ebedf2] border transition-all cursor-pointer flex items-center justify-between gap-3 active:scale-[0.99] ${isSelected
                     ? 'border-sky-500 shadow-[inset_2px_2px_4px_#cbd2de,inset_-2px_-2px_4px_#ffffff]'
                     : isDone
