@@ -523,12 +523,8 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                               />
                             )}
 
-                            {/* Multifaceted Gemstone with Smooth Hover & Float Animation */}
-                            <div
-                              className={`relative z-10 transition-transform duration-200 group-hover:scale-125 ${
-                                isCompleted ? '' : 'animate-gem-float'
-                              }`}
-                            >
+                            {/* Multifaceted Gemstone with Smooth Hover */}
+                            <div className="relative z-10 transition-transform duration-200 group-hover:scale-125">
                               <FloatingGemIcon
                                 color={quest.gemColor}
                                 gradient={quest.gradient}
@@ -579,7 +575,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-sky-400/40 blur-md pointer-events-none animate-pulse" />
 
                         {/* The Actual Attendee Orb Component */}
-                        <div className="relative animate-orb-float">
+                        <div className="relative">
                           <ChatGPTOrb
                             orbNumber={orbNumber}
                             avatar={avatar}

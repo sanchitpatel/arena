@@ -287,11 +287,11 @@ html.lenis body {
 }
 
 .animate-gem-float {
-  animation: gemFloat 3.2s ease-in-out infinite;
+  animation: none;
 }
 
 .animate-orb-float {
-  animation: orbFloat 4s ease-in-out infinite;
+  animation: none;
 }
 
 .animate-beacon-pulse {
