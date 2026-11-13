@@ -806,8 +806,8 @@ export default function ArenaQRScanner({
 
       {/* Top Center Toast Pop-up Notification (Silver / Grey-Black Theme) */}
       {showDuelToast && typeof document !== 'undefined' && createPortal(
-        <div className="fixed top-10 sm:top-5 left-1/2 -translate-x-1/2 z-[100] max-w-[92vw] sm:max-w-md pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-200 select-none">
-          <div className="flex items-center gap-2.5 px-2 py-1 rounded-full bg-gradient-to-tr from-zinc-700 to-zinc-850 text-white border border-slate-400 shadow-[0_10px_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.25)] backdrop-blur-md">
+        <div className="fixed top-11 sm:top-5 left-1/2 -translate-x-1/2 z-[100] max-w-[92vw] sm:max-w-md pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-200 select-none">
+          <div className="flex items-center gap-2.5 px-2 py-1 rounded-full bg-gradient-to-tr from-zinc-700 to-zinc-850 text-white border border-zinc-300/30 shadow-[0_4px_16px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.25)] backdrop-blur-md">
             <div className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
               <Swords size={14} strokeWidth={2.4} className="text-zinc-200" />
             </div>
