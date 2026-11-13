@@ -17,6 +17,7 @@ import {
 } from '../icons';
 import ChatGPTOrb from './ChatGPTOrb';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+import { OrbHeadingBeam, CompassToolbarButton, useDeviceHeading } from '../map/OrbHeadingBeam';
 
 /**
  * 6 Fixed Quest Locations on the Incubation Lab Floorplan
@@ -253,6 +254,9 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   const downPosRef = useRef({ x: 0, y: 0 });
   const [isZoomed, setIsZoomed] = useState(false);
 
+  // Device orientation / Compass heading
+  const { heading, isActive: isCompassActive, toggleHeading } = useDeviceHeading();
+
   const [selectedQuest, setSelectedQuest] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all' | 'active' | 'completed'
 
@@ -461,6 +465,11 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                   >
                     <Crosshair size={19} weight="bold" />
                   </button>
+                  <CompassToolbarButton
+                    isActive={isCompassActive}
+                    onClick={toggleHeading}
+                    title={isCompassActive ? "Turn Off Compass Beam" : "Show Phone Facing Direction (Compass Beam)"}
+                  />
                 </div>
 
                 <TransformComponent
@@ -563,6 +572,9 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                         }}
                         className="relative flex flex-col items-center"
                       >
+                        {/* Google Maps-style Flashlight Heading Beam (Phone Orientation) */}
+                        <OrbHeadingBeam heading={heading} isActive={isCompassActive} />
+
                         {/* Ground Shadow & Atmospheric Glow Aura */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-sky-400/40 blur-lg pointer-events-none animate-pulse" />
 
