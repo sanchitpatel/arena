@@ -251,7 +251,6 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   const transformRef = useRef(null);
   const layerRef = useRef(null);
   const downPosRef = useRef({ x: 0, y: 0 });
-  const scaleRef = useRef(1);
   const [isZoomed, setIsZoomed] = useState(false);
 
   const [selectedQuest, setSelectedQuest] = useState(null);
@@ -293,7 +292,6 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   // Scale change handler (scroll fix & CSS variable counter-scaling)
   const handleScaleChange = (scale) => {
     if (typeof scale !== 'number' || isNaN(scale)) return;
-    scaleRef.current = scale;
     const zoomed = scale > 1.01;
     setIsZoomed((prev) => (prev !== zoomed ? zoomed : prev));
     layerRef.current?.style.setProperty('--inv-scale', String(1 / scale));
@@ -493,8 +491,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                       return (
                         <div
                           key={quest.id}
-                          onClick={(e) => handleGemClick(e, quest)}
-                          className="absolute -translate-x-1/2 -translate-y-1/2 z-20 cursor-pointer group flex flex-col items-center"
+                          className="absolute -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none group flex flex-col items-center"
                           style={{
                             left: `${quest.x}%`,
                             top: `${quest.y}%`,
@@ -502,11 +499,12 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                           title={`${quest.title} (${quest.room})`}
                         >
                           <div
+                            onClick={(e) => handleGemClick(e, quest)}
                             style={{
                               transform: 'scale(var(--inv-scale, 1))',
                               transformOrigin: 'center center',
                             }}
-                            className="relative flex flex-col items-center"
+                            className="relative pointer-events-auto cursor-pointer flex flex-col items-center"
                           >
                             {/* Beacon Sonar Ground Pulse */}
                             {!isCompleted && (
