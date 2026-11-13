@@ -164,7 +164,7 @@ const playCrystalChime = () => {
     playTone(659.25, now + 0.08, 0.45); // E5
     playTone(783.99, now + 0.16, 0.65); // G5
     playTone(1046.5, now + 0.24, 0.85); // C6 (High sparkle)
-  } catch {}
+  } catch { }
 };
 
 /**
@@ -546,7 +546,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
     setCompletedQuestIds(next);
     try {
       window.localStorage.setItem(STORAGE_KEY_COMPLETED_TASKS, JSON.stringify(next));
-    } catch {}
+    } catch { }
 
     playCrystalChime();
 
@@ -674,9 +674,8 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
                   {/* Multifaceted Gemstone with Smooth Hover & Float Animation */}
                   <div
-                    className={`relative z-10 transition-transform duration-200 group-hover:scale-125 ${
-                      isCompleted ? '' : 'animate-gem-float'
-                    }`}
+                    className={`relative z-10 transition-transform duration-200 group-hover:scale-125 ${isCompleted ? '' : 'animate-gem-float'
+                      }`}
                   >
                     <FloatingGemIcon
                       color={quest.gemColor}
@@ -687,13 +686,12 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
                   {/* Compact floating points pill */}
                   <div
-                    className={`mt-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight border shadow-sm backdrop-blur-md transition-all group-hover:scale-110 ${
-                      isCompleted
+                    className={`mt-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight border shadow-sm backdrop-blur-md transition-all group-hover:scale-110 ${isCompleted
                         ? 'bg-emerald-500/90 text-white border-emerald-300'
                         : isSelected
-                        ? 'bg-zinc-900 text-white border-white scale-105'
-                        : 'bg-white/95 text-zinc-800 border-slate-300/80'
-                    }`}
+                          ? 'bg-zinc-900 text-white border-white scale-105'
+                          : 'bg-white/95 text-zinc-800 border-slate-300/80'
+                      }`}
                   >
                     {isCompleted ? '✓ Done' : `+${quest.points}`}
                   </div>
@@ -827,27 +825,24 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
             <button
               type="button"
               onClick={() => setFilter('all')}
-              className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
-                filter === 'all' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
-              }`}
+              className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${filter === 'all' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
+                }`}
             >
               All
             </button>
             <button
               type="button"
               onClick={() => setFilter('active')}
-              className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
-                filter === 'active' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
-              }`}
+              className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${filter === 'active' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
+                }`}
             >
               Active
             </button>
             <button
               type="button"
               onClick={() => setFilter('completed')}
-              className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
-                filter === 'completed' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
-              }`}
+              className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${filter === 'completed' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
+                }`}
             >
               Done
             </button>
@@ -864,21 +859,19 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
               <div
                 key={quest.id}
                 onClick={(e) => handleGemClick(e, quest)}
-                className={`p-3 rounded-2xl bg-[#ebedf2] border transition-all cursor-pointer flex items-center justify-between gap-3 active:scale-[0.99] ${
-                  isSelected
+                className={`p-3 rounded-2xl bg-[#ebedf2] border transition-all cursor-pointer flex items-center justify-between gap-3 active:scale-[0.99] ${isSelected
                     ? 'border-sky-500 shadow-[inset_2px_2px_4px_#cbd2de,inset_-2px_-2px_4px_#ffffff]'
                     : isDone
-                    ? 'border-emerald-300/80 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] opacity-80'
-                    : 'border-white/80 shadow-[3px_3px_6px_#c8d0db,-3px_-3px_6px_#ffffff] hover:shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff]'
-                }`}
+                      ? 'border-emerald-300/80 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] opacity-80'
+                      : 'border-white/80 shadow-[3px_3px_6px_#c8d0db,-3px_-3px_6px_#ffffff] hover:shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff]'
+                  }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-white shadow-sm ${
-                      isDone
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-white shadow-sm ${isDone
                         ? 'bg-emerald-500 text-white'
                         : 'bg-gradient-to-b from-zinc-800 to-zinc-950 text-white'
-                    }`}
+                      }`}
                   >
                     {isDone ? (
                       <CheckCircle size={18} weight="fill" />
