@@ -127,18 +127,18 @@ export function useDeviceHeading() {
  * Radiates a smooth, glowing cone of light in the direction the phone is physically facing.
  */
 export function OrbHeadingBeam({ heading = 0, isActive = false, buildingOffset = 0 }) {
-  if (!isActive) return null;
-
   // Real world heading adjusted by optional architectural floorplan bearing offset
   const finalAngle = heading + buildingOffset;
 
   return (
     <div
-      className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 z-10 flex items-center justify-center"
+      className={`pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 z-10 flex items-center justify-center transition-opacity duration-200 ease-out ${
+        isActive ? 'opacity-100' : 'opacity-0'
+      }`}
       style={{
         transform: `translate(-50%, -50%) rotate(${finalAngle}deg)`,
         transformOrigin: '50% 50%',
-        transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
+        transition: 'transform 0.08s ease-out, opacity 0.2s ease-out',
       }}
       aria-hidden="true"
     >
@@ -208,7 +208,7 @@ export function OrbHeadingBeam({ heading = 0, isActive = false, buildingOffset =
 }
 
 /**
- * Toolbar Button for Toggling Compass Direction (Black & White Theme)
+ * Toolbar Button for Toggling Compass Direction (Fast & Butter-Smooth Black & White Theme)
  */
 export function CompassToolbarButton({ isActive = false, onClick, title = "Toggle Facing Direction (Compass)" }) {
   return (
@@ -216,28 +216,28 @@ export function CompassToolbarButton({ isActive = false, onClick, title = "Toggl
       type="button"
       onClick={onClick}
       title={title}
-      className="map-control group relative w-7 h-7 rounded-lg flex items-center justify-center shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
+      className="map-control relative w-7 h-7 rounded-lg flex items-center justify-center shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-90 transition-transform duration-100 ease-out"
     >
       {/* Default / Inactive State Layer (Off) */}
       <span
-        className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 pointer-events-none ${
-          isActive ? 'opacity-0' : 'opacity-100 group-active:opacity-0'
+        className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none ${
+          isActive ? 'opacity-0' : 'opacity-100'
         }`}
       />
 
       {/* Active State Layer (On - Obsidian Black & White) */}
       <span
-        className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_1.5px_3px_rgba(255,255,255,0.45),1px_1px_3px_#c5ccd6] transition-opacity duration-150 pointer-events-none ${
-          isActive ? 'opacity-100' : 'opacity-0 group-active:opacity-100'
+        className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_1.5px_3px_rgba(255,255,255,0.45),1px_1px_3px_#c5ccd6] transition-opacity duration-150 ease-out pointer-events-none ${
+          isActive ? 'opacity-100' : 'opacity-0'
         }`}
       />
 
-      {/* Compass Icon */}
+      {/* Compass Icon - Clean instant color transition with zero SVG re-render flash */}
       <Compass
-        size={17}
-        weight={isActive ? "fill" : "bold"}
-        className={`relative z-10 transition-colors duration-150 ${
-          isActive ? "text-white" : "text-zinc-600 group-hover:text-zinc-900 group-active:text-white"
+        size={18}
+        weight="bold"
+        className={`relative z-10 transition-colors duration-150 ease-out ${
+          isActive ? "text-white" : "text-zinc-600 hover:text-zinc-900"
         }`}
       />
     </button>
