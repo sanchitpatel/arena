@@ -520,7 +520,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                               {/* Beacon Sonar Ground Pulse (Concentric behind the diamond) */}
                               {!isCompleted && (
                                 <div
-                                  className="absolute inset-0 rounded-full animate-beacon-pulse pointer-events-none z-0"
+                                  className="absolute inset-0 rounded-full animate-beacon-pulse pointer-events-none z-0 blur-[2px]"
                                   style={{ backgroundColor: quest.glowColor }}
                                 />
                               )}
