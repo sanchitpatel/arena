@@ -21,7 +21,7 @@ import { CrystalIcon } from './CrystalIcon';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import { OrbHeadingBeam, CompassToolbarButton, useDeviceHeading } from '../map/OrbHeadingBeam';
 import { QuestSliderCard } from '../map/QuestSliderCard';
-import { getInAppPermission, subscribeToPermissionChanges } from '../../utils/mediaGuard';
+import { getInAppPermission, subscribeToPermissionChanges, isIosDevice } from '../../utils/mediaGuard';
 
 /**
  * 6 Fixed Quest Locations on the Incubation Lab Floorplan
@@ -211,15 +211,22 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
     requestHeadingPermission,
   } = useDeviceHeading();
 
-  // iOS Safari device orientation permission prompt (asks on first visit to Map on iOS)
+  // iOS Safari device orientation permission prompt (STRICTLY for iOS devices only)
   const [showIosPrompt, setShowIosPrompt] = useState(() => {
     if (typeof window === 'undefined') return false;
-    const isIos =
+
+    // 1. STRICT iOS check: If Android, Windows, Linux, or non-iOS, NEVER show this prompt!
+    if (!isIosDevice()) return false;
+
+    // 2. Must require iOS 13+ DeviceOrientationEvent.requestPermission API
+    const hasRequestPermission =
       typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function';
-    if (!isIos) return false;
+
+    if (!hasRequestPermission) return false;
+
+    // 3. Only show if user has not yet granted, denied, or disabled it
     const pref = getInAppPermission('gyro');
-    // Open by default: ask on iOS if not yet granted, denied, or disabled
     return pref !== 'granted' && pref !== 'denied' && pref !== 'disabled';
   });
 

@@ -4,6 +4,7 @@ import {
   getInAppPermission,
   setInAppPermission,
   subscribeToPermissionChanges,
+  isIosDevice,
 } from '../../utils/mediaGuard';
 
 /**
@@ -67,6 +68,7 @@ export function useDeviceHeading() {
     if (typeof window === 'undefined') return false;
 
     if (
+      isIosDevice() &&
       typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function'
     ) {
@@ -106,6 +108,7 @@ export function useDeviceHeading() {
       setInAppPermission('gyro', 'disabled');
     } else {
       if (
+        isIosDevice() &&
         typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function'
       ) {

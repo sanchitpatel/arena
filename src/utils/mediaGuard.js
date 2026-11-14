@@ -132,6 +132,19 @@ export function getInAppPermission(capability) {
 }
 
 /**
+ * Detects if the current client is an actual iOS device (iPhone, iPad, iPod).
+ * On Android, Windows, Mac, or Linux desktops, this strictly returns false.
+ */
+export function isIosDevice() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+  return (
+    /iPhone|iPad|iPod/i.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
+/**
  * Checks the current permission state for a device capability (camera, microphone, or gyro/orientation).
  * Compares in-app user preference (localStorage) against native browser query.
  * 
@@ -151,18 +164,21 @@ export async function queryPermissionStatus(type) {
     }
 
     const isIos =
+      isIosDevice() &&
       typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function';
 
     let browserState = 'granted';
     if (isIos) {
       browserState = localPref === 'granted' ? 'granted' : (localPref === 'denied' ? 'denied' : 'prompt');
-    } else if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
-      try {
-        const res = await navigator.permissions.query({ name: 'accelerometer' });
-        browserState = res.state;
-      } catch {
-        browserState = 'granted';
+    } else {
+      // Android / Desktop: Orientation is natively available without pop-ups
+      browserState = 'granted';
+      // Automatically register local preference as granted on Android if not explicitly disabled
+      if (!localPref && typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem('arena_perm_gyro', 'granted');
+        } catch { }
       }
     }
 
@@ -172,7 +188,7 @@ export async function queryPermissionStatus(type) {
       localPref !== 'denied' &&
       browserState !== 'denied';
 
-    return { localPref, browserState, isAllowed };
+    return { localPref: localPref || (isIos ? null : 'granted'), browserState, isAllowed };
   }
 
   const prefKey = type === 'camera' ? 'arena_perm_camera' : 'arena_perm_mic';

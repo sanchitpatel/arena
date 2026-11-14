@@ -24,6 +24,7 @@ import {
   getInAppPermission,
   setInAppPermission,
   subscribeToPermissionChanges,
+  isIosDevice,
 } from '../../utils/mediaGuard';
 
 const STORAGE_KEY_DRAFT_NAME = 'arena_draft_username';
@@ -532,6 +533,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     setGyroError('');
 
     const isIos =
+      isIosDevice() &&
       typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function';
 
