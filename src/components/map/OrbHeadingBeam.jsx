@@ -18,13 +18,7 @@ export function useDeviceHeading() {
     try {
       const pref = getInAppPermission('gyro');
       if (pref === 'disabled' || pref === 'denied') return false;
-      // On iOS Safari, if permission hasn't been explicitly requested yet, default to off until granted
-      const isIos =
-        typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function';
-      if (isIos) {
-        return pref === 'granted';
-      }
+      // Open by default for both Android and iOS
       return true;
     } catch {
       return true;
@@ -169,6 +163,7 @@ export function useDeviceHeading() {
     permissionState,
     toggleHeading,
     setIsActive,
+    requestHeadingPermission,
   };
 }
 

@@ -14,12 +14,14 @@ import {
   Crown,
   X,
   Scan,
+  Compass,
 } from '../icons';
 import ChatGPTOrb from './ChatGPTOrb';
 import { CrystalIcon } from './CrystalIcon';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import { OrbHeadingBeam, CompassToolbarButton, useDeviceHeading } from '../map/OrbHeadingBeam';
 import { QuestSliderCard } from '../map/QuestSliderCard';
+import { getInAppPermission, subscribeToPermissionChanges } from '../../utils/mediaGuard';
 
 /**
  * 6 Fixed Quest Locations on the Incubation Lab Floorplan
@@ -202,7 +204,43 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   const [isZoomed, setIsZoomed] = useState(false);
 
   // Device orientation / Compass heading
-  const { heading, isActive: isCompassActive, toggleHeading } = useDeviceHeading();
+  const {
+    heading,
+    isActive: isCompassActive,
+    toggleHeading,
+    requestHeadingPermission,
+  } = useDeviceHeading();
+
+  // iOS Safari device orientation permission prompt (asks on first visit to Map on iOS)
+  const [showIosPrompt, setShowIosPrompt] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isIos =
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function';
+    if (!isIos) return false;
+    const pref = getInAppPermission('gyro');
+    // Open by default: ask on iOS if not yet granted, denied, or disabled
+    return pref !== 'granted' && pref !== 'denied' && pref !== 'disabled';
+  });
+
+  // Dismiss prompt when permission changes elsewhere (e.g. Profile tab)
+  useEffect(() => {
+    const unsubscribe = subscribeToPermissionChanges(({ capability, state }) => {
+      if (capability === 'gyro' || capability === 'orientation') {
+        if (state === 'granted' || state === 'denied' || state === 'disabled') {
+          setShowIosPrompt(false);
+        }
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleRequestIosPermission = async () => {
+    setShowIosPrompt(false);
+    if (typeof requestHeadingPermission === 'function') {
+      await requestHeadingPermission();
+    }
+  };
 
   const [selectedQuest, setSelectedQuest] = useState(null);
 
@@ -257,6 +295,9 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   // Move Orb on direct map click/tap (guarded against dragging gestures)
   const handleMapClick = (e) => {
     if (wasDrag(e)) return;
+    if (showIosPrompt) {
+      handleRequestIosPermission();
+    }
     if (selectedQuest) {
       setSelectedQuest(null);
     }
@@ -303,6 +344,9 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   // Move Orb smoothly to a Gem location when tapped on the map
   const handleGemClick = (e, quest) => {
     if (wasDrag(e)) return;
+    if (showIosPrompt) {
+      handleRequestIosPermission();
+    }
     e.stopPropagation();
     selectQuest(quest);
   };
@@ -351,6 +395,38 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
         >
           {/* Inward Shadow Overlay Layer (Ensures crisp inward shadow on top of floorplan edges) */}
           <div className="pointer-events-none absolute inset-0 rounded-[12px] shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff] z-20" />
+
+          {/* iOS Safari One-Time Facing Direction Permission Prompt Banner */}
+          {showIosPrompt && (
+            <div
+              onClick={handleRequestIosPermission}
+              className="map-control absolute top-2 left-2 right-12 z-40 max-w-[320px] bg-white/95 backdrop-blur-md border border-sky-300 shadow-[0_4px_16px_rgba(14,165,233,0.30)] rounded-2xl p-2 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-3 duration-300 cursor-pointer active:scale-[0.99] select-none"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-xl bg-sky-100 border border-sky-300/80 flex items-center justify-center shrink-0 text-sky-600 shadow-sm">
+                  <Compass size={16} weight="bold" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11.5px] font-bold text-zinc-900 leading-tight">
+                    Facing Direction
+                  </div>
+                  <div className="text-[9.5px] font-medium text-zinc-500 leading-tight">
+                    Tap to enable iOS compass
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRequestIosPermission();
+                }}
+                className="shrink-0 px-2.5 py-1 rounded-xl bg-sky-500 hover:bg-sky-600 active:scale-95 text-white text-[10.5px] font-bold shadow-sm transition-all cursor-pointer"
+              >
+                Allow
+              </button>
+            </div>
+          )}
 
           <TransformWrapper
             ref={transformRef}

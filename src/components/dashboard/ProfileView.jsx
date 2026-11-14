@@ -58,7 +58,11 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   const [micLoading, setMicLoading] = useState(false);
   const [micError, setMicError] = useState('');
 
-  const [gyroGranted, setGyroGranted] = useState(false);
+  const [gyroGranted, setGyroGranted] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const pref = getInAppPermission('gyro');
+    return pref !== 'disabled' && pref !== 'denied';
+  });
   const [gyroLoading, setGyroLoading] = useState(false);
   const [gyroError, setGyroError] = useState('');
 
@@ -527,6 +531,34 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     if (gyroLoading) return;
     setGyroError('');
 
+    const isIos =
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function';
+
+    // If on iOS and permission has not yet been authorized by the OS, prompt for iOS permission directly
+    if (isIos && gyroGranted && getInAppPermission('gyro') !== 'granted') {
+      setGyroLoading(true);
+      try {
+        const response = await DeviceOrientationEvent.requestPermission();
+        if (response === 'granted') {
+          setGyroGranted(true);
+          setGyroError('');
+          setInAppPermission('gyro', 'granted');
+        } else {
+          setGyroGranted(false);
+          setGyroError('Motion permission was not granted in iOS prompt.');
+          setInAppPermission('gyro', 'denied');
+        }
+      } catch (err) {
+        setGyroGranted(false);
+        setGyroError(err?.message || 'Unable to access device orientation.');
+        setInAppPermission('gyro', 'denied');
+      } finally {
+        setGyroLoading(false);
+      }
+      return;
+    }
+
     // If currently ON, user wants to disable gyro beam in Arena
     if (gyroGranted) {
       setGyroGranted(false);
@@ -543,10 +575,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       }
 
       // Check if iOS 13+ requires explicit user gesture permission prompt
-      if (
-        typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function'
-      ) {
+      if (isIos) {
         const response = await DeviceOrientationEvent.requestPermission();
         if (response === 'granted') {
           setGyroGranted(true);

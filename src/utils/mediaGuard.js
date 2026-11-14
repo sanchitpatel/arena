@@ -166,10 +166,11 @@ export async function queryPermissionStatus(type) {
       }
     }
 
+    // Open by default on both Android and iOS unless explicitly disabled or denied
     const isAllowed =
       localPref !== 'disabled' &&
-      browserState !== 'denied' &&
-      (browserState === 'granted' || localPref === 'granted');
+      localPref !== 'denied' &&
+      browserState !== 'denied';
 
     return { localPref, browserState, isAllowed };
   }
