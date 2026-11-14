@@ -175,14 +175,14 @@ const playCrystalChime = () => {
 function FloatingGemIcon({ color = 'amber', gradient = 'from-amber-400 to-yellow-600', isCompleted = false }) {
   if (isCompleted) {
     return (
-      <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-[0_0_14px_rgba(16,185,129,0.8),inset_0_2px_4px_rgba(255,255,255,0.6)] border-2 border-white scale-105">
+      <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-[0_0_14px_rgba(16,185,129,0.8),inset_0_2px_4px_rgba(255,255,255,0.6)] border-2 border-white scale-105">
         <CheckCircle size={18} weight="fill" className="text-white" />
       </div>
     );
   }
 
   return (
-    <div className="relative w-8 h-14 flex items-center justify-center filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.30)]">
+    <div className="relative w-9 h-12 sm:w-12 sm:h-16 flex items-center justify-center filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.30)]">
       <CrystalIcon color={color} className="w-full h-full" />
     </div>
   );
@@ -455,18 +455,14 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                         >
                           <div
                             onClick={(e) => handleGemClick(e, quest)}
-                            style={{
-                              transform: 'scale(var(--inv-scale, 1))',
-                              transformOrigin: 'center center',
-                            }}
                             className="relative pointer-events-auto cursor-pointer flex flex-col items-center"
                           >
                             {/* Luminous Prismatic Crystal with Perfectly Concentric Glowing Base */}
-                            <div className="relative z-10 w-8 h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-125">
+                            <div className="relative z-10 w-11 h-15 sm:w-12 sm:h-16 flex items-center justify-center transition-transform duration-200 group-hover:scale-125">
                               {/* Beacon Sonar Ground Pulse (Concentric behind crystal center) */}
                               {!isCompleted && (
                                 <div
-                                  className="absolute inset-0 m-auto w-10 h-10 rounded-full animate-beacon-pulse pointer-events-none z-0 blur-[1px]"
+                                  className="absolute inset-0 m-auto w-12 h-12 rounded-full animate-beacon-pulse pointer-events-none z-0 blur-[1px]"
                                   style={{ backgroundColor: quest.glowColor }}
                                 />
                               )}

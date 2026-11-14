@@ -236,8 +236,8 @@ export const CrystalIcon = ({ color = 'cryst', className = 'w-full h-full' }) =>
         </linearGradient>
       </defs>
 
-      {/* MAIN CRYSTAL CONTAINER */}
-      <g filter={`url(#${p}-crystal-glow)`}>
+      {/* MAIN CRYSTAL CONTAINER (Horizontally widened prismatic obelisk) */}
+      <g filter={`url(#${p}-crystal-glow)`} transform="translate(208, 443) scale(1.45, 1) translate(-204, -443)">
         <g clipPath={`url(#${p}-crystal-silhouette)`}>
           {/* Base Fallback Fill */}
           <polygon points="204,24 106,232 132,626 202,862 256,632 302,228" fill="#8c96bd" />
