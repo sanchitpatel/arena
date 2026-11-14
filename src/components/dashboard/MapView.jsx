@@ -237,7 +237,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
     return 'Central Corridor';
   };
 
-  const wasDrag = (e) => Math.hypot(e.clientX - downPosRef.current.x, e.clientY - downPosRef.current.y) > 10;
+  const wasDrag = (e) => Math.hypot(e.clientX - downPosRef.current.x, e.clientY - downPosRef.current.y) > 24;
 
   // Scale change handler (scroll fix & CSS variable counter-scaling)
   const handleScaleChange = (scale) => {
