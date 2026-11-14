@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {
   CheckCircle,
@@ -19,6 +19,7 @@ import ChatGPTOrb from './ChatGPTOrb';
 import { CrystalIcon } from './CrystalIcon';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import { OrbHeadingBeam, CompassToolbarButton, useDeviceHeading } from '../map/OrbHeadingBeam';
+import { QuestSliderCard } from '../map/QuestSliderCard';
 
 /**
  * 6 Fixed Quest Locations on the Incubation Lab Floorplan
@@ -204,7 +205,6 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   const { heading, isActive: isCompassActive, toggleHeading } = useDeviceHeading();
 
   const [selectedQuest, setSelectedQuest] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all' | 'active' | 'completed'
 
   // Load completed quest IDs from localStorage
   const [completedQuestIds, setCompletedQuestIds] = useState(() => {
@@ -257,6 +257,9 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   // Move Orb on direct map click/tap (guarded against dragging gestures)
   const handleMapClick = (e) => {
     if (wasDrag(e)) return;
+    if (selectedQuest) {
+      setSelectedQuest(null);
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
@@ -325,17 +328,6 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
       setCelebrationMessage('');
     }, 3200);
   };
-
-  // Filtered tasks
-  const filteredTasks = useMemo(() => {
-    if (filter === 'active') {
-      return MAP_TASKS.filter((t) => !completedQuestIds.includes(t.id));
-    }
-    if (filter === 'completed') {
-      return MAP_TASKS.filter((t) => completedQuestIds.includes(t.id));
-    }
-    return MAP_TASKS;
-  }, [filter, completedQuestIds]);
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center select-none font-sans pb-12 pt-1">
@@ -539,177 +531,19 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
         </div>
 
         {/* Floorplan Tap Tip */}
-        <p className="text-[11px] text-zinc-500 font-semibold text-center mt-2.5 leading-snug">
-          Tap any floating Crystal to view quest
+        <p className="text-[11px] text-zinc-400 font-semibold text-center mt-2.5 leading-snug">
+          Tap any floating Crystal to view quest details
         </p>
       </div>
 
-      {/* 3. Quest Details Modal / Bottom Drawer */}
-      {selectedQuest && (
-        <div className="w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] mt-3.5 bg-white border border-slate-200/90 rounded-[28px] p-4 shadow-[0_12px_32px_rgba(197,204,214,0.5)] animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <div className="flex items-start justify-between gap-3 pb-2.5 mb-2.5 border-b border-zinc-100">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <FloatingGemIcon
-                color={selectedQuest.gemColor}
-                gradient={selectedQuest.gradient}
-                isCompleted={completedQuestIds.includes(selectedQuest.id)}
-              />
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-zinc-600 border border-slate-200">
-                    {selectedQuest.room}
-                  </span>
-                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                    {selectedQuest.difficulty}
-                  </span>
-                </div>
-                <h3 className="font-arena text-sm font-black text-zinc-900 tracking-wide mt-1 truncate">
-                  {selectedQuest.title}
-                </h3>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setSelectedQuest(null)}
-              className="p-1 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-slate-100 cursor-pointer transition-colors"
-            >
-              <X size={18} weight="bold" />
-            </button>
-          </div>
-
-          <p className="text-xs text-zinc-600 leading-relaxed">
-            {selectedQuest.description}
-          </p>
-
-          <div className="mt-3.5 flex items-center justify-between gap-2.5 pt-2 border-t border-zinc-100">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-zinc-500">Reward:</span>
-              <span className="font-arena text-sm font-black text-emerald-600">
-                +{selectedQuest.points} PTS
-              </span>
-            </div>
-
-            {completedQuestIds.includes(selectedQuest.id) ? (
-              <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-1.5">
-                <CheckCircle size={15} weight="fill" className="text-emerald-600" />
-                <span>Completed</span>
-              </div>
-            ) : selectedQuest.actionType === 'scanner' ? (
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof onNavigate === 'function') onNavigate('scanner');
-                }}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-b from-zinc-900 to-black text-white text-xs font-bold border border-zinc-800 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.3)] hover:from-zinc-800 hover:to-zinc-900 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Scan size={16} weight="bold" />
-                <span>{selectedQuest.actionLabel}</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => handleCompleteQuest(selectedQuest)}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-b from-emerald-600 to-emerald-700 text-white text-xs font-bold border border-emerald-500 shadow hover:from-emerald-500 hover:to-emerald-600 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Sparkle size={16} weight="bold" />
-                <span>{selectedQuest.actionLabel}</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 4. Filter Pills & Quest Directory */}
-      <div className="w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] mt-4 flex flex-col gap-2">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-bold tracking-wider text-zinc-500 uppercase">
-            Quest Objectives ({MAP_TASKS.length})
-          </span>
-          <div className="flex items-center gap-1 bg-[#ebedf2] p-1 rounded-xl border border-white shadow-inner">
-            <button
-              type="button"
-              onClick={() => setFilter('all')}
-              className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${filter === 'all' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
-                }`}
-            >
-              All
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter('active')}
-              className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${filter === 'active' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
-                }`}
-            >
-              Active
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter('completed')}
-              className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${filter === 'completed' ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
-                }`}
-            >
-              Done
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-2">
-          {filteredTasks.map((quest) => {
-            const isDone = completedQuestIds.includes(quest.id);
-            const isSelected = selectedQuest?.id === quest.id;
-            const Icon = quest.icon;
-
-            return (
-              <div
-                key={quest.id}
-                onClick={() => selectQuest(quest)}
-                className={`p-3 rounded-2xl bg-[#ebedf2] border transition-all cursor-pointer flex items-center justify-between gap-3 active:scale-[0.99] ${isSelected
-                  ? 'border-sky-500 shadow-[inset_2px_2px_4px_#cbd2de,inset_-2px_-2px_4px_#ffffff]'
-                  : isDone
-                    ? 'border-emerald-300/80 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] opacity-80'
-                    : 'border-white/80 shadow-[3px_3px_6px_#c8d0db,-3px_-3px_6px_#ffffff] hover:shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff]'
-                  }`}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border border-white shadow-sm ${isDone
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-gradient-to-b from-zinc-800 to-zinc-950 text-white'
-                      }`}
-                  >
-                    {isDone ? (
-                      <CheckCircle size={18} weight="fill" />
-                    ) : (
-                      <Icon size={18} weight="bold" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9.5px] font-bold uppercase text-zinc-500">
-                        {quest.room}
-                      </span>
-                    </div>
-                    <div className="text-xs font-bold text-zinc-900 truncate">
-                      {quest.title}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="font-arena text-xs font-black text-zinc-700">
-                    +{quest.points}
-                  </span>
-                  {isDone && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Floating Task Details Slider Card (Slides up from behind bottom tab bar) */}
+      <QuestSliderCard
+        quest={selectedQuest}
+        isCompleted={selectedQuest ? completedQuestIds.includes(selectedQuest.id) : false}
+        onClose={() => setSelectedQuest(null)}
+        onNavigate={onNavigate}
+        onComplete={handleCompleteQuest}
+      />
     </div>
   );
 };
