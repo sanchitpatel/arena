@@ -400,17 +400,17 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
           {showIosPrompt && (
             <div
               onClick={handleRequestIosPermission}
-              className="map-control absolute top-2 left-2 right-12 z-40 max-w-[320px] bg-white/95 backdrop-blur-md border border-sky-300 shadow-[0_4px_16px_rgba(14,165,233,0.30)] rounded-2xl p-2 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-3 duration-300 cursor-pointer active:scale-[0.99] select-none"
+              className="map-control absolute top-1 left-1 right-20 z-40 max-w-[320px] bg-white/95 backdrop-blur-md border border-sky-300/80 shadow-[0_4px_16px_rgba(0,0,0,0.12),inset_1px_1px_2px_#ffffff] rounded-xl p-1 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-3 duration-300 cursor-pointer active:scale-[0.99] select-none"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-xl bg-sky-100 border border-sky-300/80 flex items-center justify-center shrink-0 text-sky-600 shadow-sm">
+                <div className="w-7 h-7 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_3px_#c8d0db,inset_-2px_-2px_3px_#ffffff] flex items-center justify-center shrink-0 text-zinc-800">
                   <Compass size={16} weight="bold" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[11.5px] font-bold text-zinc-900 leading-tight">
+                  <div className="text-[11.5px] font-bold text-zinc-800 leading-tight">
                     Facing Direction
                   </div>
-                  <div className="text-[9.5px] font-medium text-zinc-500 leading-tight">
+                  <div className="text-[9px] font-medium text-zinc-500/80  leading-tight">
                     Tap to enable iOS compass
                   </div>
                 </div>
@@ -421,7 +421,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                   e.stopPropagation();
                   handleRequestIosPermission();
                 }}
-                className="shrink-0 px-2.5 py-1 rounded-xl bg-sky-500 hover:bg-sky-600 active:scale-95 text-white text-[10.5px] font-bold shadow-sm transition-all cursor-pointer"
+                className="shrink-0 px-2.5 py-1 rounded-lg bg-gradient-to-r from-sky-700 to-sky-400 hover:from-sky-800 hover:to-sky-500 active:scale-95 text-white text-[10.5px] font-bold border border-sky-300 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),inset_0_-2px_4px_rgba(0,0,0,0.6),0_2px_4px_rgba(0,0,0,0.2)] transition-all cursor-pointer"
               >
                 Allow
               </button>
