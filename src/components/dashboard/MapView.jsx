@@ -34,7 +34,7 @@ export const MAP_TASKS = [
     type: 'Check-in',
     difficulty: 'Easy',
     points: 100,
-    x: 31.0,
+    x: 20.5,
     y: 82.5,
     gemColor: 'amber',
     gradient: 'from-amber-400 via-amber-500 to-yellow-600',
@@ -52,8 +52,8 @@ export const MAP_TASKS = [
     type: 'Live Duel',
     difficulty: 'Medium',
     points: 250,
-    x: 43.0,
-    y: 60.0,
+    x: 28.0,
+    y: 57.5,
     gemColor: 'sapphire',
     gradient: 'from-cyan-400 via-sky-500 to-blue-600',
     glowColor: 'rgba(165, 180, 252, 0.50)',
@@ -70,8 +70,8 @@ export const MAP_TASKS = [
     type: 'Discovery',
     difficulty: 'Easy',
     points: 150,
-    x: 68.0,
-    y: 51.0,
+    x: 78.0,
+    y: 50.0,
     gemColor: 'emerald',
     gradient: 'from-emerald-400 via-emerald-500 to-teal-600',
     glowColor: 'rgba(165, 180, 252, 0.50)',
@@ -88,8 +88,8 @@ export const MAP_TASKS = [
     type: 'Demo Showcase',
     difficulty: 'Medium',
     points: 200,
-    x: 66.5,
-    y: 72.5,
+    x: 78.0,
+    y: 69.5,
     gemColor: 'amethyst',
     gradient: 'from-purple-400 via-fuchsia-500 to-indigo-600',
     glowColor: 'rgba(165, 180, 252, 0.50)',
@@ -106,8 +106,8 @@ export const MAP_TASKS = [
     type: 'Secret Enigma',
     difficulty: 'Hard',
     points: 300,
-    x: 36.0,
-    y: 22.0,
+    x: 26.5,
+    y: 20.0,
     gemColor: 'ruby',
     gradient: 'from-rose-500 via-red-600 to-rose-700',
     glowColor: 'rgba(165, 180, 252, 0.50)',
@@ -124,8 +124,8 @@ export const MAP_TASKS = [
     type: 'Pitch & Vote',
     difficulty: 'Medium',
     points: 200,
-    x: 67.0,
-    y: 20.5,
+    x: 77.5,
+    y: 21.5,
     gemColor: 'diamond',
     gradient: 'from-sky-300 via-indigo-400 to-cyan-300',
     glowColor: 'rgba(165, 180, 252, 0.50)',
@@ -219,8 +219,8 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
   // Attendee Orb position on the map (defaults to Central Hallway)
   const [orbPosition, setOrbPosition] = useState({
-    x: 52.5,
-    y: 38.0,
+    x: 55.5,
+    y: 44.5,
     room: 'Central Corridor',
   });
 
@@ -228,10 +228,10 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
   // Determine room name from coordinates
   const resolveRoomName = (x, y) => {
-    if (y > 78) return 'Porch / Entry';
-    if (x < 48 && y > 38 && y <= 78) return 'Living Area';
-    if (x >= 48 && y > 38 && y <= 62) return 'Kitchen';
-    if (x >= 48 && y > 62 && y <= 78) return 'Bedroom 3';
+    if (y > 76) return 'Porch / Entry';
+    if (x < 48 && y > 38 && y <= 76) return 'Living Area';
+    if (x >= 48 && y > 38 && y <= 58) return 'Kitchen';
+    if (x >= 48 && y > 58 && y <= 78) return 'Bedroom 3';
     if (x < 48 && y <= 38) return 'Master Bedroom';
     if (x >= 48 && y <= 38) return 'Bedroom';
     return 'Central Corridor';
@@ -330,7 +330,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col items-center select-none font-sans pb-12 pt-1">
+    <div className="w-full max-w-4xl mx-auto flex flex-col items-center select-none font-sans h-[calc(100dvh-135px)] md:h-auto pb-4 md:pb-12 pt-1">
       {/* Floating Celebration Toast */}
       {celebrationMessage && (
         <div className="fixed top-16 z-50 animate-in fade-in slide-in-from-top-3 duration-200 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs font-bold shadow-2xl border border-emerald-400 flex items-center gap-2">
@@ -340,13 +340,13 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
       )}
 
       {/* Main Floorplan Canvas Frame (Outer Thick White Wall with Inward Shadow & Inside White Background) */}
-      <div className="relative w-full max-w-[420px] sm:max-w-[520px] md:max-w-[560px] flex flex-col items-center">
+      <div className="relative w-full flex-1 md:flex-initial max-w-[420px] sm:max-w-[520px] md:max-w-[560px] flex flex-col items-center min-h-0">
         {/* Interactive Floorplan Window */}
         <div
           onPointerDownCapture={(e) => {
             downPosRef.current = { x: e.clientX, y: e.clientY };
           }}
-          className="relative w-full aspect-square max-h-[76vh] overflow-hidden rounded-[16px] sm:rounded-[20px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] select-none"
+          className="relative w-full h-full aspect-[617/1024] md:aspect-square max-h-[calc(100dvh-170px)] md:max-h-[76vh] overflow-hidden rounded-[16px] sm:rounded-[20px] bg-white border-4 border-white shadow-[inset_3px_3px_8px_#c2c9d4,inset_-3px_-3px_8px_#ffffff,8px_8px_20px_#c2c9d4,-8px_-8px_20px_#ffffff] select-none min-h-0"
           style={{ touchAction: isZoomed ? 'none' : 'pan-y' }}
         >
           {/* Inward Shadow Overlay Layer (Ensures crisp inward shadow on top of floorplan edges) */}
@@ -412,19 +412,19 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
                 <TransformComponent
                   wrapperClass="!w-full !h-full"
-                  contentClass="!w-full !h-full"
+                  contentClass="!w-full !h-full flex items-center justify-center"
                 >
                   {/* Scalable & Pannable Floorplan Layer */}
                   <div
                     ref={layerRef}
                     onClick={handleMapClick}
-                    className="relative w-full h-full select-none"
+                    className="relative h-full aspect-[617/1024] max-w-full select-none m-auto"
                   >
                     {/* The 2D Floorplan Image */}
                     <img
                       src="/map/floorplan.jpg"
                       alt="Incubation Lab 2D Floor Plan"
-                      className="w-full h-full object-contain pointer-events-none"
+                      className="w-full h-full object-fill pointer-events-none"
                       draggable={false}
                     />
 
@@ -531,7 +531,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
         </div>
 
         {/* Floorplan Tap Tip */}
-        <p className="text-[11px] text-zinc-400 font-semibold text-center mt-2.5 leading-snug">
+        <p className="text-[11px] text-zinc-400 font-semibold text-center mt-2 leading-snug shrink-0">
           Tap any floating Crystal to view quest details
         </p>
       </div>
