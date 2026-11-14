@@ -3,18 +3,17 @@ import { CrystalIcon } from '../dashboard/CrystalIcon';
 import { CheckCircle, Sparkle, Scan } from '../icons';
 
 /**
- * QuestSliderCard - WhatsApp-style mobile slider bottom card for task details.
+ * QuestSliderCard - Tactile Neumorphic Mobile Quest Slider Card.
  *
- * Key Features:
- * 1. 100% Reliable Render: Uses reactive activeQuest (quest || displayedQuest) so the card
- *    is guaranteed to mount and animate into view on the very first crystal click without missing.
- * 2. Background Focus Scrim: Softly dulls out background (30% tint + micro-blur) so visual focus
- *    rests squarely on the card. Tapping the background dismisses smoothly.
- * 3. Butter-Smooth Slide Animations:
- *    - Entrance: 320ms Apple spring glide up from bottom (cubic-bezier(0.32, 0.72, 0, 1)).
- *    - Exit: 260ms smooth slide-down BEFORE unmounting from DOM.
- * 4. Gesture Slider: Tactile drag-to-dismiss (swipe down) with rubber-band resistance when pulling up.
- * 5. Clean Header: Cross button removed for a clean, spacious layout.
+ * Designed to seamlessly blend with Arena's signature #ebedf2 clay / molded neumorphic language:
+ * 1. Sheet Stacking: Positioned at z-[38] behind bottom tab bar (z-40) with rounded-t-[28px] sm:rounded-t-[32px],
+ *    so it emerges from behind the bottom tab bar on entrance and slides back behind it on exit.
+ * 2. Middle-Screen Focus Scrim: Softly dulls and blurs only the center map viewport (top-12 z-[35])
+ *    leaving the top app bar and bottom tab bar clean and prominent.
+ * 3. Tactile #ebedf2 Clay Theme: Molded surface with dual-directional light simulation, raised crystal tile,
+ *    curated Arena tokens (identity room pill, debossed badge capsules), and signature high-contrast pill CTA.
+ * 4. Butter-Smooth Slide Animations: 320ms Apple spring glide up, 260ms exit down, and velocity-aware
+ *    swipe-down gesture dismissal with rubber-band resistance when pulling up.
  */
 export const QuestSliderCard = ({
   quest,
@@ -43,7 +42,7 @@ export const QuestSliderCard = ({
       setDragOffset(0);
       setIsDragging(false);
 
-      // Double rAF ensures the element is first painted in DOM at closed position (translateY(115%))
+      // Double rAF ensures element is painted in DOM at closed position (translateY(115%))
       // before transitioning to translateY(0), guaranteeing the slide-up animation plays smoothly every time.
       const r1 = requestAnimationFrame(() => {
         const r2 = requestAnimationFrame(() => {
@@ -154,7 +153,7 @@ export const QuestSliderCard = ({
 
   return (
     <>
-      {/* Background Focus Scrim (Softly dulls out only the middle screen behind the card) */}
+      {/* Background Focus Scrim (Softly dulls out only the middle screen behind top header and bottom nav) */}
       <div
         onClick={animateDismiss}
         className={`fixed inset-x-0 bottom-0 top-12 z-[35] bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 ${
@@ -162,6 +161,7 @@ export const QuestSliderCard = ({
         }`}
       />
 
+      {/* Sheet Container: Positioned at z-[38] to emerge from behind the bottom tab bar (z-40) */}
       <div className="fixed bottom-0 left-0 right-0 z-[38] pointer-events-none flex justify-center px-2 sm:px-4">
         <div
           ref={sheetRef}
@@ -169,23 +169,23 @@ export const QuestSliderCard = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className="pointer-events-auto w-full max-w-[420px] sm:max-w-[500px] md:max-w-[540px] bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-t-[28px] sm:rounded-t-[32px] md:rounded-[28px] shadow-[0_-12px_36px_rgba(197,204,214,0.65)] p-4 pt-1.5 pb-20 md:pb-5 md:mb-5 select-none touch-pan-y"
+          className="pointer-events-auto w-full max-w-[420px] sm:max-w-[500px] md:max-w-[540px] bg-[#ebedf2] border border-white/90 rounded-t-[28px] sm:rounded-t-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6,0_-12px_36px_rgba(197,204,214,0.7)] p-4 pt-1.5 pb-20 md:pb-5 md:mb-5 select-none touch-pan-y"
           style={cardStyle}
         >
-          {/* Top Centered Drag Handle Pill (Tactile Affordance) */}
+          {/* Top Centered Drag Handle Pill (Tactile Debossed Groove) */}
           <div className="w-full flex items-center justify-center py-2 cursor-grab active:cursor-grabbing touch-none">
-            <div className="w-10 h-1.5 rounded-full bg-[#cbd5e1] shadow-[inset_1px_1px_2px_#94a3b8,inset_-1px_-1px_2px_#ffffff]" />
+            <div className="w-11 h-1.5 rounded-full bg-zinc-300/70 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.2),0_1px_1px_#ffffff]" />
           </div>
 
-          {/* Quest Header (Clean, spacious header without cross button) */}
-          <div className="flex items-center gap-3 pb-2.5 mb-2.5 border-b border-zinc-100">
-            {/* Prismatic Crystal Display with Ambient Soft Glow */}
-            <div className="relative w-8 h-12 shrink-0 flex items-center justify-center">
+          {/* Quest Header */}
+          <div className="flex items-center gap-3 pb-2.5 mb-2.5 border-b border-zinc-300/60 shadow-[0_1px_0_#ffffff]">
+            {/* Raised Tactile Crystal Tile */}
+            <div className="w-12 h-12 rounded-2xl bg-[#ebedf2] shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] border border-white/90 flex items-center justify-center shrink-0 p-1.5 relative overflow-hidden">
               <div
-                className="absolute inset-0 rounded-full opacity-30 blur-sm pointer-events-none"
-                style={{ backgroundColor: activeQuest.glowColor || '#6366f1' }}
+                className="absolute inset-0 rounded-2xl opacity-25 blur-md pointer-events-none"
+                style={{ backgroundColor: activeQuest.glowColor || '#38bdf8' }}
               />
-              <div className="relative z-10 w-full h-full flex items-center justify-center filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+              <div className="relative z-10 w-full h-full flex items-center justify-center filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.18)]">
                 <CrystalIcon color={activeQuest.gemColor} className="w-full h-full" />
               </div>
             </div>
@@ -193,44 +193,55 @@ export const QuestSliderCard = ({
             <div className="min-w-0 flex-1">
               {/* Badges: Room + Difficulty + Type */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#f0f2f5] text-zinc-700 border border-slate-200/90 shadow-[inset_1px_1px_2px_#dbe1ea,inset_-1px_-1px_2px_#ffffff]">
+                {/* Room Pill (Signature Arena Identity Gradient) */}
+                <span
+                  className="font-arena text-[10px] tracking-wider px-2.5 py-0.5 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-700 shadow-sm"
+                  style={{ WebkitTextStroke: '0.4px' }}
+                >
                   {activeQuest.room}
                 </span>
-                <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 shadow-xs">
+
+                {/* Difficulty Capsule */}
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#F2F7FC] text-zinc-600 border border-white/80 shadow-[inset_1px_1px_2px_#c8d0db,inset_-1px_-1px_2px_#ffffff]">
                   {activeQuest.difficulty}
                 </span>
+
+                {/* Type Capsule */}
                 {activeQuest.type && (
-                  <span className="text-[9.5px] font-bold uppercase px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500 border border-zinc-200/60">
+                  <span className="text-[9.5px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#f0f2f5] text-zinc-500 border border-zinc-300/50 shadow-[inset_1px_1px_2px_#c8d0db,inset_-1px_-1px_2px_#ffffff]">
                     {activeQuest.type}
                   </span>
                 )}
               </div>
 
               {/* Title */}
-              <h3 className="font-arena text-sm font-black text-zinc-900 tracking-wide mt-1 truncate">
+              <h3
+                className="font-arena text-[14px] sm:text-[15px] font-black text-zinc-900 tracking-wide mt-1.5 truncate"
+                style={{ WebkitTextStroke: '0.5px' }}
+              >
                 {activeQuest.title}
               </h3>
             </div>
           </div>
 
           {/* Quest Description */}
-          <p className="text-xs text-zinc-600 leading-relaxed font-medium px-0.5">
+          <p className="text-xs sm:text-[12.5px] text-zinc-600 leading-relaxed font-medium px-0.5">
             {activeQuest.description}
           </p>
 
           {/* Footer Actions */}
-          <div className="mt-3.5 flex items-center justify-between gap-2.5 pt-2.5 border-t border-zinc-100">
-            {/* Tactile Reward Capsule */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f0f2f5] border border-white/80 shadow-[inset_1.5px_1.5px_3px_#c8d0db,inset_-1.5px_-1.5px_3px_#ffffff]">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-500">Reward</span>
-              <span className="font-arena text-xs sm:text-sm font-black text-emerald-600">
+          <div className="mt-3 flex items-center justify-between gap-2.5 pt-2.5 border-t border-zinc-300/60 shadow-[0_1px_0_#ffffff]">
+            {/* Tactile Reward Well */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F2F7FC] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Reward</span>
+              <span className="font-arena text-xs sm:text-sm font-black text-emerald-600 tracking-wider">
                 +{activeQuest.points} PTS
               </span>
             </div>
 
-            {/* Action Button (Signature Black & White Theme) */}
+            {/* Action CTA Button (Signature Arena Pill) */}
             {isCompleted ? (
-              <div className="px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <div className="px-4 py-2 rounded-full bg-emerald-100/60 border border-emerald-300/70 text-emerald-800 text-xs font-bold flex items-center gap-1.5 shadow-[inset_1.5px_1.5px_3px_#bbf7d0,inset_-1.5px_-1.5px_3px_#ffffff]">
                 <CheckCircle size={15} weight="fill" className="text-emerald-600" />
                 <span>Completed</span>
               </div>
@@ -240,7 +251,7 @@ export const QuestSliderCard = ({
                 onClick={() => {
                   if (typeof onNavigate === 'function') onNavigate('scanner');
                 }}
-                className="px-4 py-2 rounded-xl bg-gradient-to-b from-zinc-900 to-black text-white text-xs font-bold border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] hover:from-zinc-800 hover:to-zinc-900 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                className="py-2.5 px-5 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-xs font-bold rounded-full transition-all duration-150 ease-out flex items-center gap-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.97] cursor-pointer border border-zinc-800/80"
               >
                 <Scan size={15} weight="bold" />
                 <span>{activeQuest.actionLabel}</span>
@@ -249,7 +260,7 @@ export const QuestSliderCard = ({
               <button
                 type="button"
                 onClick={() => onComplete?.(activeQuest)}
-                className="px-4 py-2 rounded-xl bg-gradient-to-b from-zinc-900 to-black text-white text-xs font-bold border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] hover:from-zinc-800 hover:to-zinc-900 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                className="py-2.5 px-5 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-xs font-bold rounded-full transition-all duration-150 ease-out flex items-center gap-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.97] cursor-pointer border border-zinc-800/80"
               >
                 <Sparkle size={15} weight="fill" className="text-amber-400" />
                 <span>{activeQuest.actionLabel}</span>
