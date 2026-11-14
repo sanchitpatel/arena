@@ -113,12 +113,17 @@ export function killAllMediaTracks(reason = 'Manual Shutdown', kindFilter = null
 /**
  * Safely reads in-app permission setting without throwing in Safari Private Browsing mode.
  * 
- * @param {'camera'|'mic'|'microphone'} capability
+ * @param {'camera'|'mic'|'microphone'|'gyro'|'orientation'} capability
  * @returns {string|null}
  */
 export function getInAppPermission(capability) {
   if (typeof window === 'undefined') return null;
-  const prefKey = (capability === 'camera') ? 'arena_perm_camera' : 'arena_perm_mic';
+  const prefKey =
+    capability === 'camera'
+      ? 'arena_perm_camera'
+      : (capability === 'gyro' || capability === 'orientation')
+      ? 'arena_perm_gyro'
+      : 'arena_perm_mic';
   try {
     return window.localStorage.getItem(prefKey);
   } catch {
@@ -127,13 +132,48 @@ export function getInAppPermission(capability) {
 }
 
 /**
- * Checks the current permission state for a device capability (camera or microphone).
+ * Checks the current permission state for a device capability (camera, microphone, or gyro/orientation).
  * Compares in-app user preference (localStorage) against native browser query.
  * 
- * @param {'camera'|'microphone'} type 
+ * @param {'camera'|'microphone'|'gyro'|'orientation'} type 
  * @returns {Promise<{ localPref: string|null, browserState: string, isAllowed: boolean }>}
  */
 export async function queryPermissionStatus(type) {
+  if (type === 'gyro' || type === 'orientation') {
+    const localPref = getInAppPermission('gyro');
+    if (typeof window === 'undefined') {
+      return { localPref, browserState: 'unsupported', isAllowed: false };
+    }
+
+    const hasEvent = 'DeviceOrientationEvent' in window;
+    if (!hasEvent) {
+      return { localPref, browserState: 'unsupported', isAllowed: false };
+    }
+
+    const isIos =
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function';
+
+    let browserState = 'granted';
+    if (isIos) {
+      browserState = localPref === 'granted' ? 'granted' : (localPref === 'denied' ? 'denied' : 'prompt');
+    } else if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+      try {
+        const res = await navigator.permissions.query({ name: 'accelerometer' });
+        browserState = res.state;
+      } catch {
+        browserState = 'granted';
+      }
+    }
+
+    const isAllowed =
+      localPref !== 'disabled' &&
+      browserState !== 'denied' &&
+      (browserState === 'granted' || localPref === 'granted');
+
+    return { localPref, browserState, isAllowed };
+  }
+
   const prefKey = type === 'camera' ? 'arena_perm_camera' : 'arena_perm_mic';
   const localPref = getInAppPermission(type);
   let browserState = 'unknown';
@@ -169,11 +209,16 @@ export const ARENA_PERM_EVENT = 'arena_permission_changed';
  * Persists an in-app permission setting and broadcasts the change across all components
  * in the active window (so Profile and QR Scanner stay 100% in sync in real time).
  * 
- * @param {'camera'|'mic'} capability
+ * @param {'camera'|'mic'|'gyro'|'orientation'} capability
  * @param {'granted'|'disabled'|'denied'} state
  */
 export function setInAppPermission(capability, state) {
-  const prefKey = capability === 'camera' ? 'arena_perm_camera' : 'arena_perm_mic';
+  const prefKey =
+    capability === 'camera'
+      ? 'arena_perm_camera'
+      : (capability === 'gyro' || capability === 'orientation')
+      ? 'arena_perm_gyro'
+      : 'arena_perm_mic';
   if (typeof window === 'undefined') return;
 
   // 1. Attempt to persist to localStorage (safely handles Safari Private Mode quota errors)

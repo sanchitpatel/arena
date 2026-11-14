@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Compass } from '../icons';
+import {
+  getInAppPermission,
+  setInAppPermission,
+  subscribeToPermissionChanges,
+} from '../../utils/mediaGuard';
 
 /**
  * Custom hook for capturing real-time device orientation & compass heading.
@@ -8,9 +13,32 @@ import { Compass } from '../icons';
  */
 export function useDeviceHeading() {
   const [heading, setHeading] = useState(0);
-  const [isActive, setIsActive] = useState(true);
+  const [isActive, setIsActive] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const pref = getInAppPermission('gyro');
+      if (pref === 'disabled' || pref === 'denied') return false;
+      // On iOS Safari, if permission hasn't been explicitly requested yet, default to off until granted
+      const isIos =
+        typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function';
+      if (isIos) {
+        return pref === 'granted';
+      }
+      return true;
+    } catch {
+      return true;
+    }
+  });
   const [isSupported, setIsSupported] = useState(true);
-  const [permissionState, setPermissionState] = useState('prompt'); // 'prompt' | 'granted' | 'denied' | 'unsupported'
+  const [permissionState, setPermissionState] = useState(() => {
+    if (typeof window === 'undefined') return 'prompt';
+    const pref = getInAppPermission('gyro');
+    if (pref === 'disabled') return 'disabled';
+    if (pref === 'denied') return 'denied';
+    if (pref === 'granted') return 'granted';
+    return 'prompt';
+  });
 
   const continuousHeadingRef = useRef(0);
   const lastRawHeadingRef = useRef(0);
@@ -22,6 +50,22 @@ export function useDeviceHeading() {
       setIsSupported(false);
       setPermissionState('unsupported');
     }
+  }, []);
+
+  // Listen to in-app permission broadcasts (e.g. from Profile page toggle)
+  useEffect(() => {
+    const unsubscribe = subscribeToPermissionChanges(({ capability, state }) => {
+      if (capability === 'gyro' || capability === 'orientation') {
+        if (state === 'granted') {
+          setIsActive(true);
+          setPermissionState('granted');
+        } else if (state === 'disabled' || state === 'denied') {
+          setIsActive(false);
+          setPermissionState(state);
+        }
+      }
+    });
+    return unsubscribe;
   }, []);
 
   // Request permission (mandatory on iOS 13+ inside a user tap gesture)
@@ -37,22 +81,26 @@ export function useDeviceHeading() {
         if (response === 'granted') {
           setPermissionState('granted');
           setIsActive(true);
+          setInAppPermission('gyro', 'granted');
           return true;
         } else {
           setPermissionState('denied');
           setIsActive(false);
+          setInAppPermission('gyro', 'denied');
           return false;
         }
       } catch (err) {
         console.warn('Device orientation permission rejected:', err);
         setPermissionState('denied');
         setIsActive(false);
+        setInAppPermission('gyro', 'denied');
         return false;
       }
     } else {
       // Android / standard desktop / older iOS: permission granted implicitly
       setPermissionState('granted');
       setIsActive(true);
+      setInAppPermission('gyro', 'granted');
       return true;
     }
   }, []);
@@ -61,6 +109,7 @@ export function useDeviceHeading() {
   const toggleHeading = useCallback(async () => {
     if (isActive) {
       setIsActive(false);
+      setInAppPermission('gyro', 'disabled');
     } else {
       if (
         typeof DeviceOrientationEvent !== 'undefined' &&
@@ -69,6 +118,7 @@ export function useDeviceHeading() {
         await requestHeadingPermission();
       } else {
         setIsActive(true);
+        setInAppPermission('gyro', 'granted');
       }
     }
   }, [isActive, requestHeadingPermission]);

@@ -9,6 +9,7 @@ import {
   X,
   Camera,
   Microphone,
+  Compass,
   SlidersHorizontal,
 } from '../icons';
 import ChatGPTOrb from './ChatGPTOrb';
@@ -57,6 +58,10 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   const [micLoading, setMicLoading] = useState(false);
   const [micError, setMicError] = useState('');
 
+  const [gyroGranted, setGyroGranted] = useState(false);
+  const [gyroLoading, setGyroLoading] = useState(false);
+  const [gyroError, setGyroError] = useState('');
+
   // Check and listen to client device permission states (localStorage preference takes priority over browser grant)
   useEffect(() => {
     let isMounted = true;
@@ -86,6 +91,19 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
             setMicError('');
           } else if (mic.browserState === 'denied') {
             setMicError('Microphone access is blocked. Please allow it in your browser settings.');
+          }
+        }
+      } catch { }
+
+      // 3. Motion & Orientation (Gyroscope / Compass) permission check:
+      try {
+        const gyro = await queryPermissionStatus('gyro');
+        if (isMounted) {
+          setGyroGranted(gyro.isAllowed);
+          if (gyro.isAllowed) {
+            setGyroError('');
+          } else if (gyro.browserState === 'denied') {
+            setGyroError('Motion sensor access is blocked in browser settings.');
           }
         }
       } catch { }
@@ -152,6 +170,14 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           setMicError('');
         } else if (state === 'denied') {
           setMicError('Microphone access is blocked. Please allow it in your browser settings.');
+        }
+      } else if (capability === 'gyro' || capability === 'orientation') {
+        const isAllowed = state === 'granted';
+        setGyroGranted(isAllowed);
+        if (isAllowed) {
+          setGyroError('');
+        } else if (state === 'denied') {
+          setGyroError('Motion sensor access is blocked in browser settings.');
         }
       }
     });
@@ -497,6 +523,71 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
     }
   };
 
+  const handleToggleGyro = async () => {
+    if (gyroLoading) return;
+    setGyroError('');
+
+    // If currently ON, user wants to disable gyro beam in Arena
+    if (gyroGranted) {
+      setGyroGranted(false);
+      setGyroError('');
+      setInAppPermission('gyro', 'disabled');
+      return;
+    }
+
+    // If currently OFF, user wants to enable gyro in Arena
+    setGyroLoading(true);
+    try {
+      if (typeof window === 'undefined' || !window.DeviceOrientationEvent) {
+        throw new Error('Motion sensors are not supported on this device or browser.');
+      }
+
+      // Check if iOS 13+ requires explicit user gesture permission prompt
+      if (
+        typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function'
+      ) {
+        const response = await DeviceOrientationEvent.requestPermission();
+        if (response === 'granted') {
+          setGyroGranted(true);
+          setGyroError('');
+          setInAppPermission('gyro', 'granted');
+        } else {
+          setGyroGranted(false);
+          setGyroError('Motion permission was not granted in iOS prompt.');
+          setInAppPermission('gyro', 'denied');
+        }
+      } else {
+        // Standard Android / Desktop browser:
+        let isDenied = false;
+        if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+          try {
+            const q = await navigator.permissions.query({ name: 'accelerometer' });
+            if (q.state === 'denied') {
+              isDenied = true;
+            }
+          } catch { }
+        }
+
+        if (isDenied) {
+          setGyroGranted(false);
+          setGyroError('Motion sensor access is blocked in browser settings.');
+          setInAppPermission('gyro', 'denied');
+        } else {
+          setGyroGranted(true);
+          setGyroError('');
+          setInAppPermission('gyro', 'granted');
+        }
+      }
+    } catch (err) {
+      setGyroGranted(false);
+      setGyroError(err?.message || 'Unable to access device orientation.');
+      setInAppPermission('gyro', 'denied');
+    } finally {
+      setGyroLoading(false);
+    }
+  };
+
   const renderFieldStatus = (field) => {
     if (savingField === field) {
       return (
@@ -747,6 +838,66 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
             {micError && !micGranted && (
               <p className="text-[10px] font-medium text-rose-500 pl-11 pt-1 leading-tight">
                 {micError}
+              </p>
+            )}
+          </div>
+
+          <div className="border-t border-zinc-300/60" />
+
+          {/* 3. Motion & Orientation (Gyro / Compass) Permission Toggle Row */}
+          <div>
+            <div
+              onClick={handleToggleGyro}
+              className="flex items-center justify-between gap-3 p-1 rounded-xl cursor-pointer hover:bg-black/[0.02] active:scale-[0.99] transition-all select-none"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-[#ebedf2] shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] border border-white/80 flex items-center justify-center shrink-0">
+                  <Compass
+                    size={18}
+                    weight="bold"
+                    className={gyroGranted ? 'text-sky-600/90 transition-colors' : 'text-zinc-500 transition-colors'}
+                  />
+                </div>
+                <div className="truncate">
+                  <div className="text-[12.5px] font-bold text-zinc-900 leading-tight">
+                    Motion &amp; Orientation
+                  </div>
+                  <div className="text-[10.5px] font-medium text-zinc-500 truncate leading-tight">
+                    Phone Facing Direction &amp; Gyro Beam
+                  </div>
+                </div>
+              </div>
+
+              {/* Custom Neumorphic iOS Toggle Switch */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={gyroGranted}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleGyro();
+                }}
+                disabled={gyroLoading}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  gyroGranted
+                    ? 'bg-sky-400 shadow-[inset_1px_1px_3px_rgba(0,0,0,0.2)]'
+                    : 'bg-[#cbd2de] shadow-[inset_2px_2px_4px_#b3bac6,inset_-2px_-2px_4px_#ffffff]'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-[1px_2px_4px_rgba(0,0,0,0.25)] transition duration-200 ease-in-out flex items-center justify-center ${
+                    gyroGranted ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                >
+                  {gyroLoading && (
+                    <CircleNotch size={11} className="animate-spin text-zinc-500" />
+                  )}
+                </span>
+              </button>
+            </div>
+            {gyroError && !gyroGranted && (
+              <p className="text-[10px] font-medium text-rose-500 pl-11 pt-1 leading-tight">
+                {gyroError}
               </p>
             )}
           </div>
