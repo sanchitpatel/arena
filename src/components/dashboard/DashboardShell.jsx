@@ -164,7 +164,7 @@ export const DashboardShell = ({
       {/* ========================================================
           1. DESKTOP SIDEBAR (Soft Slate Neumorphic Theme)
           ======================================================== */}
-      <aside className="hidden md:flex flex-col w-60 lg:w-64 bg-[#ebedf2] border-r border-slate-300/60 shrink-0 h-full z-30 shadow-[4px_0_16px_#c8d0db]">
+      <aside className="hidden md:flex flex-col w-60 lg:w-64 bg-[#ebedf2] border-r border-slate-300/60 shrink-0 h-full z-40 shadow-[4px_0_16px_#c8d0db]">
 
         {/* Arena Brand Header */}
         <div className="p-4 border-b border-zinc-300/50 flex items-center gap-2.5">
@@ -350,7 +350,7 @@ export const DashboardShell = ({
         {/* ========================================================
             TOP TRANSPARENT APP BAR (Fixed height, zero jump / zero scale on click)
             ======================================================== */}
-        <header className="sticky top-0 z-30 w-full bg-[#f0f2f5]/80 backdrop-blur-md border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
+        <header className="sticky top-0 z-40 w-full bg-[#f0f2f5]/90 backdrop-blur-md border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
           {/* Brand Name */}
           <span className="font-arena text-xl -ml-1 sm:text-lg font-black tracking-wider text-zinc-900 shrink-0">
             ARENA

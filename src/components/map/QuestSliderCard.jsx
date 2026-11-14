@@ -154,10 +154,10 @@ export const QuestSliderCard = ({
 
   return (
     <>
-      {/* Background Focus Scrim (Softly dulls out the background so focus goes to the card) */}
+      {/* Background Focus Scrim (Softly dulls out only the middle screen behind the card) */}
       <div
         onClick={animateDismiss}
-        className={`fixed inset-0 z-[35] bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 ${
+        className={`fixed inset-x-0 bottom-0 top-12 z-[35] bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 ${
           isOpen ? 'opacity-100 pointer-events-auto cursor-pointer' : 'opacity-0 pointer-events-none'
         }`}
       />
