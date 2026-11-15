@@ -120,24 +120,11 @@ export const QuestSliderCard = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeQuest]);
 
-  // Lock background and main screen scrolling while the quest slider is open
+  // Prevent background and main screen scrolling while the quest slider is open (Zero layout shift)
   useEffect(() => {
     if (!isOpen) return;
 
-    // 1. Lock document body and html elements
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevHtmlOverflow = document.documentElement.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-
-    // 2. Lock the <main> scroll container in DashboardShell
-    const mainEl = document.querySelector('main');
-    const prevMainOverflow = mainEl ? mainEl.style.overflow : '';
-    if (mainEl) {
-      mainEl.style.overflow = 'hidden';
-    }
-
-    // 3. Prevent passive touchmove/wheel bubbling on document background
+    // Prevent passive touchmove/wheel bubbling on document background
     const preventBackgroundScroll = (e) => {
       if (!sheetRef.current || !sheetRef.current.contains(e.target)) {
         if (e.cancelable) {
@@ -150,11 +137,6 @@ export const QuestSliderCard = ({
     document.addEventListener('wheel', preventBackgroundScroll, { passive: false });
 
     return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevHtmlOverflow;
-      if (mainEl) {
-        mainEl.style.overflow = prevMainOverflow;
-      }
       document.removeEventListener('touchmove', preventBackgroundScroll);
       document.removeEventListener('wheel', preventBackgroundScroll);
     };

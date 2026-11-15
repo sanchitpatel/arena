@@ -457,12 +457,12 @@ export const DashboardShell = ({
 
           {/* Top Actions: Notification on left, Prizes in middle, Map on rightmost end */}
           <div className="flex items-center gap-3 sm:gap-2">
-            {/* Notification Option (Two-layer GPU opacity cross-fade + dual-icon scale morph: buttery smooth, instant) */}
+            {/* Notification Option (Two-layer GPU opacity cross-fade: zero scale wobble, rock-solid) */}
             <button
               type="button"
               onClick={toggleNotification}
               title="WhatsApp Notifications"
-              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-[0.92] transition-transform duration-100 ease-out"
+              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-[0.96] transition-transform duration-100 ease-out"
             >
               {/* Default / Inactive State Layer (Fades out when active) */}
               <span
@@ -478,20 +478,20 @@ export const DashboardShell = ({
                 }`}
               />
 
-              {/* Dual-Icon Cross-Fade: Inactive Regular Icon vs Active Fill Icon */}
+              {/* Dual-Icon Cross-Fade: Inactive Regular Icon vs Active Fill Icon (Pure opacity cross-fade, zero wobble) */}
               <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
                 <Bell
                   size={23}
                   weight="regular"
-                  className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
-                    isNotificationOpen ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                  className={`absolute text-zinc-600 transition-opacity duration-150 ease-out will-change-[opacity] ${
+                    isNotificationOpen ? 'opacity-0' : 'opacity-100'
                   }`}
                 />
                 <Bell
                   size={23}
                   weight="fill"
-                  className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
-                    isNotificationOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                  className={`absolute text-white transition-opacity duration-150 ease-out will-change-[opacity] ${
+                    isNotificationOpen ? 'opacity-100' : 'opacity-0'
                   }`}
                 />
               </div>
