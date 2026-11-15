@@ -8,6 +8,7 @@ import NotificationSliderCard from './NotificationSliderCard';
 import { PrizeFloatingButton } from '../prizes/PrizeFloatingButton';
 import { PrizeRoadModal } from '../prizes/PrizeRoadModal';
 import { calculatePrizeProgress } from '../../data/prizesData';
+import { FrostMountainBackground } from '../common/FrostMountainBackground';
 import { MAP_TASKS } from './MapView';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import {
@@ -267,7 +268,7 @@ export const DashboardShell = ({
   ];
 
   return (
-    <div className="h-screen w-full bg-[#f0f2f5] text-zinc-800 flex flex-col md:flex-row font-sans selection:bg-sky-200 selection:text-zinc-900 overflow-hidden">
+    <div className="h-screen w-full bg-transparent text-zinc-800 flex flex-col md:flex-row font-sans selection:bg-sky-200 selection:text-zinc-900 overflow-hidden">
 
       {/* ========================================================
           1. DESKTOP SIDEBAR (Soft Slate Neumorphic Theme)
@@ -508,11 +509,14 @@ export const DashboardShell = ({
       {/* ========================================================
           3. MAIN CONTENT WORKSPACE
           ======================================================== */}
-      <main className="flex-1 flex flex-col min-w-0 h-full bg-[#f0f2f5] overflow-y-scroll [scrollbar-gutter:stable] pb-20 md:pb-0">
+      <main className="flex-1 flex flex-col min-w-0 h-full overflow-y-scroll [scrollbar-gutter:stable] pb-20 md:pb-0 relative">
+        {/* Authentic Frost Mountain & Crystal Theme Backdrop */}
+        <FrostMountainBackground hasSidebar={true} />
+
         {/* ========================================================
             TOP TRANSPARENT APP BAR (Fixed height, zero jump / zero scale on click)
             ======================================================== */}
-        <header className="sticky top-0 z-40 w-full bg-[#f0f2f5]/90 backdrop-blur-md border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
+        <header className="sticky top-0 z-40 w-full bg-[#f0f2f5]/80 backdrop-blur-md border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
           {/* Brand Name */}
           <span className="font-arena text-xl -ml-1 sm:text-lg font-black tracking-wider text-zinc-900 shrink-0">
             ARENA
@@ -645,7 +649,7 @@ export const DashboardShell = ({
         </header>
 
         {/* View Container */}
-        <div className="flex-1 px-2 pt-3 pb-6 sm:px-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <div className="flex-1 px-2 pt-3 pb-6 sm:px-6 lg:p-8 max-w-7xl w-full mx-auto relative z-10">
           {children}
         </div>
       </main>

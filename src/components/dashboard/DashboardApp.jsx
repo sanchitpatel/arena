@@ -30,8 +30,10 @@ const prefetchDashboard = () => {
     import('./IdeasPitchWallView');
 
     // Warm up critical visual assets into browser memory cache for 0ms paint
-    const img = new Image();
-    img.src = '/images/prize_road_template.webp';
+    const bgImg = new Image();
+    bgImg.src = '/images/arena-bg.webp';
+    const prizeImg = new Image();
+    prizeImg.src = '/images/prize_road_template.webp';
   }, { timeout: 1000 });
 };
 

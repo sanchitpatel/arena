@@ -10,6 +10,7 @@ import { ShieldCheck } from '@phosphor-icons/react/dist/icons/ShieldCheck';
 import Logo from '../Logo';
 import ChatGPTOrb from './ChatGPTOrb';
 import ArenaAvatar, { CURATED_AVATARS } from '../avatars/ArenaAvatar';
+import { FrostMountainBackground } from '../common/FrostMountainBackground';
 
 const STORAGE_KEY_DRAFT_NAME = 'arena_draft_username';
 const STORAGE_KEY_DRAFT_AVATAR = 'arena_draft_avatar';
@@ -192,7 +193,10 @@ export const LoginView = ({ onEnterArena }) => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#f0f2f5] text-zinc-800 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans select-none">
+    <div className="min-h-screen w-full text-zinc-800 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans select-none">
+      {/* Authentic Frost Mountain & Crystal Theme Backdrop */}
+      <FrostMountainBackground />
+
       <div className="w-full max-w-[430px] relative z-10">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-3">
