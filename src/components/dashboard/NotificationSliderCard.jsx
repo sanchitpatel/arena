@@ -110,6 +110,46 @@ export const NotificationSliderCard = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Lock background and main screen scrolling while the notification slider is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // 1. Lock document body and html elements
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    // 2. Lock the <main> scroll container in DashboardShell
+    const mainEl = document.querySelector('main');
+    const prevMainOverflow = mainEl ? mainEl.style.overflow : '';
+    if (mainEl) {
+      mainEl.style.overflow = 'hidden';
+    }
+
+    // 3. Prevent passive touchmove/wheel bubbling on document background
+    const preventBackgroundScroll = (e) => {
+      if (!sheetRef.current || !sheetRef.current.contains(e.target)) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    document.addEventListener('touchmove', preventBackgroundScroll, { passive: false });
+    document.addEventListener('wheel', preventBackgroundScroll, { passive: false });
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      if (mainEl) {
+        mainEl.style.overflow = prevMainOverflow;
+      }
+      document.removeEventListener('touchmove', preventBackgroundScroll);
+      document.removeEventListener('wheel', preventBackgroundScroll);
+    };
+  }, [isOpen]);
+
   // --- Touch & Pointer Gesture Handling (Swipe UP to Dismiss) ---
   const handlePointerDown = (e) => {
     // Ignore clicks on interactive buttons
@@ -127,6 +167,9 @@ export const NotificationSliderCard = ({
 
   const handlePointerMove = (e) => {
     if (!isDraggingRef.current) return;
+    if (e.cancelable) {
+      e.preventDefault();
+    }
 
     const deltaY = e.clientY - startYRef.current;
     if (deltaY < 0) {
@@ -150,12 +193,19 @@ export const NotificationSliderCard = ({
       e.currentTarget.releasePointerCapture?.(e.pointerId);
     } catch { }
 
-    // Dismiss if dragged upwards by > 50px
-    if (currentYRef.current < -50) {
+    // Dismiss if dragged upwards by > 40px
+    if (currentYRef.current < -40) {
       animateDismiss();
     } else {
       // Snap back to open position
       setDragOffset(0);
+    }
+  };
+
+  // Wheel gesture to dismiss on upward trackpad / mouse scroll
+  const handleWheel = (e) => {
+    if (e.deltaY < -20) {
+      animateDismiss();
     }
   };
 
@@ -195,7 +245,7 @@ export const NotificationSliderCard = ({
       {/* Full-Screen Focus Scrim (At z-[35], so top header and bottom nav at z-40 sit above it completely unblurred) */}
       <div
         onClick={animateDismiss}
-        className={`fixed inset-0 z-[35] bg-black/15 backdrop-blur-[1px] transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[35] bg-black/15 backdrop-blur-[1px] transition-opacity duration-300 touch-none select-none overscroll-none ${
           isOpen ? 'opacity-100 pointer-events-auto cursor-pointer' : 'opacity-0 pointer-events-none'
         }`}
       />
@@ -208,7 +258,8 @@ export const NotificationSliderCard = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+4.5rem)] min-h-[330px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-b-[28px] sm:rounded-b-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-4.5 pb-2 select-none touch-pan-y flex flex-col justify-between"
+          onWheel={handleWheel}
+          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+4.5rem)] min-h-[330px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-b-[28px] sm:rounded-b-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-4.5 pb-2 select-none touch-none cursor-grab active:cursor-grabbing flex flex-col justify-between"
           style={cardStyle}
         >
           {/* Top Section: Header */}
