@@ -24,12 +24,14 @@ export const CrystalIcon = React.memo(function CrystalIcon({ color = 'cryst', cl
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </radialGradient>
 
-        {/* Periodic Specular Light Sheen Gradient (Vector-only, 0 raster blur) */}
+        {/* Periodic Wide Specular Light Sheen Gradient (Vector-only, 0 raster blur) */}
         <linearGradient id={`${p}-gleam-sheen`} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
-          <stop offset="35%" stopColor="#ffffff" stopOpacity="0.08" />
-          <stop offset="50%" stopColor="#ffffff" stopOpacity="0.75" />
-          <stop offset="65%" stopColor="#ffffff" stopOpacity="0.08" />
+          <stop offset="20%" stopColor="#ffffff" stopOpacity="0.12" />
+          <stop offset="40%" stopColor="#ffffff" stopOpacity="0.7" />
+          <stop offset="50%" stopColor="#ffffff" stopOpacity="0.92" />
+          <stop offset="60%" stopColor="#ffffff" stopOpacity="0.7" />
+          <stop offset="80%" stopColor="#ffffff" stopOpacity="0.12" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
 
@@ -392,15 +394,15 @@ export const CrystalIcon = React.memo(function CrystalIcon({ color = 'cryst', cl
             strokeWidth="3"
           />
 
-          {/* Periodic Specular Sheen Sweep (100% GPU Compositor Animation) */}
+          {/* Periodic Wide Specular Sheen Sweep (100% GPU Compositor Animation) */}
           <g className="crystal-sheen-sweep" style={{ animationDelay: `${-delay}s` }}>
             <rect
-              x="-60"
-              y="-120"
-              width="520"
-              height="240"
+              x="-100"
+              y="-230"
+              width="600"
+              height="460"
               fill={`url(#${p}-gleam-sheen)`}
-              transform="rotate(-20 200 0)"
+              transform="rotate(-22 200 0)"
             />
           </g>
         </g>

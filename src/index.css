@@ -310,26 +310,30 @@ html.lenis body {
   transform-origin: center center;
 }
 
-/* 9. 2D Map Prismatic Crystal Top-to-Bottom Shine Sweep (3.6s cycle, 100% GPU compositor) */
+/* 9. 2D Map Prismatic Crystal Top-to-Bottom Gradual Synchronized Shine (3.8s cycle, 100% GPU compositor) */
 @keyframes crystalSheen {
-  0%, 50% {
-    transform: translateY(-420px);
+  0% {
+    transform: translateY(-500px);
     opacity: 0;
   }
-  56% {
-    opacity: 0.85;
+  6% {
+    opacity: 0.9;
   }
-  78% {
-    opacity: 0.85;
+  58% {
+    opacity: 0.9;
   }
-  86%, 100% {
-    transform: translateY(1100px);
+  66% {
+    transform: translateY(1280px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(1280px);
     opacity: 0;
   }
 }
 
 .crystal-sheen-sweep {
-  animation: crystalSheen 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: crystalSheen 3.8s cubic-bezier(0.38, 0.05, 0.28, 1) infinite;
   will-change: transform, opacity;
   pointer-events: none;
 }

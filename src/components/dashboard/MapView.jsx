@@ -541,7 +541,6 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                                   color={quest.gemColor}
                                   gradient={quest.gradient}
                                   isCompleted={isCompleted}
-                                  delay={(idx * 0.6) % 3.6}
                                 />
                               </div>
                             </div>
