@@ -69,22 +69,29 @@ export const NotificationSliderCard = ({
     return () => unsubscribe();
   }, [loadNotifications]);
 
-  // Entrance & Exit animation orchestration
+  // Entrance & Exit animation orchestration with instant interruptibility
   useEffect(() => {
     if (propIsOpen) {
-      setShouldRender(true);
-      setDragOffset(0);
-      setIsDragging(false);
+      if (!shouldRender) {
+        setShouldRender(true);
+        setDragOffset(0);
+        setIsDragging(false);
 
-      // Double rAF guarantees element is painted at closed position (translateY(-115%))
-      // before transitioning to translateY(0), ensuring a butter-smooth slide-down entrance.
-      const r1 = requestAnimationFrame(() => {
-        const r2 = requestAnimationFrame(() => {
-          setIsOpen(true);
+        // Double rAF ensures element is painted at closed position (translateY(-112%))
+        // before transitioning to translateY(0), guaranteeing an instant, butter-smooth slide entrance.
+        const r1 = requestAnimationFrame(() => {
+          const r2 = requestAnimationFrame(() => {
+            setIsOpen(true);
+          });
+          return () => cancelAnimationFrame(r2);
         });
-        return () => cancelAnimationFrame(r2);
-      });
-      return () => cancelAnimationFrame(r1);
+        return () => cancelAnimationFrame(r1);
+      } else {
+        // Fast re-open/interrupt: reverse direction immediately without waiting for rAF
+        setDragOffset(0);
+        setIsDragging(false);
+        setIsOpen(true);
+      }
     } else {
       setIsOpen(false);
       setDragOffset(0);
@@ -92,22 +99,18 @@ export const NotificationSliderCard = ({
 
       const timer = setTimeout(() => {
         setShouldRender(false);
-      }, 280);
+      }, 190);
       return () => clearTimeout(timer);
     }
-  }, [propIsOpen]);
+  }, [propIsOpen, shouldRender]);
 
-  // Smooth slide-up dismiss (returns back behind top nav bar)
-  const animateDismiss = () => {
+  // Smooth slide-up dismiss (immediately notifies parent and plays crisp exit)
+  const animateDismiss = useCallback(() => {
     setIsOpen(false);
     setDragOffset(0);
     setIsDragging(false);
-
-    setTimeout(() => {
-      onClose?.();
-      setShouldRender(false);
-    }, 280);
-  };
+    onClose?.();
+  }, [onClose]);
 
   // Close on Escape key
   useEffect(() => {
@@ -117,7 +120,7 @@ export const NotificationSliderCard = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [shouldRender]);
+  }, [shouldRender, animateDismiss]);
 
   // Lock background and main screen scrolling while the notification slider is open
   useEffect(() => {
@@ -202,8 +205,8 @@ export const NotificationSliderCard = ({
       e.currentTarget.releasePointerCapture?.(e.pointerId);
     } catch { }
 
-    // Dismiss if dragged upwards by > 40px
-    if (currentYRef.current < -40) {
+    // Dismiss if dragged upwards by > 35px
+    if (currentYRef.current < -35) {
       animateDismiss();
     } else {
       // Snap back to open position
@@ -213,7 +216,7 @@ export const NotificationSliderCard = ({
 
   // Wheel gesture to dismiss on upward trackpad / mouse scroll
   const handleWheel = (e) => {
-    if (e.deltaY < -20) {
+    if (e.deltaY < -15) {
       animateDismiss();
     }
   };
@@ -234,19 +237,20 @@ export const NotificationSliderCard = ({
     ? 'WHATSAPP DISPATCH'
     : 'ARENA DISPATCH';
 
-  // Dynamic transform styles: translateY(-115%) when closed, translateY(0) when open
+  // Dynamic transform styles: buttery-smooth, snappy Apple-inspired curves
   const cardStyle = isDragging
     ? {
-      transform: `translateY(${dragOffset}px)`,
+      transform: `translateY(${dragOffset}px) scale(1)`,
       transition: 'none',
       willChange: 'transform',
     }
     : {
-      transform: isOpen ? 'translateY(0px)' : 'translateY(-115%)',
+      transform: isOpen ? 'translateY(0px) scale(1)' : 'translateY(-112%) scale(0.98)',
+      opacity: isOpen ? 1 : 0.95,
       transition: isOpen
-        ? 'transform 320ms cubic-bezier(0.32, 0.72, 0, 1)'
-        : 'transform 260ms cubic-bezier(0.32, 0.72, 0, 1)',
-      willChange: 'transform',
+        ? 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out'
+        : 'transform 180ms cubic-bezier(0.25, 1, 0.5, 1), opacity 180ms ease-in',
+      willChange: 'transform, opacity',
     };
 
   if (!shouldRender && !propIsOpen) return null;
@@ -256,8 +260,10 @@ export const NotificationSliderCard = ({
       {/* Full-Screen Focus Scrim (At z-[35], so top header and bottom nav at z-40 sit above it completely unblurred) */}
       <div
         onClick={animateDismiss}
-        className={`fixed inset-0 z-[35] bg-black/15 backdrop-blur-[1px] transition-opacity duration-300 touch-none select-none overscroll-none ${
-          isOpen ? 'opacity-100 pointer-events-auto cursor-pointer' : 'opacity-0 pointer-events-none'
+        className={`fixed inset-0 z-[35] bg-black/15 backdrop-blur-[1px] touch-none select-none overscroll-none will-change-[opacity] ${
+          isOpen
+            ? 'opacity-100 pointer-events-auto cursor-pointer transition-opacity duration-200 ease-out'
+            : 'opacity-0 pointer-events-none transition-opacity duration-180 ease-out'
         }`}
       />
 

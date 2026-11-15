@@ -93,7 +93,7 @@ export const QuestSliderCard = ({
 
       const timer = setTimeout(() => {
         setDisplayedQuest(null);
-      }, 300);
+      }, 190);
       return () => clearTimeout(timer);
     }
   }, [quest]);
@@ -107,7 +107,7 @@ export const QuestSliderCard = ({
     setTimeout(() => {
       onClose?.();
       setDisplayedQuest(null);
-    }, 280);
+    }, 190);
   };
 
   // Close on Escape key
@@ -221,19 +221,20 @@ export const QuestSliderCard = ({
 
   if (!activeQuest) return null;
 
-  // Determine transform and transition styles dynamically
+  // Determine transform and transition styles dynamically: snappy Apple iOS drawer curves
   const cardStyle = isDragging
     ? {
-      transform: `translateY(${dragOffset}px)`,
+      transform: `translateY(${dragOffset}px) scale(1)`,
       transition: 'none',
       willChange: 'transform',
     }
     : {
-      transform: isOpen ? 'translateY(0px)' : 'translateY(115%)',
+      transform: isOpen ? 'translateY(0px) scale(1)' : 'translateY(112%) scale(0.98)',
+      opacity: isOpen ? 1 : 0.95,
       transition: isOpen
-        ? 'transform 320ms cubic-bezier(0.32, 0.72, 0, 1)'
-        : 'transform 260ms cubic-bezier(0.32, 0.72, 0, 1)',
-      willChange: 'transform',
+        ? 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out'
+        : 'transform 180ms cubic-bezier(0.25, 1, 0.5, 1), opacity 180ms ease-in',
+      willChange: 'transform, opacity',
     };
 
   return (
@@ -241,8 +242,10 @@ export const QuestSliderCard = ({
       {/* Full-Screen Focus Scrim (At z-[35], so top header and bottom nav at z-40 sit above it completely unblurred) */}
       <div
         onClick={animateDismiss}
-        className={`fixed inset-0 z-[35] bg-black/15 backdrop-blur-[1px] transition-opacity duration-300 touch-none select-none overscroll-none ${
-          isOpen ? 'opacity-100 pointer-events-auto cursor-pointer' : 'opacity-0 pointer-events-none'
+        className={`fixed inset-0 z-[35] bg-black/15 backdrop-blur-[1px] touch-none select-none overscroll-none will-change-[opacity] ${
+          isOpen
+            ? 'opacity-100 pointer-events-auto cursor-pointer transition-opacity duration-200 ease-out'
+            : 'opacity-0 pointer-events-none transition-opacity duration-180 ease-out'
         }`}
       />
 

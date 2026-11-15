@@ -235,16 +235,41 @@ export const DashboardShell = ({
                     onTabChange(item.id);
                   }
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left text-sm group cursor-pointer transition-colors duration-100 active:scale-[0.98] ${isActive
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left text-sm group cursor-pointer active:scale-[0.98] transition-all duration-150 ease-out ${isActive
                   ? 'bg-[#ebedf2] text-zinc-900 shadow-[3px_3px_8px_#c6ced9,-3px_-3px_8px_#ffffff] border border-white font-bold'
                   : 'text-zinc-600 hover:text-zinc-900 hover:shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] font-medium border border-transparent'
                   }`}
               >
-                <div className={`w-9 h-9 flex items-center justify-center rounded-xl shrink-0 ${isActive
-                  ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
-                  : 'bg-[#ebedf2] text-zinc-500 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] group-hover:text-zinc-900'
-                  }`}>
-                  <Icon size={24} weight={isActive ? 'bold' : 'duotone'} />
+                <div className="relative w-9 h-9 shrink-0 flex items-center justify-center">
+                  {/* Inactive Icon Background Layer */}
+                  <span
+                    className={`absolute inset-0 rounded-xl bg-[#ebedf2] shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
+                      isActive ? 'opacity-0' : 'opacity-100'
+                    }`}
+                  />
+                  {/* Active Icon Background Layer */}
+                  <span
+                    className={`absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
+                      isActive ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                  {/* Dual-Icon Crossfade */}
+                  <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
+                    <Icon
+                      size={24}
+                      weight="duotone"
+                      className={`absolute text-zinc-500 group-hover:text-zinc-900 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
+                        isActive ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                      }`}
+                    />
+                    <Icon
+                      size={24}
+                      weight="bold"
+                      className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
+                        isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                      }`}
+                    />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0 truncate">
                   <div className="leading-tight truncate">{item.label}</div>
@@ -348,35 +373,67 @@ export const DashboardShell = ({
                   onTabChange(item.id);
                   setMobileProfileOpen(false);
                 }}
-                className={`flex-1 flex flex-col items-center justify-end py-0.5 px-0.5 rounded-2xl active:scale-95 transition-transform duration-100 ease-out cursor-pointer ${
+                className={`flex-1 flex flex-col items-center justify-end py-0.5 px-0.5 rounded-2xl active:scale-95 transition-transform duration-100 ease-out cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] ${
                   isCenterScanner ? '-mt-1 sm:-mt-2.5' : ''
-                } ${isActive
-                    ? 'text-zinc-900 font-bold'
-                    : 'text-zinc-500 font-medium hover:text-zinc-800'
-                  }`}
+                }`}
               >
                 <div className="relative">
+                  {/* Stable-sized icon container preventing layout shifts */}
                   <div
-                    className={`${
+                    className={`relative ${
                       isCenterScanner
-                        ? 'p-2 rounded-xl mb-0.5'
-                        : 'p-1.5 rounded-xl mb-0.5'
-                    } ${isActive
-                        ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
-                        : isCenterScanner
-                          ? 'bg-[#ebedf2] shadow-[3px_3px_6px_#c2c9d4,-3px_-3px_6px_#ffffff] border border-white/80 text-zinc-600 hover:text-zinc-900'
-                          : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] text-zinc-500 hover:text-zinc-900'
-                      }`}
+                        ? 'w-12 h-11 mb-0.5'
+                        : 'w-10 h-9 mb-0.5'
+                    } flex items-center justify-center`}
                   >
-                    <Icon size={isCenterScanner ? 29 : 23} weight={isActive ? 'bold' : 'duotone'} />
+                    {/* Inactive Clay Background Layer */}
+                    <span
+                      className={`absolute inset-0 rounded-xl transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
+                        isCenterScanner
+                          ? 'bg-[#ebedf2] shadow-[3px_3px_6px_#c2c9d4,-3px_-3px_6px_#ffffff] border border-white/80'
+                          : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
+                      } ${isActive ? 'opacity-0' : 'opacity-100'}`}
+                    />
+
+                    {/* Active Dark Gradient Background Layer */}
+                    <span
+                      className={`absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
+                        isActive ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    />
+
+                    {/* Dual-Icon Crossfade Layer (Duotone Inactive vs Bold Active) */}
+                    <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
+                      <Icon
+                        size={isCenterScanner ? 29 : 23}
+                        weight="duotone"
+                        className={`absolute text-zinc-500 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
+                          isActive ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                        }`}
+                      />
+                      <Icon
+                        size={isCenterScanner ? 29 : 23}
+                        weight="bold"
+                        className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
+                          isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                        }`}
+                      />
+                    </div>
                   </div>
+
                   {item.badge > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-white font-extrabold text-[9px] flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.2)]">
+                    <span className="absolute -top-1 -right-1 z-20 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-white font-extrabold text-[9px] flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.2)]">
                       {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   )}
                 </div>
-                <span className={`${isCenterScanner ? 'text-[10.5px] font-bold text-zinc-700' : 'text-[10px]'} tracking-tight truncate`}>
+                <span
+                  className={`${
+                    isCenterScanner ? 'text-[10.5px]' : 'text-[10px]'
+                  } font-bold tracking-tight truncate transition-colors duration-150 ease-out ${
+                    isActive ? 'text-zinc-900' : 'text-zinc-500'
+                  }`}
+                >
                   {item.label}
                 </span>
               </button>
@@ -400,35 +457,44 @@ export const DashboardShell = ({
 
           {/* Top Actions: Notification on left, Prizes in middle, Map on rightmost end */}
           <div className="flex items-center gap-3 sm:gap-2">
-            {/* Notification Option (Two-layer GPU opacity cross-fade: zero flicker, instant & butter-smooth) */}
+            {/* Notification Option (Two-layer GPU opacity cross-fade + dual-icon scale morph: buttery smooth, instant) */}
             <button
               type="button"
               onClick={toggleNotification}
               title="WhatsApp Notifications"
-              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
+              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-[0.92] transition-transform duration-100 ease-out"
             >
               {/* Default / Inactive State Layer (Fades out when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
                   isNotificationOpen ? 'opacity-0' : 'opacity-100'
                 }`}
               />
 
               {/* Active State Layer (Fades in when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
                   isNotificationOpen ? 'opacity-100' : 'opacity-0'
                 }`}
               />
 
-              {/* Bell Icon (Smoothly transitions color on top) */}
-              <Bell
-                size={23}
-                weight={isNotificationOpen ? 'fill' : 'regular'}
-                className={`relative z-10 transition-colors duration-150 ${
-                  isNotificationOpen ? 'text-white' : 'text-zinc-600 hover:text-zinc-900'
-                }`}
-              />
+              {/* Dual-Icon Cross-Fade: Inactive Regular Icon vs Active Fill Icon */}
+              <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
+                <Bell
+                  size={23}
+                  weight="regular"
+                  className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
+                    isNotificationOpen ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                  }`}
+                />
+                <Bell
+                  size={23}
+                  weight="fill"
+                  className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
+                    isNotificationOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                  }`}
+                />
+              </div>
 
               {pendingCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 z-20 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
@@ -437,7 +503,7 @@ export const DashboardShell = ({
               )}
             </button>
 
-            {/* Bulb Option: Ideas Pitch Wall (Two-layer GPU opacity cross-fade: zero flicker, instant & butter-smooth) */}
+            {/* Bulb Option: Ideas Pitch Wall (Two-layer GPU opacity cross-fade + dual-icon scale morph) */}
             <button
               type="button"
               onClick={() => {
@@ -449,33 +515,42 @@ export const DashboardShell = ({
                 }
               }}
               title="Ideas Pitch Wall"
-              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
+              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-[0.92] transition-transform duration-100 ease-out"
             >
               {/* Default / Inactive State Layer (Fades out when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
                   (activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-0' : 'opacity-100'
                 }`}
               />
 
               {/* Active State Layer (Fades in when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
                   (activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-100' : 'opacity-0'
                 }`}
               />
 
-              {/* Lightbulb Icon (Smoothly transitions color on top) */}
-              <Lightbulb
-                size={23}
-                weight={(activeTab === 'ideas' || activeTab === 'prizes') ? 'fill' : 'regular'}
-                className={`relative z-10 transition-colors duration-150 ${
-                  (activeTab === 'ideas' || activeTab === 'prizes') ? 'text-white' : 'text-zinc-600 hover:text-zinc-900'
-                }`}
-              />
+              {/* Dual-Icon Cross-Fade: Inactive Regular Icon vs Active Fill Icon */}
+              <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
+                <Lightbulb
+                  size={23}
+                  weight="regular"
+                  className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
+                    (activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                  }`}
+                />
+                <Lightbulb
+                  size={23}
+                  weight="fill"
+                  className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
+                    (activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                  }`}
+                />
+              </div>
             </button>
 
-            {/* Map Icon on the Rightmost End (Two-layer GPU opacity cross-fade: zero flicker, instant & butter-smooth) */}
+            {/* Map Icon on the Rightmost End (Two-layer GPU opacity cross-fade + dual-icon scale morph) */}
             <button
               type="button"
               onClick={() => {
@@ -484,29 +559,37 @@ export const DashboardShell = ({
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-map'));
               }}
               title="Tactical Map"
-              className="relative w-10 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
+              className="relative w-10 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-[0.92] transition-transform duration-100 ease-out"
             >
               {/* Default / Inactive State Layer (Fades out when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
                   activeTab === 'map' ? 'opacity-0' : 'opacity-100'
                 }`}
               />
 
               {/* Active State Layer (Fades in when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 pointer-events-none ${
+                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
                   activeTab === 'map' ? 'opacity-100' : 'opacity-0'
                 }`}
               />
 
-              {/* Map Icon (Smoothly transitions color on top) */}
-              <ArenaMapIcon
-                size={27}
-                className={`relative z-10 transition-colors duration-150 ${
-                  activeTab === 'map' ? 'text-white' : 'text-zinc-600 hover:text-zinc-900'
-                }`}
-              />
+              {/* Dual-Color Cross-Fade: Inactive text-zinc-600 vs Active text-white */}
+              <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
+                <ArenaMapIcon
+                  size={27}
+                  className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
+                    activeTab === 'map' ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                  }`}
+                />
+                <ArenaMapIcon
+                  size={27}
+                  className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
+                    activeTab === 'map' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                  }`}
+                />
+              </div>
             </button>
           </div>
         </header>
