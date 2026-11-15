@@ -187,20 +187,25 @@ export const PrizeRoadModal = ({
         }`}
       />
 
-      {/* Main Prize Road Container (True 9:16 Aspect Ratio fitting viewport seamlessly) */}
+      {/* Main Prize Road Container (Locked 576:1024 Aspect-Fit Canvas) */}
       <div
-        className={`relative z-10 w-full max-w-[440px] h-[100dvh] sm:h-[94dvh] sm:max-h-[860px] aspect-[576/1024] sm:rounded-[36px] overflow-hidden flex flex-col shadow-[0_25px_80px_rgba(0,0,0,0.65)] border border-white/20 transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`relative z-10 mx-auto aspect-[576/1024] h-full max-h-[100dvh] sm:max-h-[92dvh] w-auto max-w-[100vw] sm:max-w-[480px] sm:rounded-[36px] overflow-hidden flex flex-col shadow-[0_25px_80px_rgba(0,0,0,0.65)] border border-white/20 [container-type:inline-size] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           animOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-95'
         }`}
       >
         {/* ========================================================
-            1. AUTHENTIC 3D GAME TEMPLATE ARTWORK BACKGROUND
+            1. AUTHENTIC 3D GAME TEMPLATE ARTWORK BACKGROUND (Instant WebP + Fallback)
             ======================================================== */}
-        <img
-          src="/images/prize_road_template.jpg"
-          alt="Arena Prize Road"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-        />
+        <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
+          <source srcSet="/images/prize_road_template.webp" type="image/webp" />
+          <img
+            src="/images/prize_road_template.jpg"
+            alt="Arena Prize Road"
+            className="w-full h-full block object-fill pointer-events-none select-none"
+            loading="eager"
+            decoding="async"
+          />
+        </picture>
 
         {/* ========================================================
             2. INTERACTIVE CLOSE BUTTON OVERLAY (Top-Left)
@@ -234,23 +239,23 @@ export const PrizeRoadModal = ({
                   onClick={() => setSelectedPrize(prize)}
                   className="absolute z-20 cursor-pointer group transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]"
                 >
-                  <div className="w-full h-full rounded-[18px] bg-gradient-to-r from-[#fffcf2] via-[#fffbf0] to-[#fef3c7] border border-amber-300 shadow-[0_6px_22px_rgba(245,158,11,0.3)] ring-1 ring-amber-400/25 p-2 flex items-center gap-2">
+                  <div className="w-full h-full rounded-[3.8cqw] bg-gradient-to-r from-[#fffcf2] via-[#fffbf0] to-[#fef3c7] border border-amber-300 shadow-[0_1.5cqw_4cqw_rgba(245,158,11,0.3)] ring-1 ring-amber-400/25 p-[1.8cqw] flex items-center gap-[1.8cqw]">
                     {/* Crown Icon */}
-                    <div className="w-8 h-8 rounded-xl bg-amber-100/90 border border-amber-200 flex items-center justify-center shrink-0 shadow-2xs">
-                      <span className="text-base leading-none">👑</span>
+                    <div className="w-[7.5cqw] h-[7.5cqw] rounded-[2.2cqw] bg-amber-100/90 border border-amber-200 flex items-center justify-center shrink-0 shadow-2xs">
+                      <span className="text-[3.5cqw] leading-none">👑</span>
                     </div>
 
                     {/* Text Details */}
                     <div className="min-w-0 flex-1 leading-tight">
-                      <div className="flex items-center gap-1 mb-0.5">
-                        <span className="text-[9px] font-bold px-2 py-0.2 rounded-full tracking-wide bg-[#1e1b4b] text-amber-200">
+                      <div className="flex items-center gap-[0.8cqw] mb-[0.4cqw]">
+                        <span className="text-[2.1cqw] font-bold px-[1.8cqw] py-[0.2cqw] rounded-full tracking-wide bg-[#1e1b4b] text-amber-200">
                           Stage 8
                         </span>
                       </div>
-                      <h4 className="font-black tracking-tight text-indigo-950 text-[11px] truncate">
+                      <h4 className="font-black tracking-tight text-indigo-950 text-[2.7cqw] truncate">
                         Grand Prize
                       </h4>
-                      <p className="text-[9px] font-bold text-amber-800/80 truncate -mt-0.5">
+                      <p className="text-[2.1cqw] font-bold text-amber-800/80 truncate -mt-[0.2cqw]">
                         VIP Incubation Access
                       </p>
                     </div>
@@ -265,7 +270,7 @@ export const PrizeRoadModal = ({
                 key={prize.id}
                 style={slot.style}
                 onClick={() => setSelectedPrize(prize)}
-                className="absolute z-20 cursor-pointer group flex items-center px-2 py-1.5 transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="absolute z-20 cursor-pointer group flex items-center px-[1.5cqw] py-[0.8cqw] transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
               >
                 {/* Left: Thumbnail Icon positioned over the pre-rendered square */}
                 <div className="w-[24%] max-w-[34px] aspect-square flex items-center justify-center shrink-0">
@@ -273,15 +278,15 @@ export const PrizeRoadModal = ({
                 </div>
 
                 {/* Middle: Stage Badge, Title, Points */}
-                <div className="min-w-0 flex-1 pl-1.5 leading-tight">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full tracking-wide bg-[#4c1d95] text-white">
+                <div className="min-w-0 flex-1 pl-[1.2cqw] leading-tight">
+                  <div className="flex items-center gap-[0.8cqw] mb-[0.2cqw]">
+                    <span className="text-[2.1cqw] font-bold px-[1.5cqw] py-[0.1cqw] rounded-full tracking-wide bg-[#4c1d95] text-white">
                       {prize.badgeText}
                     </span>
 
                     {/* Lock Icon for locked stages */}
                     {!isUnlocked && (
-                      <Lock size={10} weight="bold" className="text-zinc-400 shrink-0 ml-auto mr-1" />
+                      <Lock size={11} weight="bold" className="text-zinc-400 shrink-0 ml-auto mr-[0.5cqw]" />
                     )}
                   </div>
 
@@ -289,8 +294,8 @@ export const PrizeRoadModal = ({
                   <h4
                     className={`font-black tracking-tight truncate ${
                       prize.title.length > 16
-                        ? 'text-[8.5px] sm:text-[9px] text-zinc-900'
-                        : 'text-[10px] sm:text-[10.5px] text-zinc-900'
+                        ? 'text-[2.2cqw] text-zinc-900'
+                        : 'text-[2.5cqw] text-zinc-900'
                     }`}
                   >
                     {prize.title}
@@ -298,7 +303,7 @@ export const PrizeRoadModal = ({
 
                   {/* Subtitle / Points */}
                   {prize.subtitle && (
-                    <p className="text-[8.5px] font-bold text-zinc-400 truncate -mt-0.5">
+                    <p className="text-[2.1cqw] font-bold text-zinc-500 truncate -mt-[0.2cqw]">
                       {prize.subtitle}
                     </p>
                   )}
@@ -306,8 +311,8 @@ export const PrizeRoadModal = ({
 
                 {/* Right: Green Checkmark for Unlocked Stages */}
                 {isUnlocked && (
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs mr-1">
-                    <CheckCircle size={15} weight="fill" className="text-white" />
+                  <div className="w-[4.8cqw] h-[4.8cqw] rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs mr-[0.5cqw]">
+                    <CheckCircle size={14} weight="fill" className="text-white" />
                   </div>
                 )}
               </div>
@@ -318,17 +323,17 @@ export const PrizeRoadModal = ({
         {/* ========================================================
             4. FLOATING BOTTOM TELEMETRY PROGRESS PILL
             ======================================================== */}
-        <div className="absolute bottom-3 sm:bottom-4 left-0 right-0 z-30 flex justify-center pointer-events-none px-4">
-          <div className="pointer-events-auto rounded-full bg-white/95 backdrop-blur-md shadow-[0_8px_24px_rgba(76,29,149,0.25)] px-5 py-2 border border-white/90 flex flex-col items-center justify-center gap-1 w-[280px] sm:w-[300px]">
+        <div className="absolute bottom-[2.5cqw] sm:bottom-[3.5cqw] left-0 right-0 z-30 flex justify-center pointer-events-none px-[3cqw]">
+          <div className="pointer-events-auto rounded-full bg-white/95 backdrop-blur-md shadow-[0_8px_24px_rgba(76,29,149,0.25)] px-[4cqw] py-[1.8cqw] border border-white/90 flex flex-col items-center justify-center gap-[0.8cqw] w-[72cqw] max-w-[320px]">
             {/* Telemetry Text: "Stage 2 of 8 • 300 / 1,000 PTS" */}
-            <div className="text-[11.5px] font-bold text-zinc-900 tracking-normal flex items-center gap-1.5 font-sans">
+            <div className="text-[2.6cqw] font-bold text-zinc-900 tracking-normal flex items-center gap-[1cqw] font-sans">
               <span>Stage {progress.currentStage} of {progress.totalStages}</span>
               <span className="text-zinc-400">•</span>
               <span className="text-purple-700 font-extrabold">{progress.currentPoints} / {progress.nextTargetPoints.toLocaleString()} PTS</span>
             </div>
 
             {/* Smooth Purple Gradient Progress Bar */}
-            <div className="w-full h-1.5 rounded-full bg-purple-100 overflow-hidden shadow-inner">
+            <div className="w-full h-[1.2cqw] min-h-[5px] rounded-full bg-purple-100 overflow-hidden shadow-inner">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 transition-all duration-500 ease-out shadow-xs"
                 style={{ width: `${progress.progressPercent}%` }}

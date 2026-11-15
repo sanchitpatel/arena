@@ -28,6 +28,10 @@ const prefetchDashboard = () => {
     import('./ScannerView');
     import('./MapView');
     import('./IdeasPitchWallView');
+
+    // Warm up critical visual assets into browser memory cache for 0ms paint
+    const img = new Image();
+    img.src = '/images/prize_road_template.webp';
   }, { timeout: 1000 });
 };
 
