@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { LoginView } from './LoginView';
+import { FrostMountainBackground } from '../common/FrostMountainBackground';
 import { CircleNotch } from '@phosphor-icons/react/dist/icons/CircleNotch';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 
@@ -38,13 +39,19 @@ const prefetchDashboard = () => {
 };
 
 /**
- * Minimal Loading Screen: Simple slate-400 spinner in the center.
- * Uses fixed inset-0 to perfectly cover the entire mobile viewport with zero gaps or black peeks.
+ * Arena Loading Screen:
+ * Renders the authentic frost mountain background with an animated sky-blue spinner in the center.
+ * Eliminates plain white/gray flash on route transitions or cold loads.
  */
 function ArenaLoadingScreen() {
   return (
-    <div className="fixed inset-0 z-50 w-full h-full bg-[#f0f2f5] flex items-center justify-center select-none">
-      <CircleNotch size={32} className="animate-spin text-slate-400" />
+    <div className="fixed inset-0 z-50 w-full h-full flex items-center justify-center select-none overflow-hidden">
+      {/* Authentic Frost Mountain & Crystal Theme Backdrop */}
+      <FrostMountainBackground />
+
+      <div className="relative z-10 flex flex-col items-center justify-center gap-3">
+        <CircleNotch size={38} className="animate-spin text-sky-500" />
+      </div>
     </div>
   );
 }

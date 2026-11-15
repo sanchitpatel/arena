@@ -28,7 +28,10 @@
     <meta property="og:description" content="Join the live Arena game from your smartphone. Real-time gameplay, instant score sync, and live event leaderboard." />
   </head>
   <body class="bg-[#e4f0fa] text-zinc-900 antialiased selection:bg-white/20 selection:text-white">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Instant pre-hydration splash to eliminate plain white flash on cold load -->
+      <div style="position:fixed;inset:0;background:url('/images/arena-bg.webp') center/cover no-repeat;z-index:0;"></div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -510,8 +510,8 @@ export const DashboardShell = ({
           3. MAIN CONTENT WORKSPACE
           ======================================================== */}
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-y-scroll [scrollbar-gutter:stable] pb-20 md:pb-0 relative">
-        {/* Authentic Frost Mountain & Crystal Theme Backdrop */}
-        <FrostMountainBackground hasSidebar={true} />
+        {/* Authentic Frost Mountain & Crystal Theme Backdrop (Clamped to prevent occlusion by nav bars) */}
+        <FrostMountainBackground hasSidebar={true} clampToBars={true} />
 
         {/* ========================================================
             TOP TRANSPARENT APP BAR (Fixed height, zero jump / zero scale on click)
