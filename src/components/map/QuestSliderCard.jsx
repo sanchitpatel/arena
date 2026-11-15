@@ -191,7 +191,7 @@ export const QuestSliderCard = ({
       {/* Full-Screen Focus Scrim (At z-[35], so top header and bottom nav at z-40 sit above it completely unblurred) */}
       <div
         onClick={animateDismiss}
-        className={`fixed inset-0 z-[35] bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto cursor-pointer' : 'opacity-0 pointer-events-none'
+        className={`fixed inset-0 z-[35] bg-black/10 backdrop-blur-[3px] transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto cursor-pointer' : 'opacity-0 pointer-events-none'
           }`}
       />
 
@@ -203,7 +203,7 @@ export const QuestSliderCard = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+5.25rem)] min-h-[335px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-t-[28px] sm:rounded-t-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6,0_-12px_36px_rgba(197,204,214,0.7)] p-4 sm:p-4.5 pt-1.5 pb-20 md:pb-5 md:mb-5 select-none touch-pan-y flex flex-col justify-between"
+          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+5.25rem)] min-h-[335px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-t-[28px] sm:rounded-t-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] p-4 sm:p-4.5 pt-1.5 pb-20 md:pb-5 md:mb-5 select-none touch-pan-y flex flex-col justify-between"
           style={cardStyle}
         >
           {/* Top Section: Drag Handle & Header */}
