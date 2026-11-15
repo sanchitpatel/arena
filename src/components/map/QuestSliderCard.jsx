@@ -93,7 +93,7 @@ export const QuestSliderCard = ({
 
       const timer = setTimeout(() => {
         setDisplayedQuest(null);
-      }, 190);
+      }, 310);
       return () => clearTimeout(timer);
     }
   }, [quest]);
@@ -107,7 +107,7 @@ export const QuestSliderCard = ({
     setTimeout(() => {
       onClose?.();
       setDisplayedQuest(null);
-    }, 190);
+    }, 310);
   };
 
   // Close on Escape key
@@ -221,20 +221,19 @@ export const QuestSliderCard = ({
 
   if (!activeQuest) return null;
 
-  // Determine transform and transition styles dynamically: snappy Apple iOS drawer curves
+  // Determine transform and transition styles dynamically: gradual, physical drawer curves
   const cardStyle = isDragging
     ? {
-      transform: `translateY(${dragOffset}px) scale(1)`,
+      transform: `translateY(${dragOffset}px)`,
       transition: 'none',
       willChange: 'transform',
     }
     : {
-      transform: isOpen ? 'translateY(0px) scale(1)' : 'translateY(112%) scale(0.98)',
-      opacity: isOpen ? 1 : 0.95,
+      transform: isOpen ? 'translateY(0px)' : 'translateY(115%)',
       transition: isOpen
-        ? 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out'
-        : 'transform 180ms cubic-bezier(0.25, 1, 0.5, 1), opacity 180ms ease-in',
-      willChange: 'transform, opacity',
+        ? 'transform 320ms cubic-bezier(0.16, 1, 0.3, 1)'
+        : 'transform 300ms cubic-bezier(0.36, 0.66, 0.04, 1)',
+      willChange: 'transform',
     };
 
   return (
@@ -244,8 +243,8 @@ export const QuestSliderCard = ({
         onClick={animateDismiss}
         className={`fixed inset-0 z-[35] bg-black/15 backdrop-blur-[1px] touch-none select-none overscroll-none will-change-[opacity] ${
           isOpen
-            ? 'opacity-100 pointer-events-auto cursor-pointer transition-opacity duration-200 ease-out'
-            : 'opacity-0 pointer-events-none transition-opacity duration-180 ease-out'
+            ? 'opacity-100 pointer-events-auto cursor-pointer transition-opacity duration-300 ease-out'
+            : 'opacity-0 pointer-events-none transition-opacity duration-280 ease-out'
         }`}
       />
 
