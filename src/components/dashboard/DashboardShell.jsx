@@ -719,9 +719,10 @@ export const DashboardShell = ({
         onClick={() => setPrizeRoadOpen(true)}
         currentStage={prizeProgress.currentStage}
         unclaimedCount={prizeProgress.currentStage > 0 ? 0 : 1}
+        className={prizeRoadOpen ? 'opacity-0 pointer-events-none scale-90 transition-all duration-200' : 'opacity-100 scale-100 transition-all duration-200'}
       />
 
-      {/* Candy Crush-Style Serpentine Prize Road Modal */}
+      {/* Tactile Mobile Prize Slider Card (Identical architecture to QuestSliderCard) */}
       <PrizeRoadModal
         isOpen={prizeRoadOpen}
         onClose={() => setPrizeRoadOpen(false)}
