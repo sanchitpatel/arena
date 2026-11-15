@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {
   CheckCircle,
@@ -22,6 +22,9 @@ import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import { OrbHeadingBeam, CompassToolbarButton, useDeviceHeading } from '../map/OrbHeadingBeam';
 import { QuestSliderCard } from '../map/QuestSliderCard';
 import { getInAppPermission, subscribeToPermissionChanges, isIosDevice } from '../../utils/mediaGuard';
+import { PrizeFloatingButton } from '../prizes/PrizeFloatingButton';
+import { PrizeRoadModal } from '../prizes/PrizeRoadModal';
+import { calculatePrizeProgress } from '../../data/prizesData';
 
 /**
  * 6 Fixed Quest Locations on the Incubation Lab Floorplan
@@ -261,6 +264,24 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
       return [];
     }
   });
+
+  // Calculate total points earned by player from completed quests
+  const totalEarnedPoints = useMemo(() => {
+    return completedQuestIds.reduce((sum, id) => {
+      const task = MAP_TASKS.find((t) => t.id === id);
+      return sum + (task?.points || 0);
+    }, 0);
+  }, [completedQuestIds]);
+
+  const [prizeRoadOpen, setPrizeRoadOpen] = useState(false);
+  const prizeProgress = useMemo(() => calculatePrizeProgress(totalEarnedPoints), [totalEarnedPoints]);
+
+  // Global listener for opening prizes from header or elsewhere
+  useEffect(() => {
+    const handleOpenPrizes = () => setPrizeRoadOpen(true);
+    window.addEventListener('arena:open-prizes', handleOpenPrizes);
+    return () => window.removeEventListener('arena:open-prizes', handleOpenPrizes);
+  }, []);
 
   // Attendee Orb position on the map (defaults to Central Hallway)
   const [orbPosition, setOrbPosition] = useState({
@@ -627,6 +648,21 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
         onClose={() => setSelectedQuest(null)}
         onNavigate={onNavigate}
         onComplete={handleCompleteQuest}
+      />
+
+      {/* Industry Game-Standard Floating Prize Road Button (Bottom-Right Corner) */}
+      <PrizeFloatingButton
+        onClick={() => setPrizeRoadOpen(true)}
+        currentStage={prizeProgress.currentStage}
+        unclaimedCount={prizeProgress.currentStage > 0 ? 0 : 1}
+      />
+
+      {/* Candy Crush-Style Serpentine Prize Road Modal (Bottom to Top) */}
+      <PrizeRoadModal
+        isOpen={prizeRoadOpen}
+        onClose={() => setPrizeRoadOpen(false)}
+        player={player}
+        totalPoints={totalEarnedPoints}
       />
     </div>
   );
