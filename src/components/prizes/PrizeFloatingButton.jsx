@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Trophy } from '../icons';
+
+const STORAGE_KEY_POS = 'arena_prize_button_pos_v1';
 
 /**
  * PrizeFloatingButton Component:
- * Industry game-standard floating action button (FAB) in the bottom-right corner.
- * Features machined double-bezel hardware layering, a glowing golden trophy emblem,
- * tactile spring physics, and an overhanging "PRIZES" brand badge.
+ * Industry game-standard floating action button (FAB) for the Arena Prize Road.
+ * Features:
+ * - Default position: bottom-right corner (above mobile bottom bar, right edge).
+ * - Fully Draggable: touch and mouse gestures allow attendees to place it anywhere on screen.
+ * - Viewport bounds clamping: never clips or gets dragged off-screen.
+ * - Double-click / double-tap to reset to default corner position.
+ * - Tap vs. Drag discrimination (6px threshold) so clicks reliably open the Prize Road modal.
+ * - Machined double-bezel hardware layering, glowing golden trophy, and "PRIZES" brand badge.
  */
 export const PrizeFloatingButton = ({
   onClick,
@@ -13,19 +20,242 @@ export const PrizeFloatingButton = ({
   currentStage = 1,
   className = '',
 }) => {
+  const containerRef = useRef(null);
+  const cleanupListenersRef = useRef(null);
+  const lastTapTimeRef = useRef(0);
+
+  // Position: null means default responsive CSS position (bottom-20 right-3.5 etc.)
+  const [position, setPosition] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY_POS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          return parsed;
+        }
+      }
+    } catch {}
+    return null;
+  });
+
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Mutable refs to track drag state without triggering excessive re-renders
+  const dragRef = useRef({
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0,
+    hasMoved: false,
+    active: false,
+  });
+
+  const hasDraggedRef = useRef(false);
+
+  // Viewport clamping utility
+  const getClampedPosition = useCallback((x, y) => {
+    const el = containerRef.current;
+    const width = el?.offsetWidth || 64;
+    const height = el?.offsetHeight || 72;
+    const pad = 10;
+    const maxX = Math.max(pad, window.innerWidth - width - pad);
+    const maxY = Math.max(pad, window.innerHeight - height - pad);
+    return {
+      x: Math.min(Math.max(x, pad), maxX),
+      y: Math.min(Math.max(y, pad), maxY),
+    };
+  }, []);
+
+  // Handle window resize: clamp position so it never goes off-screen
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition((prev) => {
+        if (!prev) return null;
+        const clamped = getClampedPosition(prev.x, prev.y);
+        if (clamped.x === prev.x && clamped.y === prev.y) return prev;
+        return clamped;
+      });
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [getClampedPosition]);
+
+  // Clean up any lingering drag listeners on component unmount
+  useEffect(() => {
+    return () => {
+      if (cleanupListenersRef.current) {
+        cleanupListenersRef.current();
+      }
+    };
+  }, []);
+
+  // Pointer down: initiate gesture tracking
+  const handlePointerDown = (e) => {
+    // Only primary mouse button (0) or touch
+    if (e.button !== undefined && e.button !== 0) return;
+
+    const el = containerRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    const currentX = position ? position.x : rect.left;
+    const currentY = position ? position.y : rect.top;
+
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: currentX,
+      originY: currentY,
+      hasMoved: false,
+      active: true,
+    };
+
+    const handlePointerMove = (moveEvent) => {
+      const state = dragRef.current;
+      if (!state.active) return;
+
+      const deltaX = moveEvent.clientX - state.startX;
+      const deltaY = moveEvent.clientY - state.startY;
+      const distance = Math.hypot(deltaX, deltaY);
+
+      // 6px threshold to distinguish tap vs deliberate drag
+      if (distance > 6) {
+        if (!state.hasMoved) {
+          state.hasMoved = true;
+          hasDraggedRef.current = true;
+          setIsDragging(true);
+        }
+
+        const nextX = state.originX + deltaX;
+        const nextY = state.originY + deltaY;
+        const clamped = getClampedPosition(nextX, nextY);
+
+        setPosition(clamped);
+      }
+    };
+
+    const handlePointerUp = () => {
+      const state = dragRef.current;
+      if (!state.active) return;
+
+      if (cleanupListenersRef.current) {
+        cleanupListenersRef.current();
+        cleanupListenersRef.current = null;
+      }
+
+      const didDrag = state.hasMoved;
+      state.active = false;
+      setIsDragging(false);
+
+      if (didDrag) {
+        // Save dragged coordinates in localStorage
+        setPosition((latest) => {
+          if (latest) {
+            try {
+              window.localStorage.setItem(STORAGE_KEY_POS, JSON.stringify(latest));
+            } catch {}
+          }
+          return latest;
+        });
+
+        // Keep hasDraggedRef true briefly to swallow the immediate synthetic click
+        setTimeout(() => {
+          hasDraggedRef.current = false;
+        }, 140);
+      } else {
+        hasDraggedRef.current = false;
+
+        // Double-tap reset gesture detection for touch devices
+        const now = Date.now();
+        if (now - lastTapTimeRef.current < 320) {
+          // Double-tap detected: smoothly reset position to default corner
+          lastTapTimeRef.current = 0;
+          try {
+            window.localStorage.removeItem(STORAGE_KEY_POS);
+          } catch {}
+          setPosition(null);
+          return;
+        }
+        lastTapTimeRef.current = now;
+      }
+    };
+
+    cleanupListenersRef.current = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+  };
+
+  const handleButtonClick = (e) => {
+    if (hasDraggedRef.current || isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onClick?.();
+  };
+
+  const handleDoubleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      window.localStorage.removeItem(STORAGE_KEY_POS);
+    } catch {}
+    setPosition(null);
+  };
+
+  // Determine fixed positioning:
+  // If position is null: use responsive bottom-right Tailwind classes
+  // If position is set: use inline top/left coordinates
+  const positionClasses = position ? '' : 'bottom-20 right-3.5 sm:right-6 md:bottom-6 md:right-8';
+  const positionStyle = position
+    ? {
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        bottom: 'auto',
+        right: 'auto',
+      }
+    : undefined;
+
   return (
     <div
-      className={`fixed bottom-20 right-3.5 sm:right-6 md:bottom-6 md:right-8 z-40 select-none ${className}`}
+      ref={containerRef}
+      onPointerDown={handlePointerDown}
+      onDoubleClick={handleDoubleClick}
+      style={{
+        ...positionStyle,
+        touchAction: 'none',
+      }}
+      className={`fixed z-[45] select-none touch-none ${positionClasses} ${
+        isDragging
+          ? 'cursor-grabbing scale-105 transition-none'
+          : 'cursor-grab transition-transform duration-150'
+      } ${className}`}
     >
       <button
         type="button"
-        onClick={onClick}
-        title="View Arena Prize Road & Milestones"
+        onClick={handleButtonClick}
+        title="Arena Prize Road & Milestones (Drag to reposition anywhere • Double-tap to reset)"
         aria-label="Open Prize Road"
-        className="group relative flex flex-col items-center justify-center cursor-pointer outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-90 transition-transform duration-150 ease-out"
+        className={`group relative flex flex-col items-center justify-center outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab active:scale-95'
+        } transition-transform duration-150 ease-out`}
       >
         {/* Outer Machined Neumorphic Bezel Shell */}
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] sm:rounded-[24px] bg-[#ebedf2] p-1 shadow-[4px_4px_12px_#b8c2d0,-4px_-4px_12px_#ffffff] border border-white/90 transition-shadow duration-200 group-hover:shadow-[6px_6px_16px_#b0bccb,-6px_-6px_16px_#ffffff]">
+        <div
+          className={`w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] sm:rounded-[24px] bg-[#ebedf2] p-1 border border-white/90 transition-all duration-200 ${
+            isDragging
+              ? 'shadow-[0_16px_36px_rgba(0,0,0,0.38),0_4px_12px_rgba(245,158,11,0.3)] ring-2 ring-amber-400/70 ring-offset-2 ring-offset-black/20'
+              : 'shadow-[4px_4px_12px_#b8c2d0,-4px_-4px_12px_#ffffff] group-hover:shadow-[6px_6px_16px_#b0bccb,-6px_-6px_16px_#ffffff]'
+          }`}
+        >
           {/* Inner Deep Obsidian & Titanium Core */}
           <div className="w-full h-full rounded-[18px] sm:rounded-[20px] bg-gradient-to-b from-zinc-900 to-black flex flex-col items-center justify-center relative overflow-hidden border border-zinc-800/90 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.35),inset_0_2px_5px_rgba(255,255,255,0.4)]">
             {/* Ambient Warm Golden Aura (Breathing pulse) */}

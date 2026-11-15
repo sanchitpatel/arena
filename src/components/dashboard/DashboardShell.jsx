@@ -1,10 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X, ArenaMapIcon, CurrencyCircleDollar, Lightbulb } from '../icons';
 import Logo from '../Logo';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
 import NotificationSliderCard from './NotificationSliderCard';
+import { PrizeFloatingButton } from '../prizes/PrizeFloatingButton';
+import { PrizeRoadModal } from '../prizes/PrizeRoadModal';
+import { calculatePrizeProgress } from '../../data/prizesData';
+import { MAP_TASKS } from './MapView';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import {
   getPendingNotificationCount,
@@ -33,6 +37,66 @@ export const DashboardShell = ({
   const isNotificationOpen = propNotificationOpen !== undefined ? propNotificationOpen : internalNotificationOpen;
   const toggleNotification = propToggleNotification || (() => setInternalNotificationOpen((prev) => !prev));
   const closeNotification = propCloseNotification || (() => setInternalNotificationOpen(false));
+
+  // Global Prize Road Modal State
+  const [prizeRoadOpen, setPrizeRoadOpen] = useState(false);
+
+  // Bonus points earned from completed map tasks
+  const [questBonusPoints, setQuestBonusPoints] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    try {
+      const stored = window.localStorage.getItem('arena_completed_map_tasks');
+      if (!stored) return 0;
+      const ids = JSON.parse(stored);
+      return ids.reduce((sum, id) => {
+        const task = MAP_TASKS.find((t) => t.id === id);
+        return sum + (task?.points || 0);
+      }, 0);
+    } catch {
+      return 0;
+    }
+  });
+
+  // Synchronize quest completion across views & storage events
+  useEffect(() => {
+    const updateQuestPoints = () => {
+      try {
+        const stored = window.localStorage.getItem('arena_completed_map_tasks');
+        if (!stored) {
+          setQuestBonusPoints(0);
+          return;
+        }
+        const ids = JSON.parse(stored);
+        const points = ids.reduce((sum, id) => {
+          const task = MAP_TASKS.find((t) => t.id === id);
+          return sum + (task?.points || 0);
+        }, 0);
+        setQuestBonusPoints(points);
+      } catch {}
+    };
+
+    window.addEventListener('storage', updateQuestPoints);
+    window.addEventListener('arena:tasks-updated', updateQuestPoints);
+    return () => {
+      window.removeEventListener('storage', updateQuestPoints);
+      window.removeEventListener('arena:tasks-updated', updateQuestPoints);
+    };
+  }, []);
+
+  // Compute total points & prize progression
+  const totalPoints = useMemo(() => {
+    const base = player?.total_points || 300;
+    return base + questBonusPoints;
+  }, [player?.total_points, questBonusPoints]);
+
+  const prizeProgress = useMemo(() => calculatePrizeProgress(totalPoints), [totalPoints]);
+
+  // Global listener for opening prizes from header button or anywhere in app
+  useEffect(() => {
+    const handleOpenPrizes = () => setPrizeRoadOpen(true);
+    window.addEventListener('arena:open-prizes', handleOpenPrizes);
+    return () => window.removeEventListener('arena:open-prizes', handleOpenPrizes);
+  }, []);
 
   // Player identity fallback resolution
   const guestId = player?.guest_id || getPlayerId() || 'Guest001';
@@ -649,6 +713,21 @@ export const DashboardShell = ({
             onTabChange(tab);
           }
         }}
+      />
+
+      {/* Draggable Prize Road Floating Action Button (Universal across all tabs) */}
+      <PrizeFloatingButton
+        onClick={() => setPrizeRoadOpen(true)}
+        currentStage={prizeProgress.currentStage}
+        unclaimedCount={prizeProgress.currentStage > 0 ? 0 : 1}
+      />
+
+      {/* Candy Crush-Style Serpentine Prize Road Modal */}
+      <PrizeRoadModal
+        isOpen={prizeRoadOpen}
+        onClose={() => setPrizeRoadOpen(false)}
+        player={player}
+        totalPoints={totalPoints}
       />
     </div>
   );
