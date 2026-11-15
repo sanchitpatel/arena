@@ -9,6 +9,7 @@ const NewPatientView = lazy(() => import('./NewPatientView').then(m => ({ defaul
 const ExistingPatientView = lazy(() => import('./ExistingPatientView').then(m => ({ default: m.ExistingPatientView })));
 const DoctorDashboardView = lazy(() => import('./DoctorDashboardView').then(m => ({ default: m.DoctorDashboardView })));
 const NotificationView = lazy(() => import('./NotificationView').then(m => ({ default: m.NotificationView })));
+const NotificationSliderCard = lazy(() => import('./NotificationSliderCard').then(m => ({ default: m.NotificationSliderCard })));
 const ProfileView = lazy(() => import('./ProfileView').then(m => ({ default: m.ProfileView })));
 const ScannerView = lazy(() => import('./ScannerView').then(m => ({ default: m.ScannerView })));
 const MapView = lazy(() => import('./MapView').then(m => ({ default: m.MapView })));
@@ -120,6 +121,20 @@ export default function DashboardApp() {
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(null);
+
+  // Track previous content tab so opening notification slider keeps underlying view visible behind scrim
+  const [lastBaseTab, setLastBaseTab] = useState(() => {
+    const initial = parsePathToTab(typeof window !== 'undefined' ? window.location.pathname : '');
+    return initial !== 'notifications' ? initial : ROOT_TAB;
+  });
+
+  useEffect(() => {
+    if (activeTab !== 'notifications') {
+      setLastBaseTab(activeTab);
+    }
+  }, [activeTab]);
+
+  const currentVisibleTab = activeTab === 'notifications' ? lastBaseTab : activeTab;
 
   // Silently warm up dashboard chunks while player types nickname/chooses avatar
   useEffect(() => {
@@ -241,50 +256,56 @@ export default function DashboardApp() {
         player={player}
         onSignOut={handleSignOut}
       >
-        <div className={activeTab === 'new-patient' ? 'block' : 'hidden'}>
+        <div className={currentVisibleTab === 'new-patient' ? 'block' : 'hidden'}>
           <NewPatientView onNavigate={handleTabChange} />
         </div>
-        <div className={activeTab === 'existing-patient' ? 'block' : 'hidden'}>
+        <div className={currentVisibleTab === 'existing-patient' ? 'block' : 'hidden'}>
           <ExistingPatientView
             selectedMonth={selectedMonth}
             onSelectMonth={handleSelectMonth}
           />
         </div>
-        <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
+        <div className={currentVisibleTab === 'dashboard' ? 'block' : 'hidden'}>
           <DoctorDashboardView
             selectedDate={selectedDate}
             onSelectDate={handleSelectDate}
           />
         </div>
-        <div className={activeTab === 'notifications' ? 'block' : 'hidden'}>
-          <NotificationView />
-        </div>
-        <div className={activeTab === 'profile' ? 'block' : 'hidden'}>
+        <div className={currentVisibleTab === 'profile' ? 'block' : 'hidden'}>
           <ProfileView
             player={player}
             onUpdatePlayer={(updated) => setPlayer((prev) => ({ ...prev, ...updated }))}
             onSignOut={handleSignOut}
           />
         </div>
-        <div className={activeTab === 'scanner' ? 'block' : 'hidden'}>
+        <div className={currentVisibleTab === 'scanner' ? 'block' : 'hidden'}>
           <ScannerView
             player={player}
             onNavigate={handleTabChange}
-            isActive={activeTab === 'scanner'}
+            isActive={currentVisibleTab === 'scanner'}
           />
         </div>
-        <div className={activeTab === 'map' ? 'block' : 'hidden'}>
+        <div className={currentVisibleTab === 'map' ? 'block' : 'hidden'}>
           <MapView
             player={player}
             onNavigate={handleTabChange}
-            isActive={activeTab === 'map'}
+            isActive={currentVisibleTab === 'map'}
           />
         </div>
-        <div className={(activeTab === 'ideas' || activeTab === 'prizes') ? 'block' : 'hidden'}>
+        <div className={(currentVisibleTab === 'ideas' || currentVisibleTab === 'prizes') ? 'block' : 'hidden'}>
           <IdeasPitchWallView
             player={player}
           />
         </div>
+
+        {/* Top-Down Notification Slider Card (Slides down from behind top nav bar) */}
+        {activeTab === 'notifications' && (
+          <NotificationSliderCard
+            isOpen={activeTab === 'notifications'}
+            onClose={() => handleTabChange(lastBaseTab || 'new-patient')}
+            onNavigate={handleTabChange}
+          />
+        )}
       </DashboardShell>
     </Suspense>
   );
