@@ -595,11 +595,11 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                         {/* Google Maps-style Flashlight Heading Beam (Internal smooth GPU rotation) */}
                         <OrbHeadingBeam isActive={isCompassActive} />
 
-                        {/* Ground Shadow & Atmospheric Glow Aura */}
+                        {/* Ground Shadow & Atmospheric Glow Aura (Equal size as the Orb) */}
                         <div
-                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full pointer-events-none animate-pulse"
+                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full pointer-events-none animate-pulse"
                           style={{
-                            background: 'radial-gradient(circle, rgba(56, 189, 248, 0.45) 0%, rgba(56, 189, 248, 0.15) 50%, transparent 75%)',
+                            background: 'radial-gradient(circle, rgba(56, 189, 248, 0.4) 0%, rgba(56, 189, 248, 0.15) 65%, transparent 100%)',
                             willChange: 'opacity',
                           }}
                         />

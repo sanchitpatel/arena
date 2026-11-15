@@ -255,10 +255,10 @@ export function OrbHeadingBeam({ heading: externalHeading, isActive = false, bui
             <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
           </linearGradient>
 
-          {/* Secondary Soft Ambient Radial Bloom */}
-          <radialGradient id="orb-beam-radial" cx="80" cy="80" r="75" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.5" />
-            <stop offset="60%" stopColor="#0ea5e9" stopOpacity="0.15" />
+          {/* Secondary Soft Ambient Radial Bloom (Fitted to Orb Size) */}
+          <radialGradient id="orb-beam-radial" cx="80" cy="80" r="21" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.45" />
+            <stop offset="65%" stopColor="#0ea5e9" stopOpacity="0.15" />
             <stop offset="100%" stopColor="#0284c7" stopOpacity="0" />
           </radialGradient>
 
@@ -268,8 +268,8 @@ export function OrbHeadingBeam({ heading: externalHeading, isActive = false, bui
           </filter>
         </defs>
 
-        {/* 1. Ambient Glow Base Halo */}
-        <circle cx="80" cy="80" r="28" fill="url(#orb-beam-radial)" />
+        {/* 1. Ambient Glow Base Halo (Matches Orb Circumference) */}
+        <circle cx="80" cy="80" r="21" fill="url(#orb-beam-radial)" />
 
         {/* 2. Soft Blurred Outer Beam for Atmospheric Haze */}
         <path
@@ -285,21 +285,21 @@ export function OrbHeadingBeam({ heading: externalHeading, isActive = false, bui
           fill="url(#orb-beam-gradient)"
         />
 
-        {/* 4. Center Forward Needle / Ray */}
+        {/* 4. Center Forward Needle / Ray (Crisp White Heading Line) */}
         <line
           x1="80"
           y1="80"
           x2="80"
           y2="20"
-          stroke="#7dd3fc"
+          stroke="#ffffff"
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeDasharray="2 4"
-          opacity="0.7"
+          opacity="0.95"
         />
 
-        {/* 5. Forward Tip Pointer Dot */}
-        <circle cx="80" cy="18" r="2" fill="#e0f2fe" opacity="0.9" />
+        {/* 5. Forward Tip Pointer Dot (White) */}
+        <circle cx="80" cy="18" r="2" fill="#ffffff" opacity="0.95" />
       </svg>
     </div>
   );
