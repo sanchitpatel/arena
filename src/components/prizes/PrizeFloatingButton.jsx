@@ -1,7 +1,168 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Trophy } from '../icons';
+import { Sparkle } from '../icons';
 
 const STORAGE_KEY_POS = 'arena_prize_button_pos_v2';
+
+/**
+ * 3D Royal Reward Chest Icon (Vector Masterwork):
+ * Specifically crafted to match the Arena Prize Road theme:
+ * - Rich Royal Purple & Violet Vaulted Hull (#7c3aed, #9333ea, #581c87)
+ * - 24K Polished Golden Reinforced Straps & Rim (#fde047, #f59e0b, #78350f)
+ * - Radiant Diamond Starburst erupting from the chest seam
+ * - Polished Center Escutcheon with an embedded faceted Amethyst Gem
+ * - High-clarity silhouette that is instantly recognizable as prizes/rewards in one glance.
+ */
+export const RewardChestIcon = ({ className = 'w-8 h-8 sm:w-8.5 sm:h-8.5' }) => (
+  <svg
+    viewBox="0 0 36 36"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <defs>
+      {/* Soft Golden Ambient Light */}
+      <radialGradient id="rc-glow" cx="50%" cy="40%" r="50%">
+        <stop offset="0%" stopColor="#fde047" stopOpacity="0.8" />
+        <stop offset="50%" stopColor="#f59e0b" stopOpacity="0.3" />
+        <stop offset="100%" stopColor="#c084fc" stopOpacity="0" />
+      </radialGradient>
+
+      {/* Polished 24K Gold Hardware */}
+      <linearGradient id="rc-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fffbeb" />
+        <stop offset="25%" stopColor="#fde047" />
+        <stop offset="60%" stopColor="#d97706" />
+        <stop offset="100%" stopColor="#78350f" />
+      </linearGradient>
+
+      {/* Horizontal Seam Gold */}
+      <linearGradient id="rc-gold-rim" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="30%" stopColor="#fde047" />
+        <stop offset="70%" stopColor="#d97706" />
+        <stop offset="100%" stopColor="#451a03" />
+      </linearGradient>
+
+      {/* Domed Lid Royal Purple */}
+      <linearGradient id="rc-lid" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#d8b4fe" />
+        <stop offset="30%" stopColor="#9333ea" />
+        <stop offset="75%" stopColor="#6b21a8" />
+        <stop offset="100%" stopColor="#4c1d95" />
+      </linearGradient>
+
+      {/* Lower Hull Velvet Violet */}
+      <linearGradient id="rc-body" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#7c3aed" />
+        <stop offset="50%" stopColor="#581c87" />
+        <stop offset="100%" stopColor="#3b0764" />
+      </linearGradient>
+
+      {/* Amethyst Gem Core */}
+      <linearGradient id="rc-gem" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="40%" stopColor="#d8b4fe" />
+        <stop offset="80%" stopColor="#9333ea" />
+        <stop offset="100%" stopColor="#581c87" />
+      </linearGradient>
+    </defs>
+
+    {/* Layer 1: Warm Golden Backlight Glow */}
+    <circle cx="18" cy="17" r="14" fill="url(#rc-glow)" />
+
+    {/* Layer 2: Radiant Starburst Light erupting from Chest Seam */}
+    <g className="animate-pulse" style={{ transformOrigin: '18px 14px' }}>
+      {/* Core Diamond Star */}
+      <path
+        d="M18 3.5 L19.8 11.2 L27.5 13 L19.8 14.8 L18 22.5 L16.2 14.8 L8.5 13 L16.2 11.2 Z"
+        fill="#ffffff"
+        opacity="0.9"
+      />
+      <path
+        d="M18 5.5 L19.2 11.5 L25 13 L19.2 14.5 L18 20.5 L16.8 14.5 L11 13 L16.8 11.5 Z"
+        fill="#fef08a"
+        opacity="0.95"
+      />
+      {/* Star Sparkle Satellite Accents */}
+      <circle cx="28" cy="7.5" r="1" fill="#ffffff" />
+      <circle cx="7.5" cy="9.5" r="0.8" fill="#fef08a" />
+      <circle cx="29.5" cy="21.5" r="0.7" fill="#fde047" />
+    </g>
+
+    {/* Layer 3: Chest Lower Body (Hull) */}
+    <rect
+      x="5.5"
+      y="15.5"
+      width="25"
+      height="13.5"
+      rx="3.5"
+      fill="url(#rc-body)"
+      stroke="#2e1065"
+      strokeWidth="0.8"
+    />
+    {/* Hull Inner Highlights & Shadows */}
+    <rect x="6.5" y="16.5" width="23" height="2.5" fill="#ffffff" fillOpacity="0.18" />
+    <rect x="6.5" y="26" width="23" height="2" rx="1" fill="#000000" fillOpacity="0.35" />
+
+    {/* Layer 4: Vaulted Domed Lid */}
+    <path
+      d="M5 16 C5 10.5, 9.5 7.5, 18 7.5 C26.5 7.5, 31 10.5, 31 16 Z"
+      fill="url(#rc-lid)"
+      stroke="#3b0764"
+      strokeWidth="0.8"
+    />
+    {/* Curved Specular Reflection along Vault Crown */}
+    <path
+      d="M8.5 13 C11 9.5, 14 9, 18 9 C22 9, 25 9.5, 27.5 13"
+      stroke="#ffffff"
+      strokeWidth="1.1"
+      strokeLinecap="round"
+      fill="none"
+      opacity="0.75"
+    />
+
+    {/* Layer 5: Vertical Reinforced Gold Straps (Left & Right) */}
+    {/* Left Strap */}
+    <path d="M10 9.2 C10.8 8.8, 11.8 8.5, 13 8.2 L13 16 L10 16 Z" fill="url(#rc-gold)" />
+    <rect x="10" y="15.5" width="3" height="13.5" fill="url(#rc-gold)" stroke="#78350f" strokeWidth="0.4" />
+    <line x1="11.5" y1="16" x2="11.5" y2="28" stroke="#ffffff" strokeWidth="0.6" opacity="0.85" />
+
+    {/* Right Strap */}
+    <path d="M26 9.2 C25.2 8.8, 24.2 8.5, 23 8.2 L23 16 L26 16 Z" fill="url(#rc-gold)" />
+    <rect x="23" y="15.5" width="3" height="13.5" fill="url(#rc-gold)" stroke="#78350f" strokeWidth="0.4" />
+    <line x1="24.5" y1="16" x2="24.5" y2="28" stroke="#ffffff" strokeWidth="0.6" opacity="0.85" />
+
+    {/* Layer 6: Horizontal Seam Rim / Gasket */}
+    <rect
+      x="4"
+      y="15"
+      width="28"
+      height="2.5"
+      rx="1.2"
+      fill="url(#rc-gold-rim)"
+      stroke="#78350f"
+      strokeWidth="0.5"
+    />
+    <line x1="5" y1="15.5" x2="31" y2="15.5" stroke="#ffffff" strokeWidth="0.7" opacity="0.9" />
+
+    {/* Layer 7: Golden Center Clasp Plate with Glowing Cut Amethyst Gem */}
+    {/* Escutcheon Plate */}
+    <path
+      d="M15.5 15 L20.5 15 L20.5 19.5 C20.5 21.8, 18 23.5, 18 23.5 C18 23.5, 15.5 21.8, 15.5 19.5 Z"
+      fill="url(#rc-gold)"
+      stroke="#78350f"
+      strokeWidth="0.6"
+    />
+    {/* Amethyst Gem Core */}
+    <circle cx="18" cy="18.5" r="1.8" fill="url(#rc-gem)" stroke="#4a044e" strokeWidth="0.4" />
+    {/* Specular White Sparkle Glint on Gem */}
+    <circle cx="17.4" cy="17.8" r="0.5" fill="#ffffff" />
+
+    {/* Layer 8: Bottom Corner Hardware Rivets */}
+    <circle cx="6.8" cy="26.8" r="0.8" fill="#fde047" stroke="#78350f" strokeWidth="0.3" />
+    <circle cx="29.2" cy="26.8" r="0.8" fill="#fde047" stroke="#78350f" strokeWidth="0.3" />
+  </svg>
+);
 
 /**
  * PrizeFloatingButton Component:
@@ -13,7 +174,7 @@ const STORAGE_KEY_POS = 'arena_prize_button_pos_v2';
  * - Layered strictly at z-[34] (between z-30 and z-35), always visible without toggling or disabling.
  * - Double-click / double-tap to reset to default corner position.
  * - Tap vs. Drag discrimination (6px threshold) so clicks reliably toggle the Prize Road modal.
- * - Machined double-bezel hardware layering, glowing golden trophy, and "PRIZES" brand badge.
+ * - Machined double-bezel hardware layering, glowing royal reward chest, and "PRIZES" brand badge.
  */
 export const PrizeFloatingButton = ({
   onClick,
@@ -67,9 +228,9 @@ export const PrizeFloatingButton = ({
     const rect = el?.getBoundingClientRect();
     const isDesktop = window.innerWidth >= 768;
 
-    // Measured element dimensions + buffer for overhanging PRIZES badge (-bottom-1.5 = 6px) and soft shadows
-    const width = (rect && rect.width > 0) ? rect.width : (isDesktop ? 68 : 60);
-    const height = (rect && rect.height > 0) ? Math.max(rect.height, isDesktop ? 80 : 72) : (isDesktop ? 80 : 72);
+    // Measured element dimensions
+    const width = (rect && rect.width > 0) ? rect.width : (isDesktop ? 64 : 56);
+    const height = (rect && rect.height > 0) ? rect.height : (isDesktop ? 64 : 56);
     const pad = 10;
 
     // 1. Top Nav Bar Clearance (stops icon from gliding into or over top nav)
@@ -306,41 +467,32 @@ export const PrizeFloatingButton = ({
       >
         {/* Outer Machined Neumorphic Bezel Shell */}
         <div
-          className={`w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] sm:rounded-[24px] bg-[#ebedf2] p-1 border border-white/90 transition-all duration-200 ${
+          className={`w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-[#ebedf2] p-1 border border-white/90 transition-all duration-200 ${
             isDragging
-              ? 'shadow-[0_16px_36px_rgba(0,0,0,0.38),0_4px_12px_rgba(245,158,11,0.3)] ring-2 ring-amber-400/70 ring-offset-2 ring-offset-black/20'
-              : 'shadow-[4px_4px_12px_#b8c2d0,-4px_-4px_12px_#ffffff] group-hover:shadow-[6px_6px_16px_#b0bccb,-6px_-6px_16px_#ffffff]'
+              ? 'shadow-[0_16px_36px_rgba(109,40,217,0.38),0_4px_14px_rgba(245,158,11,0.3)] ring-2 ring-violet-500/80 ring-offset-2 ring-offset-black/20'
+              : 'shadow-[4px_4px_12px_#b8c2d0,-4px_-4px_12px_#ffffff] group-hover:shadow-[6px_6px_16px_#a8b4c4,-6px_-6px_16px_#ffffff]'
           }`}
         >
-          {/* Inner Deep Obsidian & Titanium Core */}
-          <div className="w-full h-full rounded-[18px] sm:rounded-[20px] bg-gradient-to-b from-zinc-900 to-black flex flex-col items-center justify-center relative overflow-hidden border border-zinc-800/90 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.35),inset_0_2px_5px_rgba(255,255,255,0.4)]">
-            {/* Ambient Warm Golden Aura (Breathing pulse) */}
-            <div className="absolute inset-0 m-auto w-8 h-8 rounded-full bg-amber-400/25 blur-md pointer-events-none animate-pulse" />
+          {/* Inner Royal Amethyst & Violet-Indigo Gemstone Core (Harmonized with Prize Road) */}
+          <div className="w-full h-full rounded-2xl bg-gradient-to-b from-[#6d28d9] via-[#4c1d95] to-[#2e1065] flex flex-col items-center justify-center relative overflow-hidden border border-violet-400/40 shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-3px_6px_rgba(0,0,0,0.45)]">
+            {/* Ambient Warm Golden & Purple Aura (Breathing pulse) */}
+            <div className="absolute inset-0 m-auto w-10 h-10 rounded-full bg-gradient-to-r from-amber-400/25 to-violet-400/35 blur-md pointer-events-none animate-pulse" />
 
-            {/* Subtle Diagonal Glint Line */}
-            <div className="absolute -top-6 -left-6 w-14 h-14 bg-gradient-to-br from-white/20 to-transparent rotate-45 pointer-events-none" />
+            {/* Specular Diagonal Glass Sheen */}
+            <div className="absolute -top-6 -left-6 w-14 h-14 bg-gradient-to-br from-white/30 via-white/10 to-transparent rotate-45 pointer-events-none" />
 
-            {/* Radiant Golden Trophy Icon */}
-            <div className="relative z-10 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-translate-y-0.5">
-              <Trophy
-                size={27}
-                weight="fill"
-                className="text-amber-400 drop-shadow-[0_2px_8px_rgba(245,158,11,0.65)]"
-              />
+            {/* 3D Royal Reward Chest Icon */}
+            <div className="relative z-10 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-translate-y-0.5 filter drop-shadow-[0_2px_8px_rgba(245,158,11,0.45)]">
+              <RewardChestIcon className="w-8 h-8 sm:w-8.5 sm:h-8.5" />
             </div>
           </div>
         </div>
-
-        {/* Overhanging Game-Style "PRIZES" Tag */}
-        <span className="absolute -bottom-1.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-zinc-950 font-black text-[8px] sm:text-[8.5px] uppercase tracking-wider shadow-[0_2px_6px_rgba(0,0,0,0.22)] font-arena border border-amber-200/90 pointer-events-none transition-transform duration-200 group-hover:scale-105">
-          PRIZES
-        </span>
 
         {/* Notification Alert / Unlocked Tier Ping */}
         {unclaimedCount > 0 && (
           <span className="absolute -top-1 -right-1 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 border-2 border-white items-center justify-center text-[8.5px] font-black text-white shadow-xs">
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-gradient-to-r from-amber-400 to-yellow-400 border-2 border-white items-center justify-center text-[8.5px] font-black text-zinc-950 shadow-xs">
               {unclaimedCount}
             </span>
           </span>
