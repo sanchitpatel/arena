@@ -725,12 +725,11 @@ export const DashboardShell = ({
         }}
       />
 
-      {/* Draggable Prize Road Floating Action Button (Universal across all tabs) */}
+      {/* Draggable Prize Road Floating Action Button (Universal across all tabs, always visible at z-[34]) */}
       <PrizeFloatingButton
-        onClick={() => setPrizeRoadOpen(true)}
+        onClick={() => setPrizeRoadOpen((prev) => !prev)}
         currentStage={prizeProgress.currentStage}
         unclaimedCount={prizeProgress.currentStage > 0 ? 0 : 1}
-        className={prizeRoadOpen ? 'opacity-0 pointer-events-none scale-90 transition-all duration-200' : 'opacity-100 scale-100 transition-all duration-200'}
       />
 
       {/* Tactile Mobile Prize Slider Card (Identical architecture to QuestSliderCard) */}

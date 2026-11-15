@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Trophy } from '../icons';
 
-const STORAGE_KEY_POS = 'arena_prize_button_pos_v1';
+const STORAGE_KEY_POS = 'arena_prize_button_pos_v2';
 
 /**
  * PrizeFloatingButton Component:
@@ -9,9 +9,10 @@ const STORAGE_KEY_POS = 'arena_prize_button_pos_v1';
  * Features:
  * - Default position: bottom-right corner (above mobile bottom bar, right edge).
  * - Fully Draggable: touch and mouse gestures allow attendees to place it anywhere on screen.
- * - Viewport bounds clamping: never clips or gets dragged off-screen.
+ * - Viewport & Chrome clamping: NEVER glides over top nav bar, bottom tab bar, or desktop sidebar.
+ * - Layered strictly at z-[34] (between z-30 and z-35), always visible without toggling or disabling.
  * - Double-click / double-tap to reset to default corner position.
- * - Tap vs. Drag discrimination (6px threshold) so clicks reliably open the Prize Road modal.
+ * - Tap vs. Drag discrimination (6px threshold) so clicks reliably toggle the Prize Road modal.
  * - Machined double-bezel hardware layering, glowing golden trophy, and "PRIZES" brand badge.
  */
 export const PrizeFloatingButton = ({
@@ -53,17 +54,69 @@ export const PrizeFloatingButton = ({
 
   const hasDraggedRef = useRef(false);
 
-  // Viewport clamping utility
+  // Viewport & Chrome Clamping Utility:
+  // Guarantees the icon NEVER glides over or clips into:
+  // 1. Top Navigation Bar (z-40): Clamped at least 10px below its bottom edge
+  // 2. Mobile Bottom Tab Bar (z-40): Clamped at least 10px above its top edge
+  // 3. Desktop Left Sidebar (z-40): Clamped at least 10px to the right of its edge
+  // 4. Viewport boundaries: Clamped with safe margins so it cannot be dragged off-screen
   const getClampedPosition = useCallback((x, y) => {
+    if (typeof window === 'undefined') return { x, y };
+
     const el = containerRef.current;
-    const width = el?.offsetWidth || 64;
-    const height = el?.offsetHeight || 72;
+    const rect = el?.getBoundingClientRect();
+    const isDesktop = window.innerWidth >= 768;
+
+    // Measured element dimensions + buffer for overhanging PRIZES badge (-bottom-1.5 = 6px) and soft shadows
+    const width = (rect && rect.width > 0) ? rect.width : (isDesktop ? 68 : 60);
+    const height = (rect && rect.height > 0) ? Math.max(rect.height, isDesktop ? 80 : 72) : (isDesktop ? 80 : 72);
     const pad = 10;
-    const maxX = Math.max(pad, window.innerWidth - width - pad);
-    const maxY = Math.max(pad, window.innerHeight - height - pad);
+
+    // 1. Top Nav Bar Clearance (stops icon from gliding into or over top nav)
+    let topNavBottom = 56;
+    const headerEl = document.querySelector('header');
+    if (headerEl) {
+      const hRect = headerEl.getBoundingClientRect();
+      if (hRect.height > 0) {
+        topNavBottom = hRect.bottom;
+      }
+    }
+    const minY = topNavBottom + pad;
+
+    // 2. Mobile Bottom Tab Bar Clearance (stops icon from gliding into or over bottom tab bar)
+    let bottomNavTop = window.innerHeight;
+    if (!isDesktop) {
+      const navEl = document.querySelector('nav');
+      if (navEl) {
+        const nRect = navEl.getBoundingClientRect();
+        if (nRect.height > 0 && nRect.top < window.innerHeight) {
+          bottomNavTop = nRect.top;
+        }
+      } else {
+        bottomNavTop = window.innerHeight - 68;
+      }
+    }
+    const maxY = Math.max(minY, bottomNavTop - height - pad);
+
+    // 3. Desktop Left Sidebar Clearance (stops icon from gliding into or over left sidebar)
+    let sidebarRight = 0;
+    if (isDesktop) {
+      const asideEl = document.querySelector('aside');
+      if (asideEl) {
+        const aRect = asideEl.getBoundingClientRect();
+        if (aRect.width > 0) {
+          sidebarRight = aRect.right;
+        }
+      } else {
+        sidebarRight = 256;
+      }
+    }
+    const minX = sidebarRight > 0 ? sidebarRight + pad : pad;
+    const maxX = Math.max(minX, window.innerWidth - width - pad);
+
     return {
-      x: Math.min(Math.max(x, pad), maxX),
-      y: Math.min(Math.max(y, pad), maxY),
+      x: Math.min(Math.max(x, minX), maxX),
+      y: Math.min(Math.max(y, minY), maxY),
     };
   }, []);
 
@@ -74,6 +127,9 @@ export const PrizeFloatingButton = ({
         if (!prev) return null;
         const clamped = getClampedPosition(prev.x, prev.y);
         if (clamped.x === prev.x && clamped.y === prev.y) return prev;
+        try {
+          window.localStorage.setItem(STORAGE_KEY_POS, JSON.stringify(clamped));
+        } catch {}
         return clamped;
       });
     };
@@ -233,7 +289,7 @@ export const PrizeFloatingButton = ({
         ...positionStyle,
         touchAction: 'none',
       }}
-      className={`fixed z-[45] select-none touch-none ${positionClasses} ${
+      className={`fixed z-[34] select-none touch-none ${positionClasses} ${
         isDragging
           ? 'cursor-grabbing scale-105 transition-none'
           : 'cursor-grab transition-transform duration-150'
