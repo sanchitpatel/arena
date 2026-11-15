@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sparkle } from '../icons';
 
-const STORAGE_KEY_POS = 'arena_prize_button_pos_v2';
+const STORAGE_KEY_POS = 'arena_prize_button_pos_v3';
 
 /**
  * 3D Royal Reward Chest Icon:
@@ -26,7 +26,7 @@ export const PrizeFloatingButton = ({
   const cleanupListenersRef = useRef(null);
   const lastTapTimeRef = useRef(0);
 
-  // Position: null means default responsive CSS position (bottom-20 right-3.5 etc.)
+  // Position: null means default responsive CSS position (top-right corner: top-16 right-3.5 etc.)
   const [position, setPosition] = useState(() => {
     if (typeof window === 'undefined') return null;
     try {
@@ -269,9 +269,9 @@ export const PrizeFloatingButton = ({
   };
 
   // Determine fixed positioning:
-  // If position is null: use responsive bottom-right Tailwind classes
+  // If position is null: use responsive top-right Tailwind classes
   // If position is set: use inline top/left coordinates
-  const positionClasses = position ? '' : 'bottom-20 right-3.5 sm:right-6 md:bottom-6 md:right-8';
+  const positionClasses = position ? '' : 'top-14 right-3.5 sm:top-16 sm:right-6 md:top-16 md:right-8';
   const positionStyle = position
     ? {
         left: `${position.x}px`,
