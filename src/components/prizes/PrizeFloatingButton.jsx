@@ -5,11 +5,11 @@ const STORAGE_KEY_POS = 'arena_prize_button_pos_v2';
 
 /**
  * 3D Royal Reward Chest Icon (Vector Masterwork):
- * Specifically crafted to match the Arena Prize Road theme:
- * - Rich Royal Purple & Violet Vaulted Hull (#7c3aed, #9333ea, #581c87)
+ * Specifically crafted to match the Arena primary theme:
+ * - Rich Electric & Sapphire Blue Vaulted Hull (#38bdf8, #0284c7, #0369a1, #082f49)
  * - 24K Polished Golden Reinforced Straps & Rim (#fde047, #f59e0b, #78350f)
  * - Radiant Diamond Starburst erupting from the chest seam
- * - Polished Center Escutcheon with an embedded faceted Amethyst Gem
+ * - Polished Center Escutcheon with an embedded faceted Cyan Gem
  * - High-clarity silhouette that is instantly recognizable as prizes/rewards in one glance.
  */
 export const RewardChestIcon = ({ className = 'w-8 h-8 sm:w-8.5 sm:h-8.5' }) => (
@@ -20,11 +20,11 @@ export const RewardChestIcon = ({ className = 'w-8 h-8 sm:w-8.5 sm:h-8.5' }) => 
     className={className}
   >
     <defs>
-      {/* Soft Golden Ambient Light */}
+      {/* Soft Cyan & Golden Ambient Light */}
       <radialGradient id="rc-glow" cx="50%" cy="40%" r="50%">
-        <stop offset="0%" stopColor="#fde047" stopOpacity="0.8" />
-        <stop offset="50%" stopColor="#f59e0b" stopOpacity="0.3" />
-        <stop offset="100%" stopColor="#c084fc" stopOpacity="0" />
+        <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.85" />
+        <stop offset="45%" stopColor="#0284c7" stopOpacity="0.35" />
+        <stop offset="100%" stopColor="#0369a1" stopOpacity="0" />
       </radialGradient>
 
       {/* Polished 24K Gold Hardware */}
@@ -43,31 +43,31 @@ export const RewardChestIcon = ({ className = 'w-8 h-8 sm:w-8.5 sm:h-8.5' }) => 
         <stop offset="100%" stopColor="#451a03" />
       </linearGradient>
 
-      {/* Domed Lid Royal Purple */}
+      {/* Domed Lid Electric Blue */}
       <linearGradient id="rc-lid" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#d8b4fe" />
-        <stop offset="30%" stopColor="#9333ea" />
-        <stop offset="75%" stopColor="#6b21a8" />
-        <stop offset="100%" stopColor="#4c1d95" />
+        <stop offset="0%" stopColor="#7dd3fc" />
+        <stop offset="25%" stopColor="#38bdf8" />
+        <stop offset="65%" stopColor="#0284c7" />
+        <stop offset="100%" stopColor="#075985" />
       </linearGradient>
 
-      {/* Lower Hull Velvet Violet */}
+      {/* Lower Hull Sapphire Cobalt Blue */}
       <linearGradient id="rc-body" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#7c3aed" />
-        <stop offset="50%" stopColor="#581c87" />
-        <stop offset="100%" stopColor="#3b0764" />
+        <stop offset="0%" stopColor="#0284c7" />
+        <stop offset="45%" stopColor="#0369a1" />
+        <stop offset="100%" stopColor="#082f49" />
       </linearGradient>
 
-      {/* Amethyst Gem Core */}
+      {/* Cyan Jewel Gem Core */}
       <linearGradient id="rc-gem" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#ffffff" />
-        <stop offset="40%" stopColor="#d8b4fe" />
-        <stop offset="80%" stopColor="#9333ea" />
-        <stop offset="100%" stopColor="#581c87" />
+        <stop offset="35%" stopColor="#bae6fd" />
+        <stop offset="75%" stopColor="#38bdf8" />
+        <stop offset="100%" stopColor="#0284c7" />
       </linearGradient>
     </defs>
 
-    {/* Layer 1: Warm Golden Backlight Glow */}
+    {/* Layer 1: Warm Golden & Cyan Backlight Glow */}
     <circle cx="18" cy="17" r="14" fill="url(#rc-glow)" />
 
     {/* Layer 2: Radiant Starburst Light erupting from Chest Seam */}
@@ -97,18 +97,18 @@ export const RewardChestIcon = ({ className = 'w-8 h-8 sm:w-8.5 sm:h-8.5' }) => 
       height="13.5"
       rx="3.5"
       fill="url(#rc-body)"
-      stroke="#2e1065"
+      stroke="#082f49"
       strokeWidth="0.8"
     />
     {/* Hull Inner Highlights & Shadows */}
-    <rect x="6.5" y="16.5" width="23" height="2.5" fill="#ffffff" fillOpacity="0.18" />
+    <rect x="6.5" y="16.5" width="23" height="2.5" fill="#ffffff" fillOpacity="0.22" />
     <rect x="6.5" y="26" width="23" height="2" rx="1" fill="#000000" fillOpacity="0.35" />
 
     {/* Layer 4: Vaulted Domed Lid */}
     <path
       d="M5 16 C5 10.5, 9.5 7.5, 18 7.5 C26.5 7.5, 31 10.5, 31 16 Z"
       fill="url(#rc-lid)"
-      stroke="#3b0764"
+      stroke="#075985"
       strokeWidth="0.8"
     />
     {/* Curved Specular Reflection along Vault Crown */}
@@ -118,7 +118,7 @@ export const RewardChestIcon = ({ className = 'w-8 h-8 sm:w-8.5 sm:h-8.5' }) => 
       strokeWidth="1.1"
       strokeLinecap="round"
       fill="none"
-      opacity="0.75"
+      opacity="0.8"
     />
 
     {/* Layer 5: Vertical Reinforced Gold Straps (Left & Right) */}
@@ -145,7 +145,7 @@ export const RewardChestIcon = ({ className = 'w-8 h-8 sm:w-8.5 sm:h-8.5' }) => 
     />
     <line x1="5" y1="15.5" x2="31" y2="15.5" stroke="#ffffff" strokeWidth="0.7" opacity="0.9" />
 
-    {/* Layer 7: Golden Center Clasp Plate with Glowing Cut Amethyst Gem */}
+    {/* Layer 7: Golden Center Clasp Plate with Glowing Cut Cyan Gem */}
     {/* Escutcheon Plate */}
     <path
       d="M15.5 15 L20.5 15 L20.5 19.5 C20.5 21.8, 18 23.5, 18 23.5 C18 23.5, 15.5 21.8, 15.5 19.5 Z"
@@ -153,8 +153,8 @@ export const RewardChestIcon = ({ className = 'w-8 h-8 sm:w-8.5 sm:h-8.5' }) => 
       stroke="#78350f"
       strokeWidth="0.6"
     />
-    {/* Amethyst Gem Core */}
-    <circle cx="18" cy="18.5" r="1.8" fill="url(#rc-gem)" stroke="#4a044e" strokeWidth="0.4" />
+    {/* Cyan Gem Core */}
+    <circle cx="18" cy="18.5" r="1.8" fill="url(#rc-gem)" stroke="#0369a1" strokeWidth="0.4" />
     {/* Specular White Sparkle Glint on Gem */}
     <circle cx="17.4" cy="17.8" r="0.5" fill="#ffffff" />
 
@@ -469,20 +469,20 @@ export const PrizeFloatingButton = ({
         <div
           className={`w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-[#ebedf2] p-1 border border-white/90 transition-all duration-200 ${
             isDragging
-              ? 'shadow-[0_16px_36px_rgba(109,40,217,0.38),0_4px_14px_rgba(245,158,11,0.3)] ring-2 ring-violet-500/80 ring-offset-2 ring-offset-black/20'
+              ? 'shadow-[0_14px_30px_rgba(0,0,0,0.22),0_4px_10px_rgba(0,0,0,0.12)] ring-2 ring-white/90 ring-offset-2 ring-offset-black/15'
               : 'shadow-[4px_4px_12px_#b8c2d0,-4px_-4px_12px_#ffffff] group-hover:shadow-[6px_6px_16px_#a8b4c4,-6px_-6px_16px_#ffffff]'
           }`}
         >
-          {/* Inner Royal Amethyst & Violet-Indigo Gemstone Core (Harmonized with Prize Road) */}
-          <div className="w-full h-full rounded-2xl bg-gradient-to-b from-[#6d28d9] via-[#4c1d95] to-[#2e1065] flex flex-col items-center justify-center relative overflow-hidden border border-violet-400/40 shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-3px_6px_rgba(0,0,0,0.45)]">
-            {/* Ambient Warm Golden & Purple Aura (Breathing pulse) */}
-            <div className="absolute inset-0 m-auto w-10 h-10 rounded-full bg-gradient-to-r from-amber-400/25 to-violet-400/35 blur-md pointer-events-none animate-pulse" />
+          {/* Inner Luminous Cyan & Royal Blue Gemstone Core (Harmonized with Arena Theme) */}
+          <div className="w-full h-full rounded-2xl bg-gradient-to-b from-[#38bdf8] via-[#0284c7] to-[#0c4a6e] flex flex-col items-center justify-center relative overflow-hidden border border-white/35 shadow-[inset_0_2px_4px_rgba(255,255,255,0.65),inset_0_-3px_6px_rgba(0,0,0,0.4)]">
+            {/* Ambient Electric Blue & Cyan Aura (Breathing pulse) */}
+            <div className="absolute inset-0 m-auto w-10 h-10 rounded-full bg-gradient-to-r from-sky-300/35 to-blue-500/25 blur-md pointer-events-none animate-pulse" />
 
             {/* Specular Diagonal Glass Sheen */}
-            <div className="absolute -top-6 -left-6 w-14 h-14 bg-gradient-to-br from-white/30 via-white/10 to-transparent rotate-45 pointer-events-none" />
+            <div className="absolute -top-6 -left-6 w-14 h-14 bg-gradient-to-br from-white/35 via-white/10 to-transparent rotate-45 pointer-events-none" />
 
             {/* 3D Royal Reward Chest Icon */}
-            <div className="relative z-10 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-translate-y-0.5 filter drop-shadow-[0_2px_8px_rgba(245,158,11,0.45)]">
+            <div className="relative z-10 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-translate-y-0.5 filter drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)]">
               <RewardChestIcon className="w-8 h-8 sm:w-8.5 sm:h-8.5" />
             </div>
           </div>
