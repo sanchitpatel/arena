@@ -98,6 +98,17 @@ export const DashboardShell = ({
     return () => window.removeEventListener('arena:open-prizes', handleOpenPrizes);
   }, []);
 
+  // Automatically close Prize Road slider whenever the active tab changes or notifications open
+  useEffect(() => {
+    setPrizeRoadOpen(false);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (isNotificationOpen) {
+      setPrizeRoadOpen(false);
+    }
+  }, [isNotificationOpen]);
+
   // Player identity fallback resolution
   const guestId = player?.guest_id || getPlayerId() || 'Guest001';
   const orbNumber = player?.orb_number || getOrbNumber(guestId) || 1;

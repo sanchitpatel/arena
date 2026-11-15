@@ -77,13 +77,20 @@ function StageThumbnailIcon({ type = 'gift', className = 'w-5 h-5' }) {
  * PrizeSliderCard (formerly PrizeRoadModal):
  * Tactile Neumorphic Mobile Prize Road Slider Card.
  *
- * Designed to frame ONLY the authentic Prize Road artwork with minimal padding:
- * - No extra header, cross button, external text, or external icons.
- * - Sized with definite viewport constraints so it never collapses.
- * - Perfectly wraps the 576:1024 artwork with a tactile #ebedf2 clay bezel and subtle padding.
- * - Emerges from behind the bottom tab bar (z-40) with 320ms Apple spring glide up.
- * - Swipe-down gesture dismissal, wheel scroll dismissal, scrim tap, and Escape key handling.
- * - Container query scaling (cqw) intact: zero distortion on any device.
+ * Replicates the exact properties, gestures, and behaviors of QuestSliderCard:
+ * 1. Sheet Stacking: Positioned at z-[38] to emerge from behind the bottom tab bar (z-40)
+ *    with rounded-t-[28px] sm:rounded-t-[32px] md:rounded-[28px].
+ * 2. Reduced Height: Sized comfortably below the sticky top nav bar with generous clearance (never hides behind it).
+ * 3. Focus Scrim: At z-[35], so top header and bottom nav at z-40 sit above it unblurred.
+ * 4. Background Scroll Locking: While open, all touchmove and wheel bubbling outside the card is prevented.
+ * 5. Auto-Dismiss on ANY External Button Click: Clicking any button/tab outside the slider automatically closes it.
+ * 6. Dismissal Channels:
+ *    - Click anywhere on the focus scrim.
+ *    - Click any button outside the card (top nav, bottom nav, sidebar).
+ *    - Pointer/touch swipe-down gesture anywhere on the card (> 40px with upward rubber-band resistance).
+ *    - Downward mouse wheel scroll (> 20 delta).
+ *    - Escape key press.
+ * 7. Visual Framing: Purely frames the authentic 576:1024 Prize Road artwork with minimal padding (no extra headers, crosses, text, or icons).
  */
 export const PrizeSliderCard = ({
   isOpen = false,
@@ -92,7 +99,7 @@ export const PrizeSliderCard = ({
   totalPoints = 300,
 }) => {
   const [displayed, setDisplayed] = useState(isOpen);
-  const [animOpen, setAnimOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedPrize, setSelectedPrize] = useState(null);
@@ -106,27 +113,24 @@ export const PrizeSliderCard = ({
   const effectivePoints = totalPoints > 0 ? totalPoints : 300;
   const progress = useMemo(() => calculatePrizeProgress(effectivePoints), [effectivePoints]);
 
-  // Entrance & Exit animation orchestration matching QuestSliderCard
+  // Entrance & Exit animation orchestration identical to QuestSliderCard
   useEffect(() => {
-    let r1, r2;
     if (isOpen) {
       setDisplayed(true);
       setDragOffset(0);
       setIsDragging(false);
 
-      // Double rAF ensures DOM paint at translateY(115%) before animating to translateY(0)
-      r1 = requestAnimationFrame(() => {
-        r2 = requestAnimationFrame(() => {
-          setAnimOpen(true);
+      // Double rAF ensures element is painted in DOM at closed position (translateY(115%))
+      // before transitioning to translateY(0), guaranteeing the slide-up animation plays smoothly every time.
+      const r1 = requestAnimationFrame(() => {
+        const r2 = requestAnimationFrame(() => {
+          setOpenState(true);
         });
+        return () => cancelAnimationFrame(r2);
       });
-
-      return () => {
-        if (r1) cancelAnimationFrame(r1);
-        if (r2) cancelAnimationFrame(r2);
-      };
+      return () => cancelAnimationFrame(r1);
     } else {
-      setAnimOpen(false);
+      setOpenState(false);
       setDragOffset(0);
       setIsDragging(false);
 
@@ -138,9 +142,9 @@ export const PrizeSliderCard = ({
     }
   }, [isOpen]);
 
-  // Smooth slide-down dismiss
+  // Smooth slide-down dismiss identical to QuestSliderCard
   const animateDismiss = () => {
-    setAnimOpen(false);
+    setOpenState(false);
     setDragOffset(0);
     setIsDragging(false);
 
@@ -164,9 +168,9 @@ export const PrizeSliderCard = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [displayed, selectedPrize]);
 
-  // Prevent background and main screen scrolling while the prize slider is open
+  // Prevent background and main screen scrolling while the slider is open (Identical to QuestSliderCard)
   useEffect(() => {
-    if (!animOpen) return;
+    if (!openState) return;
 
     const preventBackgroundScroll = (e) => {
       if (!sheetRef.current || !sheetRef.current.contains(e.target)) {
@@ -183,12 +187,33 @@ export const PrizeSliderCard = ({
       document.removeEventListener('touchmove', preventBackgroundScroll);
       document.removeEventListener('wheel', preventBackgroundScroll);
     };
-  }, [animOpen]);
+  }, [openState]);
 
-  // --- Touch & Pointer Gesture Handling (Swipe to Dismiss) ---
+  // When slider is active, clicking ANY button outside the slider automatically closes it
+  useEffect(() => {
+    if (!openState) return;
+
+    const handleGlobalClick = (e) => {
+      const button = e.target.closest('button, [role="button"], a');
+      if (button) {
+        // If the button clicked is NOT inside this slider sheet (e.g. top nav, bottom nav, sidebar)
+        if (!sheetRef.current || !sheetRef.current.contains(button)) {
+          animateDismiss();
+        }
+      }
+    };
+
+    // Use capture phase so we detect the button click immediately without blocking its action
+    document.addEventListener('click', handleGlobalClick, true);
+    return () => {
+      document.removeEventListener('click', handleGlobalClick, true);
+    };
+  }, [openState]);
+
+  // --- Touch & Pointer Gesture Handling (Swipe to Dismiss) identical to QuestSliderCard ---
   const handlePointerDown = (e) => {
-    // Ignore clicks on interactive stage speech bubbles
-    if (e.target.closest('[data-interactive]')) return;
+    // Ignore clicks on close button inside detail inspector
+    if (e.target.closest('button')) return;
 
     startYRef.current = e.clientY;
     currentYRef.current = 0;
@@ -237,7 +262,7 @@ export const PrizeSliderCard = ({
     }
   };
 
-  // Wheel gesture to dismiss on downward trackpad / mouse scroll
+  // Wheel gesture to dismiss on downward trackpad / mouse scroll identical to QuestSliderCard
   const handleWheel = (e) => {
     if (e.deltaY > 20) {
       animateDismiss();
@@ -290,7 +315,7 @@ export const PrizeSliderCard = ({
 
   if (!displayed || typeof document === 'undefined') return null;
 
-  // Transform & transition styles identical to QuestSliderCard
+  // Determine transform and transition styles dynamically identical to QuestSliderCard
   const cardStyle = isDragging
     ? {
         transform: `translateY(${dragOffset}px)`,
@@ -298,8 +323,8 @@ export const PrizeSliderCard = ({
         willChange: 'transform',
       }
     : {
-        transform: animOpen ? 'translateY(0px)' : 'translateY(115%)',
-        transition: animOpen
+        transform: openState ? 'translateY(0px)' : 'translateY(115%)',
+        transition: openState
           ? 'transform 320ms cubic-bezier(0.16, 1, 0.3, 1)'
           : 'transform 300ms cubic-bezier(0.36, 0.66, 0.04, 1)',
         willChange: 'transform',
@@ -307,18 +332,18 @@ export const PrizeSliderCard = ({
 
   return createPortal(
     <>
-      {/* Full-Screen Focus Scrim (At z-[35], top header & bottom nav at z-40 sit unblurred) */}
+      {/* Full-Screen Focus Scrim (At z-[35], so top header and bottom nav at z-40 sit above it unblurred) */}
       <div
         onClick={animateDismiss}
-        className={`fixed inset-0 z-[35] bg-black/25 backdrop-blur-[2px] touch-none select-none overscroll-none will-change-[opacity] ${
-          animOpen
+        className={`fixed inset-0 z-[35] bg-black/15 backdrop-blur-[1px] touch-none select-none overscroll-none will-change-[opacity] ${
+          openState
             ? 'opacity-100 pointer-events-auto cursor-pointer transition-opacity duration-300 ease-out'
             : 'opacity-0 pointer-events-none transition-opacity duration-280 ease-out'
         }`}
       />
 
       {/* Sheet Container: Positioned at z-[38] to emerge from behind the bottom tab bar (z-40) */}
-      <div className="fixed bottom-0 left-0 right-0 z-[38] pointer-events-none flex justify-center px-2 sm:px-4">
+      <div className="fixed bottom-0 left-0 right-0 z-[38] pointer-events-none flex justify-center px-1.5 sm:px-4">
         <div
           ref={sheetRef}
           onPointerDown={handlePointerDown}
@@ -326,17 +351,16 @@ export const PrizeSliderCard = ({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onWheel={handleWheel}
-          style={{
-            ...cardStyle,
-            width: 'min(440px, calc(100vw - 1.5rem))',
-            height: 'min(760px, calc(100dvh - 4.5rem))',
-          }}
-          className="pointer-events-auto bg-[#ebedf2] border border-white/90 rounded-t-[28px] sm:rounded-t-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6,0_-8px_32px_rgba(0,0,0,0.22)] p-2 sm:p-2.5 pb-20 md:pb-2.5 md:mb-3 select-none flex flex-col items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
+          style={cardStyle}
+          className="pointer-events-auto w-auto max-w-[min(440px,calc(100vw-1.5rem))] bg-[#ebedf2] border border-white/90 rounded-t-[28px] sm:rounded-t-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6,0_-8px_32px_rgba(0,0,0,0.18)] p-2 sm:p-2.5 pb-20 md:pb-2.5 md:mb-4 select-none touch-none cursor-grab active:cursor-grabbing flex flex-col items-center justify-center overflow-hidden"
         >
-          {/* Main Prize Road Artwork (Locked 576:1024 Canvas fitting with little bit of padding only) */}
+          {/* Main Prize Road Artwork Container: Reduced height with comfortable clearance below top nav bar */}
           <div
-            style={{ aspectRatio: '576 / 1024' }}
-            className="relative h-full max-h-full max-w-full rounded-[20px] sm:rounded-[22px] overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.06)] [container-type:inline-size] select-none flex items-center justify-center"
+            style={{
+              aspectRatio: '576 / 1024',
+              height: 'min(615px, calc(100dvh - 7.5rem))',
+            }}
+            className="relative w-auto max-w-full rounded-[20px] sm:rounded-[22px] overflow-hidden shadow-[inset_0_1px_3px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.06)] [container-type:inline-size] select-none flex items-center justify-center"
           >
             {/* Authentic 3D Game Template Artwork Background (WebP + JPG fallback) */}
             <picture className="absolute inset-0 w-full h-full pointer-events-none select-none">
@@ -366,7 +390,11 @@ export const PrizeSliderCard = ({
                       key={prize.id}
                       data-interactive="true"
                       style={slot.style}
-                      onClick={() => setSelectedPrize(prize)}
+                      onClick={() => {
+                        if (!isDraggingRef.current && dragOffset === 0) {
+                          setSelectedPrize(prize);
+                        }
+                      }}
                       className="absolute z-20 cursor-pointer group transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]"
                     >
                       <div className="w-full h-full rounded-[3.8cqw] bg-gradient-to-r from-[#fffcf2] via-[#fffbf0] to-[#fef3c7] border border-amber-300 shadow-[0_1.5cqw_4cqw_rgba(245,158,11,0.3)] ring-1 ring-amber-400/25 p-[1.8cqw] flex items-center gap-[1.8cqw]">
@@ -400,7 +428,11 @@ export const PrizeSliderCard = ({
                     key={prize.id}
                     data-interactive="true"
                     style={slot.style}
-                    onClick={() => setSelectedPrize(prize)}
+                    onClick={() => {
+                      if (!isDraggingRef.current && dragOffset === 0) {
+                        setSelectedPrize(prize);
+                      }
+                    }}
                     className="absolute z-20 cursor-pointer group flex items-center px-[1.5cqw] py-[0.8cqw] transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
                   >
                     {/* Left: Thumbnail Icon positioned over pre-rendered square */}
@@ -473,7 +505,7 @@ export const PrizeSliderCard = ({
           {selectedPrize && (
             <div
               onClick={() => setSelectedPrize(null)}
-              className="absolute inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 animate-in fade-in duration-150 cursor-pointer"
+              className="absolute inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 animate-in fade-in duration-150 cursor-pointer"
             >
               <div
                 onClick={(e) => e.stopPropagation()}
