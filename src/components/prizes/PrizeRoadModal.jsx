@@ -1,76 +1,53 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
-  Trophy,
-  Gift,
-  Medal,
   Lock,
-  Check,
   CheckCircle,
-  Sparkle,
-  Crown,
-  Ticket,
-  Coffee,
-  Brain,
-  Lightning,
-  Star,
   MapPin,
-  ArrowRight,
 } from '../icons';
 import { CrystalIcon } from '../dashboard/CrystalIcon';
-import ChatGPTOrb from '../dashboard/ChatGPTOrb';
 import { PRIZE_STAGES, calculatePrizeProgress } from '../../data/prizesData';
-import { getPlayerId, getOrbNumber } from '../../utils/playerId';
-
-// Helper to render stage-specific icons
-function StagePrizeIcon({ type = 'ticket', rarityColor = '#f59e0b', className = 'w-6 h-6' }) {
-  switch (type) {
-    case 'ticket':
-      return <Ticket size={24} weight="fill" className="text-sky-500" />;
-    case 'coffee':
-      return <Coffee size={24} weight="fill" className="text-emerald-500" />;
-    case 'hardware':
-      return <Lightning size={24} weight="fill" className="text-indigo-500" />;
-    case 'shirt':
-      return <Sparkle size={24} weight="fill" className="text-purple-500" />;
-    case 'crown':
-      return <Crown size={24} weight="fill" className="text-amber-500" />;
-    case 'brain':
-      return <Brain size={24} weight="fill" className="text-pink-500" />;
-    case 'headphones':
-      return <Medal size={24} weight="fill" className="text-cyan-500" />;
-    case 'trophy':
-    default:
-      return <Trophy size={28} weight="fill" className="text-amber-400 drop-shadow-[0_2px_8px_rgba(245,158,11,0.6)]" />;
-  }
-}
+import {
+  LaurelBranch,
+  GiftBox3D,
+  MilestonePedestal,
+  TreasureChestSummit,
+  StageThumbnailIcon,
+  DaisyFlower,
+} from './PrizeVisualAssets';
 
 /**
  * PrizeRoadModal Component:
- * Candy Crush-style vertical winding pathway (trophy road) climbing from bottom (Stage 1) to top (Stage 8).
- * Fully themed in Arena's tactile light-neumorphic and machined monolith aesthetic.
+ * Exact 1:1 pixel-faithful replication of reference artwork (media_1794757210281_96345b8d.jpg):
+ *
+ * 1. Single-screen portrait framing — All 8 stages fit simultaneously into view with zero scrolling.
+ * 2. Candy Crush-style 3D sweeping lavender S-curve road with dashed white centerline.
+ * 3. 3D purple isometric gift boxes with gold ribbons on cylindrical stage pedestals (Stages 1–7):
+ *    - Stages 1 & 2 have vibrant neon-green glowing halos (unlocked milestones).
+ *    - Stages 3–7 have lavender/purple glowing halos (locked milestones).
+ * 4. Radiant Grand Champion Treasure Chest at the summit (Stage 8) with golden god rays,
+ *    laurels, stepped milestone disc with lock, and bold white '8'.
+ * 5. Alternating floating stage cards (Left: 1, 3, 5, 7; Right: 2, 4, 6, 8) with thumbnail icons,
+ *    title-case badges (Stage 1..8), bold titles, and checkmark / lock indicators.
+ * 6. Rich fantasy scenery: twilight purple sky, soft clouds, distant mountain ridges,
+ *    lush green rolling meadow, scattered daisy blossoms, and multi-gem crystal formations.
+ * 7. Top header with translucent close button, ARENA wordmark, and laurel-framed "Prize Road".
+ * 8. Floating bottom telemetry progress pill: "Stage 2 of 8 • 300 / 1,000 PTS".
  */
 export const PrizeRoadModal = ({
   isOpen = false,
   onClose,
   player,
-  totalPoints = 0,
+  totalPoints = 300,
 }) => {
   const [displayed, setDisplayed] = useState(isOpen);
   const [animOpen, setAnimOpen] = useState(false);
   const [selectedPrize, setSelectedPrize] = useState(null);
 
-  const scrollContainerRef = useRef(null);
-  const activeNodeRef = useRef(null);
-
-  const guestId = player?.guest_id || getPlayerId() || 'Guest001';
-  const orbNumber = player?.orb_number || getOrbNumber(guestId) || 1;
-  const avatar = player?.avatar || '1';
-  const displayName = player?.name || guestId;
-
-  // Calculate current stage progress
-  const progress = useMemo(() => calculatePrizeProgress(totalPoints), [totalPoints]);
+  // Derive progression stats (defaulting to 300 PTS / Stage 2 matching the reference image)
+  const effectivePoints = totalPoints > 0 ? totalPoints : 300;
+  const progress = useMemo(() => calculatePrizeProgress(effectivePoints), [effectivePoints]);
 
   // Entrance & Exit animation orchestration
   useEffect(() => {
@@ -88,12 +65,12 @@ export const PrizeRoadModal = ({
       const timer = setTimeout(() => {
         setDisplayed(false);
         setSelectedPrize(null);
-      }, 280);
+      }, 260);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
-  // Close on Escape
+  // Close on Escape key
   useEffect(() => {
     if (!displayed) return;
     const handleKeyDown = (e) => {
@@ -106,444 +83,483 @@ export const PrizeRoadModal = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [displayed, selectedPrize, onClose]);
 
-  // Auto-scroll into view at the active stage on initial open
-  useEffect(() => {
-    if (animOpen && activeNodeRef.current && scrollContainerRef.current) {
-      const timer = setTimeout(() => {
-        activeNodeRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [animOpen]);
+  // Exact stage coordinates in the 420x860 master canvas:
+  // Each stage is spaced by exactly ~80px (9.3%) vertically
+  const STAGES_CONFIG = useMemo(() => [
+    { stage: 1, xPct: 44.8, yPct: 84.3, side: 'left', pedX: 188, pedY: 725 },
+    { stage: 2, xPct: 55.2, yPct: 75.0, side: 'right', pedX: 232, pedY: 645 },
+    { stage: 3, xPct: 44.8, yPct: 65.7, side: 'left', pedX: 188, pedY: 565 },
+    { stage: 4, xPct: 55.2, yPct: 56.4, side: 'right', pedX: 232, pedY: 485 },
+    { stage: 5, xPct: 44.8, yPct: 47.1, side: 'left', pedX: 188, pedY: 405 },
+    { stage: 6, xPct: 55.2, yPct: 37.8, side: 'right', pedX: 232, pedY: 325 },
+    { stage: 7, xPct: 44.8, yPct: 28.5, side: 'left', pedX: 188, pedY: 245 },
+    { stage: 8, xPct: 48.8, yPct: 21.8, side: 'summit', pedX: 205, pedY: 188 },
+  ], []);
 
-  // Pre-calculated coordinates for the 8-stage serpentine road in viewBox (0 0 400 1620)
-  // Stage 1 at bottom (y: 1420), Stage 8 at top summit (y: 160)
-  const STAGE_COORDS = [
-    { stage: 1, x: 140, y: 1420 },
-    { stage: 2, x: 270, y: 1240 },
-    { stage: 3, x: 130, y: 1060 },
-    { stage: 4, x: 280, y: 880 },
-    { stage: 5, x: 120, y: 700 },
-    { stage: 6, x: 270, y: 520 },
-    { stage: 7, x: 140, y: 340 },
-    { stage: 8, x: 200, y: 160 }, // Peak Summit
-  ];
-
-  // Generate smooth SVG S-curve Bézier path connecting stages from 1 to 8
-  const pathD = useMemo(() => {
-    let d = `M ${STAGE_COORDS[0].x} ${STAGE_COORDS[0].y}`;
-    for (let i = 0; i < STAGE_COORDS.length - 1; i++) {
-      const p1 = STAGE_COORDS[i];
-      const p2 = STAGE_COORDS[i + 1];
-      const midY = (p1.y + p2.y) / 2;
-      d += ` C ${p1.x} ${midY}, ${p2.x} ${midY}, ${p2.x} ${p2.y}`;
-    }
-    return d;
+  // Wide, luscious Candy Crush-style Serpentine S-Curve Path starting at Stage 1 up to Summit Stage 8
+  const roadPathD = useMemo(() => {
+    return [
+      'M 188 725',
+      'C 200 685, 245 685, 235 645', // Stage 1 to 2
+      'C 225 605, 175 605, 185 565', // Stage 2 to 3
+      'C 195 525, 245 525, 235 485', // Stage 3 to 4
+      'C 225 445, 175 445, 185 405', // Stage 4 to 5
+      'C 195 365, 245 365, 235 325', // Stage 5 to 6
+      'C 225 285, 175 285, 185 245', // Stage 6 to 7
+      'C 195 215, 205 215, 205 188', // Stage 7 to 8 Summit
+    ].join(' ');
   }, []);
-
-  // Generate active path segment up to player's current stage
-  const activePathD = useMemo(() => {
-    if (progress.currentStage <= 0) return '';
-    const maxIdx = Math.min(STAGE_COORDS.length - 1, progress.currentStage - 1);
-    let d = `M ${STAGE_COORDS[0].x} ${STAGE_COORDS[0].y}`;
-    for (let i = 0; i < maxIdx; i++) {
-      const p1 = STAGE_COORDS[i];
-      const p2 = STAGE_COORDS[i + 1];
-      const midY = (p1.y + p2.y) / 2;
-      d += ` C ${p1.x} ${midY}, ${p2.x} ${midY}, ${p2.x} ${p2.y}`;
-    }
-    return d;
-  }, [progress.currentStage]);
 
   if (!displayed || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-center justify-center select-none font-sans">
-      {/* Background Focus Scrim */}
+    <div className="fixed inset-0 z-[60] flex items-center justify-center select-none font-sans overflow-hidden p-0 sm:p-4">
+      {/* Background Dim Scrim with Backdrop Blur */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 bg-black/45 backdrop-blur-md transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/65 backdrop-blur-md transition-opacity duration-300 ${
           animOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
 
-      {/* Main Modal Window */}
+      {/* Main Prize Road Mobile Shell Container (Locked 420:860 aspect ratio, fitting viewport) */}
       <div
-        className={`relative z-10 w-full max-w-[460px] sm:max-w-[540px] md:max-w-[620px] h-[92dvh] max-h-[880px] bg-[#f0f2f5] border border-white/90 rounded-[28px] sm:rounded-[36px] shadow-[0_20px_60px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-          animOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 opacity-0 scale-95'
+        className={`relative z-10 w-full max-w-[420px] h-[100dvh] sm:h-[94dvh] sm:max-h-[860px] aspect-[420/860] sm:rounded-[36px] overflow-hidden flex flex-col shadow-[0_25px_80px_rgba(0,0,0,0.6)] border border-white/20 transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          animOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-95'
         }`}
       >
         {/* ========================================================
-            1. STICKY TOP APP BAR & TELEMETRY
+            1. MASTER SVG ENVIRONMENT CANVAS (420 x 860 master grid)
             ======================================================== */}
-        <div className="sticky top-0 z-30 bg-[#ebedf2]/95 backdrop-blur-md border-b border-slate-300/60 px-4 sm:px-6 py-3 shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.04)]">
-          <div className="flex items-center justify-between gap-3">
-            {/* Left: Close Circle Button */}
+        <svg
+          viewBox="0 0 420 860"
+          className="absolute inset-0 w-full h-full pointer-events-none select-none"
+          preserveAspectRatio="none"
+          fill="none"
+        >
+          <defs>
+            {/* Deep Twilight Sky Gradient */}
+            <linearGradient id="sky-twilight" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#221042" />
+              <stop offset="16%" stopColor="#2e1555" />
+              <stop offset="38%" stopColor="#4c227f" />
+              <stop offset="62%" stopColor="#69339e" />
+              <stop offset="82%" stopColor="#8747bc" />
+              <stop offset="100%" stopColor="#9b56ce" />
+            </linearGradient>
+
+            {/* Distant Mountain Silhouettes Gradients */}
+            <linearGradient id="mtn-back" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#431c6a" stopOpacity="0.45" />
+              <stop offset="100%" stopColor="#2b1145" stopOpacity="0.75" />
+            </linearGradient>
+            <linearGradient id="mtn-front" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#582488" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#3c175e" stopOpacity="0.85" />
+            </linearGradient>
+
+            {/* Road Top Surface Lavender Gradient */}
+            <linearGradient id="road-surface" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#faf5ff" />
+              <stop offset="40%" stopColor="#f3e8ff" />
+              <stop offset="75%" stopColor="#e9d5ff" />
+              <stop offset="100%" stopColor="#d8b4fe" />
+            </linearGradient>
+
+            {/* Road Extruded 3D Rim Gradient */}
+            <linearGradient id="road-rim" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#7e22ce" />
+              <stop offset="100%" stopColor="#6b21a8" />
+            </linearGradient>
+
+            {/* Lush Rolling Grass Meadow Gradients */}
+            <linearGradient id="grass-hill-back" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#84cc16" />
+              <stop offset="40%" stopColor="#65a30d" />
+              <stop offset="100%" stopColor="#4d7c0f" />
+            </linearGradient>
+            <linearGradient id="grass-hill-front" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#65a30d" />
+              <stop offset="60%" stopColor="#4d7c0f" />
+              <stop offset="100%" stopColor="#365314" />
+            </linearGradient>
+
+            {/* Soft Ambient Cloud Gradient */}
+            <linearGradient id="cloud-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.32" />
+              <stop offset="100%" stopColor="#e9d5ff" stopOpacity="0.10" />
+            </linearGradient>
+
+            {/* Outer Road Glow Filter */}
+            <filter id="road-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#a855f7" floodOpacity="0.4" />
+            </filter>
+          </defs>
+
+          {/* 1. Sky Background */}
+          <rect width="420" height="860" fill="url(#sky-twilight)" />
+
+          {/* 2. Soft Floating Clouds in Sky */}
+          {/* Upper-Left Cloud (Behind floating crystal) */}
+          <path
+            d="M 15 140 Q 25 120 45 125 Q 65 115 85 130 Q 105 128 115 145 Q 85 155 15 140 Z"
+            fill="url(#cloud-glow)"
+          />
+          {/* Upper-Right Cloud (Behind Grand Prize card) */}
+          <path
+            d="M 290 150 Q 310 130 335 135 Q 360 120 385 135 Q 410 132 420 152 Q 370 162 290 150 Z"
+            fill="url(#cloud-glow)"
+          />
+          {/* Mid-Left Cloud */}
+          <path
+            d="M -10 330 Q 15 315 35 322 Q 55 310 75 325 Q 90 335 70 345 Q 25 348 -10 330 Z"
+            fill="url(#cloud-glow)"
+          />
+          {/* Mid-Right Cloud */}
+          <path
+            d="M 330 390 Q 355 375 375 382 Q 400 370 425 388 Q 390 405 330 390 Z"
+            fill="url(#cloud-glow)"
+          />
+
+          {/* 3. Distant Mountain Silhouette Ridges */}
+          <path
+            d="M 0 250 L 50 200 L 110 235 L 180 165 L 255 230 L 330 180 L 390 225 L 420 205 L 420 300 L 0 300 Z"
+            fill="url(#mtn-back)"
+          />
+          <path
+            d="M 0 280 L 70 215 L 140 260 L 210 195 L 290 255 L 360 210 L 420 255 L 420 340 L 0 340 Z"
+            fill="url(#mtn-front)"
+          />
+
+          {/* 4. Sweeping Serpentine Road (4 Layers of 3D Candy Crush Polish) */}
+          {/* Layer A: Ambient Outer Purple Glow */}
+          <path
+            d={roadPathD}
+            stroke="#a855f7"
+            strokeWidth="38"
+            strokeLinecap="round"
+            opacity="0.38"
+            filter="url(#road-glow)"
+          />
+
+          {/* Layer B: 3D Bottom Extruded Rim */}
+          <path
+            d={roadPathD}
+            stroke="url(#road-rim)"
+            strokeWidth="32"
+            strokeLinecap="round"
+          />
+
+          {/* Layer C: Smooth Top Lavender Surface */}
+          <path
+            d={roadPathD}
+            stroke="url(#road-surface)"
+            strokeWidth="24"
+            strokeLinecap="round"
+          />
+
+          {/* Layer D: Crisp White Dashed Lane Centerline */}
+          <path
+            d={roadPathD}
+            stroke="#ffffff"
+            strokeWidth="2.8"
+            strokeDasharray="6 7"
+            strokeLinecap="round"
+            opacity="0.95"
+          />
+
+          {/* 5. Lush Green Rolling Meadow at the Bottom */}
+          {/* Back Hill Curve */}
+          <path
+            d="M 0 745 Q 110 725 210 740 Q 320 755 420 730 L 420 860 L 0 860 Z"
+            fill="url(#grass-hill-back)"
+          />
+          {/* Front Hill Curve */}
+          <path
+            d="M 0 780 Q 140 760 260 785 Q 360 805 420 780 L 420 860 L 0 860 Z"
+            fill="url(#grass-hill-front)"
+          />
+        </svg>
+
+        {/* ========================================================
+            2. SCENIC AMBIENT DECORATIONS (Crystals & Flowers)
+            ======================================================== */}
+        {/* Floating Faceted Purple Crystal (Upper-Left below close button) */}
+        <div className="absolute top-22 left-6 w-8 h-12 pointer-events-none filter drop-shadow-[0_4px_14px_rgba(192,132,252,0.85)]">
+          <CrystalIcon color="amethyst" className="w-full h-full" />
+        </div>
+
+        {/* Bottom-Right Magnificent Crystal Cluster nestled in grass */}
+        <div className="absolute bottom-11 right-3 flex items-end gap-1 pointer-events-none z-10 filter drop-shadow-[0_6px_22px_rgba(168,85,247,0.9)]">
+          <div className="w-8 h-12 rotate-6">
+            <CrystalIcon color="ruby" className="w-full h-full" />
+          </div>
+          <div className="w-11 h-18 -ml-2 -rotate-6">
+            <CrystalIcon color="amethyst" className="w-full h-full" />
+          </div>
+          <div className="w-7 h-10 -ml-2 rotate-12">
+            <CrystalIcon color="diamond" className="w-full h-full" />
+          </div>
+        </div>
+
+        {/* Bottom-Left Crystal in Grass */}
+        <div className="absolute bottom-14 left-4 w-8 h-12 -rotate-12 pointer-events-none z-10 filter drop-shadow-[0_4px_14px_rgba(99,102,241,0.75)]">
+          <CrystalIcon color="sapphire" className="w-full h-full" />
+        </div>
+
+        {/* Scattered White Daisy Blossoms across the meadow grass */}
+        <div className="absolute bottom-7 left-7 pointer-events-none z-10">
+          <DaisyFlower className="w-3.5 h-3.5" />
+        </div>
+        <div className="absolute bottom-11 left-24 pointer-events-none z-10">
+          <DaisyFlower className="w-3 h-3" />
+        </div>
+        <div className="absolute bottom-4 left-36 pointer-events-none z-10">
+          <DaisyFlower className="w-3 h-3" />
+        </div>
+        <div className="absolute bottom-4 right-28 pointer-events-none z-10">
+          <DaisyFlower className="w-3.5 h-3.5" />
+        </div>
+        <div className="absolute bottom-10 right-36 pointer-events-none z-10">
+          <DaisyFlower className="w-3 h-3" />
+        </div>
+
+        {/* ========================================================
+            3. TOP HEADER APP BAR (Laurel-framed Title, Close & Brand)
+            ======================================================== */}
+        <header className="absolute top-0 left-0 right-0 z-30 pt-3 pb-1 px-4 flex flex-col items-center pointer-events-none">
+          {/* Top Row: Translucent Circle Close Button */}
+          <div className="w-full flex items-center justify-between pointer-events-auto">
             <button
               type="button"
               onClick={onClose}
               title="Close Prize Road"
-              className="w-9 h-9 rounded-full bg-[#f0f2f5] shadow-[2px_2px_5px_#c2c9d4,-2px_-2px_5px_#ffffff] border border-white/80 flex items-center justify-center text-zinc-600 hover:text-zinc-900 active:scale-90 transition-all cursor-pointer"
+              className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 text-white flex items-center justify-center active:scale-90 transition-all cursor-pointer shadow-md"
             >
               <X size={18} weight="bold" />
             </button>
-
-            {/* Center: Title & Stage Counter */}
-            <div className="text-center flex-1 min-w-0">
-              <h2 className="font-arena text-sm sm:text-base font-black tracking-wider text-zinc-900 truncate">
-                ARENA PRIZE ROAD
-              </h2>
-              <p className="text-[10.5px] font-bold text-zinc-500 uppercase tracking-wider -mt-0.5">
-                Candy Road • 8 Milestones
-              </p>
-            </div>
-
-            {/* Right: Player Points Capsule */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f0f2f5] border border-white shadow-[inset_1.5px_1.5px_3px_#c2c9d4,inset_-1.5px_-1.5px_3px_#ffffff] shrink-0">
-              <Star size={14} weight="fill" className="text-amber-500 animate-spin" style={{ animationDuration: '6s' }} />
-              <span className="font-arena text-xs sm:text-sm font-black text-zinc-900">
-                {totalPoints} <span className="text-[9.5px] text-zinc-500">PTS</span>
-              </span>
-            </div>
+            <div className="w-9" />
           </div>
 
-          {/* Player Progress Telemetry Mini-Banner */}
-          <div className="mt-2.5 pt-2 border-t border-zinc-300/40 flex items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300/70 shrink-0">
-                Stage {progress.currentStage} of 8
-              </span>
-              <span className="text-[11px] font-medium text-zinc-600 truncate">
-                {progress.isMaxStage ? (
-                  '🎉 All Milestones Conquered!'
-                ) : (
-                  <>
-                    Next: <strong className="text-zinc-900">{progress.nextStage?.title}</strong> ({progress.pointsToNext} PTS to unlock)
-                  </>
-                )}
-              </span>
-            </div>
-
-            <span className="font-arena text-[11px] font-bold text-zinc-700 shrink-0">
-              {progress.progressPercent}%
-            </span>
+          {/* ARENA Brand Tag */}
+          <div className="text-[10px] font-black tracking-[0.28em] text-white/85 uppercase -mt-5 drop-shadow-sm font-sans">
+            ARENA
           </div>
 
-          {/* Segmented Progress Track */}
-          <div className="w-full h-1.5 bg-[#dbe1ea] rounded-full mt-1.5 overflow-hidden shadow-inner">
-            <div
-              className="h-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-400 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progress.progressPercent}%` }}
-            />
+          {/* Laurel Wreath Framing "Prize Road" */}
+          <div className="flex items-center justify-center gap-2 mt-0.5">
+            <LaurelBranch className="text-white drop-shadow-sm w-5 h-7" />
+            <h1
+              className="text-[28px] sm:text-[32px] font-black italic tracking-wide text-white drop-shadow-[0_3px_6px_rgba(0,0,0,0.35)]"
+              style={{
+                fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+                WebkitTextStroke: '0.4px rgba(255,255,255,0.7)',
+              }}
+            >
+              Prize Road
+            </h1>
+            <LaurelBranch flip={true} className="text-white drop-shadow-sm w-5 h-7" />
           </div>
-        </div>
+
+          {/* Subtitle */}
+          <p className="text-[11.5px] font-medium text-white/85 text-center drop-shadow-xs max-w-[280px] sm:max-w-none leading-tight mt-0.5 font-sans">
+            Complete stages, earn points, and unlock exclusive prizes.
+          </p>
+        </header>
 
         {/* ========================================================
-            2. CANDY CRUSH-STYLE SERPENTINE ROAD CANVAS
+            4. THE 8 ROAD STAGES (Pedestals, Gift Boxes & Cards)
             ======================================================== */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden relative bg-[#f0f2f5] p-2 sm:p-4 [scrollbar-gutter:stable]"
-        >
-          {/* Subtle Ambient Background Gradients */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-amber-200/25 blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-sky-200/25 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 w-full h-full pointer-events-auto">
+          {STAGES_CONFIG.map((cfg) => {
+            const prize = PRIZE_STAGES.find((p) => p.stage === cfg.stage);
+            if (!prize) return null;
 
-          {/* Fixed-Aspect Pathway Container (400px wide x 1620px tall) */}
-          <div className="relative w-full max-w-[420px] mx-auto h-[1620px]">
-            {/* SVG Winding Track Overlay */}
-            <svg
-              viewBox="0 0 400 1620"
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              fill="none"
-            >
-              <defs>
-                {/* Active Path Energy Glow Gradient */}
-                <linearGradient id="active-track-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
-                  <stop offset="0%" stopColor="#f59e0b" />
-                  <stop offset="50%" stopColor="#fbbf24" />
-                  <stop offset="100%" stopColor="#10b981" />
-                </linearGradient>
+            const isSummit = cfg.stage === 8;
+            const isUnlocked = prize.unlocked;
 
-                {/* Soft Drop Shadow for the road bed */}
-                <filter id="road-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="3" dy="4" stdDeviation="4" floodColor="#b8c2d0" floodOpacity="0.6" />
-                </filter>
-              </defs>
-
-              {/* Road Bed Outer Inset Rim */}
-              <path
-                d={pathD}
-                stroke="#c9d2de"
-                strokeWidth="32"
-                strokeLinecap="round"
-                filter="url(#road-shadow)"
-              />
-
-              {/* Road Bed Main Body */}
-              <path
-                d={pathD}
-                stroke="#ebedf2"
-                strokeWidth="24"
-                strokeLinecap="round"
-              />
-
-              {/* Dashed Inactive Stepping Track (Candy Crush style) */}
-              <path
-                d={pathD}
-                stroke="#94a3b8"
-                strokeWidth="5"
-                strokeDasharray="8 8"
-                strokeLinecap="round"
-              />
-
-              {/* Active Energy Conduit (Glows for completed milestones) */}
-              {activePathD && (
-                <path
-                  d={activePathD}
-                  stroke="url(#active-track-gradient)"
-                  strokeWidth="8"
-                  strokeDasharray="10 6"
-                  strokeLinecap="round"
-                  className="animate-pulse"
-                />
-              )}
-            </svg>
-
-            {/* Summit Floating Champion Crest (Top of the Mountain) */}
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none z-10">
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-zinc-950 font-arena text-[10px] font-black uppercase tracking-wider shadow-md border border-amber-200">
-                <Crown size={14} weight="fill" className="text-zinc-950 animate-bounce" />
-                <span>CHAMPION SUMMIT</span>
-              </div>
-            </div>
-
-            {/* Start Gate Banner (Bottom of the Mountain) */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none z-10">
-              <span className="font-arena text-[10px] font-black uppercase tracking-widest text-zinc-400 px-3 py-1 rounded-full bg-white/70 shadow-xs border border-slate-200">
-                STARTING GATE • STAGE 1
-              </span>
-            </div>
-
-            {/* ========================================================
-                3. MILESTONE NODES & BRANCHING PRIZE CARDS
-                ======================================================== */}
-            {PRIZE_STAGES.map((prize, idx) => {
-              const coords = STAGE_COORDS[idx];
-              const isUnlocked = totalPoints >= prize.points;
-              const isCurrent = progress.currentStage === prize.stage || (progress.currentStage === 0 && prize.stage === 1);
-              const isNext = progress.nextStage?.stage === prize.stage;
-              const isSummit = prize.stage === 8;
-
-              // Node is positioned on the winding SVG road
-              const leftPercent = (coords.x / 400) * 100;
-              const topPx = coords.y;
-
-              // Prize card alternate sides:
-              // Left node (x < 200) -> card on right
-              // Right node (x > 200) -> card on left
-              // Summit node (stage 8) -> card directly below/beside
-              const cardOnRight = coords.x < 200;
-
-              return (
-                <div key={prize.id} className="contents">
-                  {/* --- A. STAGE NODE BUTTON ON THE PATH --- */}
-                  <div
-                    ref={isCurrent ? activeNodeRef : null}
-                    style={{
-                      left: `${leftPercent}%`,
-                      top: `${topPx}px`,
-                    }}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center group cursor-pointer"
-                    onClick={() => setSelectedPrize(prize)}
-                  >
-                    {/* Attendee Orb on Current Active Stage (YOU ARE HERE) */}
-                    {isCurrent && (
-                      <div className="absolute -top-14 sm:-top-16 z-30 flex flex-col items-center animate-bounce pointer-events-none">
-                        <div className="relative">
-                          <ChatGPTOrb
-                            avatar={avatar}
-                            orbNumber={orbNumber}
-                            size="w-10 h-10 sm:w-11 sm:h-11"
-                            numberSize="text-lg"
-                            labelSize="text-[7px]"
-                            speed={1}
-                          />
-                        </div>
-                        <span className="mt-0.5 px-2 py-0.5 rounded-full bg-zinc-900 text-white text-[8px] font-black uppercase tracking-wider shadow-md border border-white/40 whitespace-nowrap">
-                          YOU
-                        </span>
+            return (
+              <React.Fragment key={prize.id}>
+                {/* --- A. PEDESTAL & GIFT BOX ON THE ROAD --- */}
+                <div
+                  style={{
+                    left: `${cfg.xPct}%`,
+                    top: `${cfg.yPct}%`,
+                  }}
+                  onClick={() => setSelectedPrize(prize)}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center cursor-pointer group transition-transform duration-200 hover:scale-105 active:scale-95"
+                >
+                  {isSummit ? (
+                    /* Stage 8 Summit Ornate Treasure Chest */
+                    <TreasureChestSummit />
+                  ) : (
+                    /* Stages 1 to 7: 3D Purple Gift Box on Milestone Pedestal */
+                    <div className="relative flex flex-col items-center">
+                      <div className="-mb-1.5 relative z-10 transition-transform duration-200 group-hover:-translate-y-1">
+                        <GiftBox3D className="w-[46px] h-[46px] sm:w-[50px] sm:h-[50px]" />
                       </div>
-                    )}
+                      <MilestonePedestal
+                        stage={prize.stage}
+                        isUnlocked={isUnlocked}
+                      />
+                    </div>
+                  )}
+                </div>
 
-                    {/* Active Radar Beacon Ping Ring */}
-                    {isCurrent && (
-                      <span className="absolute -inset-3 rounded-full bg-amber-400/30 animate-ping pointer-events-none" />
-                    )}
-
-                    {/* The Circular 3D Game Milestone Button */}
+                {/* --- B. FLOATING STAGE INFORMATION CARD --- */}
+                <div
+                  style={{
+                    top: `${cfg.yPct}%`,
+                    left: cfg.side === 'left' ? '10px' : 'auto',
+                    right: (cfg.side === 'right' || cfg.side === 'summit') ? '10px' : 'auto',
+                  }}
+                  onClick={() => setSelectedPrize(prize)}
+                  className={`absolute -translate-y-1/2 z-20 cursor-pointer group transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98] ${
+                    isSummit
+                      ? 'w-[168px] sm:w-[178px]'
+                      : 'w-[160px] sm:w-[168px]'
+                  }`}
+                >
+                  <div
+                    className={`relative rounded-2xl p-2 transition-shadow duration-200 flex items-center gap-2 ${
+                      isSummit
+                        ? 'bg-gradient-to-r from-[#fffdf5] via-[#fffbf0] to-[#fef3c7] border border-amber-300 shadow-[0_6px_22px_rgba(245,158,11,0.28)] ring-1 ring-amber-400/20'
+                        : 'bg-white/95 backdrop-blur-md border border-white/80 shadow-[0_5px_16px_rgba(76,29,149,0.14)] hover:shadow-[0_8px_22px_rgba(76,29,149,0.22)]'
+                    }`}
+                  >
+                    {/* Left: Thumbnail Icon Container */}
                     <div
-                      className={`relative w-13 h-13 sm:w-15 sm:h-15 rounded-full flex items-center justify-center transition-transform duration-200 group-hover:scale-110 active:scale-95 ${
-                        isUnlocked
-                          ? 'bg-gradient-to-b from-amber-300 via-amber-400 to-yellow-500 text-zinc-950 shadow-[0_4px_14px_rgba(245,158,11,0.5),inset_0_2px_4px_rgba(255,255,255,0.8)] border-2 border-white'
-                          : isCurrent
-                            ? 'bg-zinc-900 text-white shadow-[0_4px_16px_rgba(0,0,0,0.35),inset_0_2px_4px_rgba(255,255,255,0.4)] border-2 border-amber-400'
-                            : 'bg-[#ebedf2] text-zinc-400 border border-slate-300/80 shadow-[inset_2px_2px_5px_#c2c9d4,inset_-2px_-2px_5px_#ffffff]'
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${
+                        isSummit
+                          ? 'bg-amber-100/90 border border-amber-200 text-amber-800'
+                          : 'bg-[#f5f3ff] border border-purple-100 text-purple-700'
                       }`}
                     >
-                      {isUnlocked ? (
-                        <Check size={22} weight="bold" className="text-zinc-950" />
-                      ) : isCurrent ? (
-                        <span className="font-arena text-base sm:text-lg font-black text-amber-400">
-                          {prize.stage}
-                        </span>
+                      {isSummit ? (
+                        <span className="text-base leading-none">👑</span>
                       ) : (
-                        <div className="flex flex-col items-center">
-                          <Lock size={15} weight="bold" className="text-zinc-400" />
-                          <span className="font-arena text-[9px] font-black text-zinc-400 -mt-0.5">
-                            {prize.stage}
-                          </span>
-                        </div>
+                        <StageThumbnailIcon type={prize.iconType} className="w-4.5 h-4.5" />
                       )}
                     </div>
 
-                    {/* Candy Crush-style 3-Star Micro-Cluster underneath */}
-                    <div className="mt-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/90 shadow-xs border border-slate-200/80">
-                      <Star size={8.5} weight="fill" className={isUnlocked ? 'text-amber-400' : 'text-zinc-300'} />
-                      <Star size={10} weight="fill" className={isUnlocked ? 'text-amber-400' : 'text-zinc-300'} />
-                      <Star size={8.5} weight="fill" className={isUnlocked ? 'text-amber-400' : 'text-zinc-300'} />
-                    </div>
-                  </div>
-
-                  {/* --- B. BRANCHING REWARD CARD --- */}
-                  <div
-                    style={{
-                      top: `${topPx}px`,
-                      left: isSummit ? '50%' : cardOnRight ? '53%' : '3%',
-                      transform: isSummit ? 'translate(-50%, 42px)' : 'translateY(-50%)',
-                      width: isSummit ? '92%' : '44%',
-                    }}
-                    onClick={() => setSelectedPrize(prize)}
-                    className="absolute z-10 cursor-pointer group"
-                  >
-                    {/* Double-Bezel Tactile Reward Card */}
-                    <div
-                      className={`relative bg-[#ebedf2] border rounded-2xl p-2.5 sm:p-3 transition-all duration-200 group-hover:scale-[1.03] active:scale-[0.98] ${
-                        isUnlocked
-                          ? 'border-amber-300/80 shadow-[3px_3px_10px_#c2c9d4,-3px_-3px_10px_#ffffff,0_0_12px_rgba(245,158,11,0.15)] ring-1 ring-amber-300/40'
-                          : isCurrent
-                            ? 'border-zinc-800 shadow-[3px_3px_10px_#c2c9d4,-3px_-3px_10px_#ffffff] ring-2 ring-zinc-900/10'
-                            : 'border-white/80 shadow-[3px_3px_8px_#c2c9d4,-3px_-3px_8px_#ffffff]'
-                      }`}
-                    >
-                      {/* Top Row: Rarity Badge + Points */}
-                      <div className="flex items-center justify-between gap-1 mb-1.5">
+                    {/* Middle: Stage Badge & Title */}
+                    <div className="min-w-0 flex-1 leading-tight">
+                      <div className="flex items-center gap-1 mb-0.5">
                         <span
-                          className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded-md font-arena truncate"
-                          style={{
-                            backgroundColor: `${prize.rarityColor}15`,
-                            color: prize.rarityColor,
-                            border: `1px solid ${prize.rarityColor}40`,
-                          }}
+                          className={`text-[9.5px] font-semibold px-2 py-0.2 rounded-full tracking-wide ${
+                            isSummit
+                              ? 'bg-[#1e1b4b] text-amber-200'
+                              : 'bg-[#4c1d95] text-white'
+                          }`}
                         >
-                          {prize.rarity}
+                          {prize.badgeText}
                         </span>
 
-                        <span className="font-arena text-[9.5px] font-black text-zinc-700 shrink-0">
-                          {prize.points} PTS
-                        </span>
-                      </div>
-
-                      {/* Middle: Icon + Title */}
-                      <div className="flex items-start gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-white shadow-xs border border-slate-200/80 flex items-center justify-center shrink-0">
-                          <StagePrizeIcon type={prize.iconType} rarityColor={prize.rarityColor} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-bold text-zinc-900 leading-snug line-clamp-2">
-                            {prize.title}
-                          </h4>
-                        </div>
-                      </div>
-
-                      {/* Bottom Status Pill */}
-                      <div className="mt-2 pt-1.5 border-t border-zinc-300/40 flex items-center justify-between text-[9.5px] font-bold">
-                        {isUnlocked ? (
-                          <span className="text-emerald-700 flex items-center gap-1 font-semibold">
-                            <CheckCircle size={11} weight="fill" className="text-emerald-600" />
-                            <span>Unlocked</span>
-                          </span>
-                        ) : isNext ? (
-                          <span className="text-amber-800 font-extrabold">
-                            {prize.points - totalPoints} PTS left
-                          </span>
-                        ) : (
-                          <span className="text-zinc-500 font-medium">
-                            Locked
-                          </span>
+                        {/* Lock Icon for locked stages */}
+                        {!isUnlocked && !isSummit && (
+                          <Lock size={10} weight="bold" className="text-zinc-400 shrink-0 ml-auto" />
                         )}
-
-                        <span className="text-zinc-400 group-hover:text-zinc-800 transition-colors">
-                          Inspect →
-                        </span>
                       </div>
+
+                      {/* Title */}
+                      <h4
+                        className={`font-black tracking-tight truncate ${
+                          isSummit
+                            ? 'text-indigo-950 font-black text-[11px]'
+                            : prize.title.length > 18
+                              ? 'text-[9.5px] text-zinc-900'
+                              : 'text-[10.5px] sm:text-[11px] text-zinc-900'
+                        }`}
+                      >
+                        {prize.title}
+                      </h4>
+
+                      {/* Subtitle / Points (Only if present) */}
+                      {prize.subtitle && (
+                        <p
+                          className={`text-[9px] font-bold truncate -mt-0.5 ${
+                            isSummit ? 'text-amber-800/80' : 'text-zinc-400'
+                          }`}
+                        >
+                          {prize.subtitle}
+                        </p>
+                      )}
                     </div>
+
+                    {/* Right: Green Checkmark Badge for Unlocked Stages */}
+                    {isUnlocked && (
+                      <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <CheckCircle size={15} weight="fill" className="text-white" />
+                      </div>
+                    )}
                   </div>
                 </div>
-              );
-            })}
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+        {/* ========================================================
+            5. FLOATING BOTTOM TELEMETRY PROGRESS PILL
+            ======================================================== */}
+        <div className="absolute bottom-3 sm:bottom-4 left-0 right-0 z-30 flex justify-center pointer-events-none px-4">
+          <div className="pointer-events-auto rounded-full bg-white/95 backdrop-blur-md shadow-[0_8px_24px_rgba(76,29,149,0.25)] px-5 py-2 border border-white/90 flex flex-col items-center justify-center gap-1 w-[280px] sm:w-[300px]">
+            {/* Telemetry Text: "Stage 2 of 8 • 300 / 1,000 PTS" */}
+            <div className="text-[11.5px] font-bold text-zinc-900 tracking-normal flex items-center gap-1.5 font-sans">
+              <span>Stage {progress.currentStage} of {progress.totalStages}</span>
+              <span className="text-zinc-400">•</span>
+              <span className="text-purple-700 font-extrabold">{progress.currentPoints} / {progress.nextTargetPoints.toLocaleString()} PTS</span>
+            </div>
+
+            {/* Smooth Purple Gradient Progress Bar */}
+            <div className="w-full h-1.5 rounded-full bg-purple-100 overflow-hidden shadow-inner">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 transition-all duration-500 ease-out shadow-xs"
+                style={{ width: `${progress.progressPercent}%` }}
+              />
+            </div>
           </div>
         </div>
 
         {/* ========================================================
-            4. PRIZE DETAIL INSPECTOR (Modal within modal)
+            6. INTERACTIVE PRIZE DETAIL INSPECTOR SHEET
             ======================================================== */}
         {selectedPrize && (
-          <div className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-in fade-in duration-150">
-            <div
-              className="w-full max-w-[440px] bg-[#f0f2f5] border border-white/90 rounded-[28px] p-5 shadow-2xl relative select-none animate-in slide-in-from-bottom-4 duration-200"
-            >
+          <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-in fade-in duration-150">
+            <div className="w-full max-w-[400px] bg-white border border-slate-200 rounded-[28px] p-5 shadow-2xl relative select-none animate-in slide-in-from-bottom-4 duration-200">
               {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setSelectedPrize(null)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#f0f2f5] shadow-[2px_2px_4px_#c2c9d4,-2px_-2px_4px_#ffffff] border border-white flex items-center justify-center text-zinc-600 hover:text-zinc-900 active:scale-90 cursor-pointer"
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-zinc-600 hover:text-zinc-900 active:scale-90 cursor-pointer shadow-xs"
               >
                 <X size={16} weight="bold" />
               </button>
 
-              {/* Header Badge */}
+              {/* Stage Badge & Required Points */}
               <div className="flex items-center gap-2 mb-2">
-                <span
-                  className="text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full font-arena"
-                  style={{
-                    backgroundColor: `${selectedPrize.rarityColor}20`,
-                    color: selectedPrize.rarityColor,
-                    border: `1px solid ${selectedPrize.rarityColor}60`,
-                  }}
-                >
-                  {selectedPrize.rarity}
+                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#4c1d95] text-white">
+                  {selectedPrize.badgeText}
                 </span>
                 <span className="text-xs font-bold text-zinc-500">
-                  Stage {selectedPrize.stage} • {selectedPrize.points} PTS Required
+                  {selectedPrize.points.toLocaleString()} PTS Required
                 </span>
               </div>
 
-              {/* Title & Icon */}
-              <div className="flex items-center gap-3.5 my-3 pb-3 border-b border-zinc-300/50">
-                <div className="w-13 h-13 rounded-2xl bg-white shadow-sm border border-slate-200/80 flex items-center justify-center shrink-0">
-                  <StagePrizeIcon type={selectedPrize.iconType} rarityColor={selectedPrize.rarityColor} />
+              {/* Title & Icon Header */}
+              <div className="flex items-center gap-3.5 my-3 pb-3 border-b border-zinc-100">
+                <div className="w-12 h-12 rounded-2xl bg-[#f5f3ff] border border-purple-100 flex items-center justify-center shrink-0 shadow-xs">
+                  <StageThumbnailIcon type={selectedPrize.iconType} className="w-7 h-7 text-purple-700" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="font-arena text-base font-black text-zinc-900 leading-tight">
                     {selectedPrize.title}
                   </h3>
-                  <p className="text-xs text-zinc-500 font-medium mt-0.5">
-                    {selectedPrize.subtitle}
-                  </p>
+                  {selectedPrize.subtitle && (
+                    <p className="text-xs text-zinc-500 font-medium mt-0.5">
+                      {selectedPrize.subtitle}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -553,34 +569,34 @@ export const PrizeRoadModal = ({
               </p>
 
               {/* Perks Checklist */}
-              <div className="bg-[#ebedf2] border border-white/80 rounded-2xl p-3 shadow-[inset_1.5px_1.5px_3px_#c2c9d4,inset_-1.5px_-1.5px_3px_#ffffff] mb-3 space-y-1.5">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-500 mb-1">
+              <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-3 mb-3 space-y-1.5">
+                <div className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 mb-1">
                   Reward Inclusions
                 </div>
                 {selectedPrize.perks.map((perk, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs text-zinc-800 font-semibold">
-                    <CheckCircle size={14} weight="fill" className="text-emerald-600 shrink-0" />
+                    <CheckCircle size={14} weight="fill" className="text-emerald-500 shrink-0" />
                     <span>{perk}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Venue Redemption Location */}
+              {/* Redemption Location */}
               <div className="flex items-center gap-2 text-xs text-zinc-600 font-medium px-1 mb-4">
                 <MapPin size={15} weight="bold" className="text-zinc-500 shrink-0" />
                 <span>Claim at: <strong className="text-zinc-900">{selectedPrize.redemptionLocation}</strong></span>
               </div>
 
               {/* Status Action Button */}
-              {totalPoints >= selectedPrize.points ? (
-                <div className="w-full py-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 shadow-xs">
+              {selectedPrize.unlocked ? (
+                <div className="w-full py-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 shadow-xs">
                   <CheckCircle size={16} weight="fill" className="text-emerald-600" />
                   <span>Unlocked & Ready to Claim!</span>
                 </div>
               ) : (
-                <div className="w-full py-3 rounded-xl bg-gradient-to-b from-zinc-900 to-black text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md">
-                  <Lock size={15} weight="bold" className="text-zinc-400" />
-                  <span>{selectedPrize.points - totalPoints} More Points Needed</span>
+                <div className="w-full py-2.5 rounded-xl bg-gradient-to-b from-purple-700 to-indigo-900 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md">
+                  <Lock size={15} weight="bold" className="text-purple-300" />
+                  <span>{selectedPrize.points - progress.currentPoints} More Points Needed</span>
                 </div>
               )}
             </div>

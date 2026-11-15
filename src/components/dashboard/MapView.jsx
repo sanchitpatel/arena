@@ -23,7 +23,7 @@ import { OrbHeadingBeam, CompassToolbarButton, useDeviceHeading } from '../map/O
 import { QuestSliderCard } from '../map/QuestSliderCard';
 import { getInAppPermission, subscribeToPermissionChanges, isIosDevice } from '../../utils/mediaGuard';
 import { PrizeFloatingButton } from '../prizes/PrizeFloatingButton';
-import { PrizeRoadModal } from '../prizes/PrizeRoadModal';
+import { PrizeRoadModal } from '../prizes/PrizeRoadModal?v=2';
 import { calculatePrizeProgress } from '../../data/prizesData';
 
 /**
