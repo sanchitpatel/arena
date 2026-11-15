@@ -175,7 +175,7 @@ const playCrystalChime = () => {
  * 3D Prismatic Quartz Crystal Icon
  * Exact SVG design built from public/crystal.md
  */
-function FloatingGemIcon({ color = 'amber', gradient = 'from-amber-400 to-yellow-600', isCompleted = false }) {
+const FloatingGemIcon = React.memo(function FloatingGemIcon({ color = 'amber', gradient = 'from-amber-400 to-yellow-600', isCompleted = false }) {
   if (isCompleted) {
     return (
       <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-[0_0_14px_rgba(16,185,129,0.8),inset_0_2px_4px_rgba(255,255,255,0.6)] border-2 border-white scale-105">
@@ -185,11 +185,11 @@ function FloatingGemIcon({ color = 'amber', gradient = 'from-amber-400 to-yellow
   }
 
   return (
-    <div className="relative w-9 h-12 sm:w-12 sm:h-16 flex items-center justify-center filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.30)]">
+    <div className="relative w-9 h-12 sm:w-12 sm:h-16 flex items-center justify-center">
       <CrystalIcon color={color} className="w-full h-full" />
     </div>
   );
-}
+});
 
 export const MapView = ({ player, onNavigate, isActive = true }) => {
   const guestId = player?.guest_id || getPlayerId() || 'Guest001';
@@ -200,12 +200,12 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
   // Gesture & Transform state
   const transformRef = useRef(null);
   const layerRef = useRef(null);
+  const orbScaleRef = useRef(null);
   const downPosRef = useRef({ x: 0, y: 0 });
   const [isZoomed, setIsZoomed] = useState(false);
 
-  // Device orientation / Compass heading
+  // Device orientation / Compass heading (controls compass button; beam handles rotation internally without MapView re-renders)
   const {
-    heading,
     isActive: isCompassActive,
     toggleHeading,
     requestHeadingPermission,
@@ -284,12 +284,14 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
   const wasDrag = (e) => Math.hypot(e.clientX - downPosRef.current.x, e.clientY - downPosRef.current.y) > 24;
 
-  // Scale change handler (scroll fix & CSS variable counter-scaling)
+  // Scale change handler (direct GPU counter-scaling targeting only the attendee orb)
   const handleScaleChange = (scale) => {
     if (typeof scale !== 'number' || isNaN(scale)) return;
     const zoomed = scale > 1.01;
     setIsZoomed((prev) => (prev !== zoomed ? zoomed : prev));
-    layerRef.current?.style.setProperty('--inv-scale', String(1 / scale));
+    if (orbScaleRef.current) {
+      orbScaleRef.current.style.transform = `scale(${1 / scale})`;
+    }
   };
 
   // Reset transform when tab becomes inactive
@@ -537,8 +539,11 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                               {/* Beacon Sonar Ground Pulse (Concentric behind crystal center) */}
                               {!isCompleted && (
                                 <div
-                                  className="absolute inset-0 m-auto w-12 h-12 rounded-full animate-beacon-pulse pointer-events-none z-0 blur-[1px]"
-                                  style={{ backgroundColor: quest.glowColor }}
+                                  className="absolute inset-0 m-auto w-12 h-12 rounded-full animate-beacon-pulse pointer-events-none z-0"
+                                  style={{
+                                    background: `radial-gradient(circle, ${quest.glowColor} 0%, rgba(165, 180, 252, 0.25) 50%, transparent 72%)`,
+                                    willChange: 'transform, opacity',
+                                  }}
                                 />
                               )}
 
@@ -553,7 +558,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
 
                             {/* Compact floating points pill */}
                             <div
-                              className={`mt-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight border shadow-sm backdrop-blur-md transition-all group-hover:scale-110 ${isCompleted
+                              className={`mt-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight border shadow-sm transition-all group-hover:scale-110 ${isCompleted
                                   ? 'bg-emerald-500/90 text-white border-emerald-300'
                                   : isSelected
                                     ? 'bg-zinc-900 text-white border-white scale-105'
@@ -580,17 +585,24 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                       }}
                     >
                       <div
+                        ref={orbScaleRef}
                         style={{
-                          transform: 'scale(var(--inv-scale, 1))',
                           transformOrigin: 'center center',
+                          willChange: 'transform',
                         }}
                         className="relative flex flex-col items-center"
                       >
-                        {/* Google Maps-style Flashlight Heading Beam (Phone Orientation) */}
-                        <OrbHeadingBeam heading={heading} isActive={isCompassActive} />
+                        {/* Google Maps-style Flashlight Heading Beam (Internal smooth GPU rotation) */}
+                        <OrbHeadingBeam isActive={isCompassActive} />
 
                         {/* Ground Shadow & Atmospheric Glow Aura */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-sky-400/40 blur-md pointer-events-none animate-pulse" />
+                        <div
+                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full pointer-events-none animate-pulse"
+                          style={{
+                            background: 'radial-gradient(circle, rgba(56, 189, 248, 0.45) 0%, rgba(56, 189, 248, 0.15) 50%, transparent 75%)',
+                            willChange: 'opacity',
+                          }}
+                        />
 
                         {/* The Actual Attendee Orb Component */}
                         <div className="relative">

@@ -12,7 +12,7 @@ import {
  * Handles iOS Safari 13+ permission prompts and Android Chrome absolute heading.
  * Includes shortest-path angle unwrapping so 359° -> 1° never spins backwards.
  */
-export function useDeviceHeading() {
+export function useDeviceHeading({ trackHeading = false } = {}) {
   const [heading, setHeading] = useState(0);
   const [isActive, setIsActive] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -120,9 +120,9 @@ export function useDeviceHeading() {
     }
   }, [isActive, requestHeadingPermission]);
 
-  // Orientation event listener
+  // Orientation event listener (only runs if caller explicitly requests React heading state)
   useEffect(() => {
-    if (!isActive || typeof window === 'undefined') return;
+    if (!trackHeading || !isActive || typeof window === 'undefined') return;
 
     const handleOrientation = (e) => {
       let rawHeading = null;
@@ -173,19 +173,69 @@ export function useDeviceHeading() {
 /**
  * Google Maps-style Flashlight Beam (Heading Cone)
  * Radiates a smooth, glowing cone of light in the direction the phone is physically facing.
+ * Uses direct GPU DOM transform mutation on orientation events to avoid triggering
+ * React component re-renders (keeping pinch-to-zoom at a solid 60fps).
  */
-export function OrbHeadingBeam({ heading = 0, isActive = false, buildingOffset = 0 }) {
-  // Real world heading adjusted by optional architectural floorplan bearing offset
-  const finalAngle = heading + buildingOffset;
+export function OrbHeadingBeam({ heading: externalHeading, isActive = false, buildingOffset = 0 }) {
+  const beamRef = useRef(null);
+  const continuousHeadingRef = useRef(0);
+
+  useEffect(() => {
+    // If heading is explicitly passed from outside, update transform directly
+    if (typeof externalHeading === 'number') {
+      if (beamRef.current) {
+        beamRef.current.style.transform = `translate(-50%, -50%) rotate(${externalHeading + buildingOffset}deg)`;
+      }
+      return;
+    }
+
+    if (!isActive || typeof window === 'undefined') return;
+
+    const handleOrientation = (e) => {
+      let rawHeading = null;
+
+      // 1. iOS Safari webkitCompassHeading
+      if (typeof e.webkitCompassHeading !== 'undefined' && e.webkitCompassHeading !== null) {
+        rawHeading = e.webkitCompassHeading;
+      }
+      // 2. Android Chrome deviceorientationabsolute or standard alpha
+      else if (e.alpha !== null && typeof e.alpha !== 'undefined') {
+        rawHeading = (360 - e.alpha) % 360;
+      }
+
+      if (rawHeading === null || isNaN(rawHeading)) return;
+
+      // Shortest-path angle unwrapping so 359° <-> 1° smoothly interpolates without spinning
+      const prev = continuousHeadingRef.current;
+      const diff = ((((rawHeading - (prev % 360)) + 540) % 360) - 180);
+      const nextContinuous = prev + diff;
+      continuousHeadingRef.current = nextContinuous;
+
+      if (beamRef.current) {
+        beamRef.current.style.transform = `translate(-50%, -50%) rotate(${nextContinuous + buildingOffset}deg)`;
+      }
+    };
+
+    const eventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+    window.addEventListener(eventName, handleOrientation, { passive: true, capture: true });
+
+    return () => {
+      window.removeEventListener(eventName, handleOrientation, { capture: true });
+    };
+  }, [isActive, externalHeading, buildingOffset]);
+
+  const initialAngle = (typeof externalHeading === 'number' ? externalHeading : continuousHeadingRef.current) + buildingOffset;
 
   return (
     <div
+      ref={beamRef}
       className={`pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 z-10 flex items-center justify-center transition-opacity duration-200 ease-out ${
         isActive ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
-        transform: `translate(-50%, -50%) rotate(${finalAngle}deg)`,
+        transform: `translate(-50%, -50%) rotate(${initialAngle}deg)`,
         transformOrigin: '50% 50%',
+        willChange: 'transform',
         transition: 'transform 0.08s ease-out, opacity 0.2s ease-out',
       }}
       aria-hidden="true"

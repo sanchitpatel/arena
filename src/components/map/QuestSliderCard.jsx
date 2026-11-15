@@ -196,56 +196,61 @@ export const QuestSliderCard = ({
       />
 
       {/* Sheet Container: Positioned at z-[38] to emerge from behind the bottom tab bar (z-40) */}
-      <div className="fixed bottom-0 left-0 right-0 z-[38] pointer-events-none flex justify-center px-2 sm:px-4">
+      <div className="fixed bottom-0 left-0 right-0 z-[38] pointer-events-none flex justify-center px-1.5 sm:px-4">
         <div
           ref={sheetRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className="pointer-events-auto w-full max-w-[420px] sm:max-w-[500px] md:max-w-[540px] bg-[#ebedf2] border border-white/90 rounded-t-[28px] sm:rounded-t-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6,0_-12px_36px_rgba(197,204,214,0.7)] p-4 pt-1.5 pb-20 md:pb-5 md:mb-5 select-none touch-pan-y"
+          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+5.25rem)] min-h-[335px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-t-[28px] sm:rounded-t-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6,0_-12px_36px_rgba(197,204,214,0.7)] p-4 sm:p-4.5 pt-1.5 pb-20 md:pb-5 md:mb-5 select-none touch-pan-y flex flex-col justify-between"
           style={cardStyle}
         >
-          {/* Top Centered Drag Handle Pill (Tactile Debossed Groove) */}
-          <div className="w-full flex items-center justify-center py-2 cursor-grab active:cursor-grabbing touch-none">
-            <div className="w-11 h-1.5 rounded-full bg-zinc-300/70 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.2),0_1px_1px_#ffffff]" />
-          </div>
-
-          {/* Quest Header */}
-          <div className="flex items-center gap-3 pb-2.5 mb-2.5 border-b border-zinc-300/60 shadow-[0_1px_0_#ffffff]">
-            {/* Tactile Task Icon Tile */}
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] flex items-center justify-center shrink-0">
-              <TaskIcon size={24} weight="bold" className="text-white" />
+          {/* Top Section: Drag Handle & Header */}
+          <div className="shrink-0">
+            {/* Top Centered Drag Handle Pill (Tactile Debossed Groove) */}
+            <div className="w-full flex items-center justify-center py-2 cursor-grab active:cursor-grabbing touch-none">
+              <div className="w-11 h-1.5 rounded-full bg-zinc-300/70 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.2),0_1px_1px_#ffffff]" />
             </div>
 
-            <div className="min-w-0 flex-1">
-              {/* Room Pill (Signature Arena Identity Gradient) */}
-              <div className="flex items-center">
-                <span
-                  className="font-arena text-[10.5px] tracking-wider px-2.5 py-0.5 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-700 shadow-sm"
-                  style={{ WebkitTextStroke: '0.4px' }}
-                >
-                  {activeQuest.room}
-                </span>
+            {/* Quest Header */}
+            <div className="flex items-center gap-3 pb-3 mb-1.5 border-b border-zinc-300/60 shadow-[0_1px_0_#ffffff]">
+              {/* Tactile Task Icon Tile */}
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] flex items-center justify-center shrink-0">
+                <TaskIcon size={24} weight="bold" className="text-white" />
               </div>
 
-              {/* Title */}
-              <h3
-                className="font-arena text-[14px] sm:text-[15px] font-black text-zinc-900 tracking-wide mt-1.5 truncate"
-                style={{ WebkitTextStroke: '0.5px' }}
-              >
-                {activeQuest.title}
-              </h3>
+              <div className="min-w-0 flex-1">
+                {/* Room Pill (Signature Arena Identity Gradient) */}
+                <div className="flex items-center">
+                  <span
+                    className="font-arena text-[10.5px] tracking-wider px-2.5 py-0.5 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-700 shadow-sm"
+                    style={{ WebkitTextStroke: '0.4px' }}
+                  >
+                    {activeQuest.room}
+                  </span>
+                </div>
+
+                {/* Title */}
+                <h3
+                  className="font-arena text-[14px] sm:text-[15px] font-black text-zinc-900 tracking-wide mt-1.5 truncate"
+                  style={{ WebkitTextStroke: '0.5px' }}
+                >
+                  {activeQuest.title}
+                </h3>
+              </div>
             </div>
           </div>
 
-          {/* Quest Description */}
-          <p className="text-xs sm:text-[12.5px] text-zinc-600 leading-relaxed font-medium px-0.5">
-            {activeQuest.description}
-          </p>
+          {/* Quest Description (Vertically Centered Compartment with Equal Height) */}
+          <div className="flex-1 min-h-0 flex items-center py-2 px-1">
+            <p className="text-[12.5px] sm:text-[13px] text-zinc-600 leading-relaxed font-medium line-clamp-3 sm:line-clamp-4">
+              {activeQuest.description}
+            </p>
+          </div>
 
           {/* Footer Actions */}
-          <div className="mt-3 flex items-center justify-between gap-2.5 pt-2.5 border-t border-zinc-300/60 shadow-[0_1px_0_#ffffff]">
+          <div className="shrink-0 flex items-center justify-between gap-2.5 pt-2.5 border-t border-zinc-300/60 shadow-[0_1px_0_#ffffff]">
             {/* Tactile Reward Well */}
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F2F7FC] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Reward</span>

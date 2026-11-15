@@ -4,7 +4,7 @@ import React from 'react';
  * 3D Prismatic Quartz Crystal Obelisk
  * Exact SVG design built from public/crystal.md
  */
-export const CrystalIcon = ({ color = 'cryst', className = 'w-full h-full' }) => {
+export const CrystalIcon = React.memo(function CrystalIcon({ color = 'cryst', className = 'w-full h-full' }) {
   const p = color || 'cryst';
 
   return (
@@ -16,24 +16,13 @@ export const CrystalIcon = ({ color = 'cryst', className = 'w-full h-full' }) =>
       className={className}
     >
       <defs>
-        {/* Soft Ambient Drop Shadow */}
-        <filter id={`${p}-crystal-glow`} x="-20%" y="-10%" width="140%" height="120%">
-          <feDropShadow dx="0" dy="18" stdDeviation="16" floodColor="#5c528a" floodOpacity="0.22" />
-          <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#809fff" floodOpacity="0.15" />
-        </filter>
-
-        {/* Specular Star/Flare Filter */}
-        <filter id={`${p}-flare-blur`} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-
-        <filter id={`${p}-soft-glow`} x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="12" />
-        </filter>
+        {/* Soft Ambient Radial Halo (100% GPU-accelerated Vector Gradient - 0 Raster Blur Latency) */}
+        <radialGradient id={`${p}-flare-glow`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+          <stop offset="40%" stopColor="#ffebd6" stopOpacity="0.5" />
+          <stop offset="70%" stopColor="#9cb4f8" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
 
         {/* Clip Path for the Exact Outer Silhouette */}
         <clipPath id={`${p}-crystal-silhouette`}>
@@ -237,7 +226,7 @@ export const CrystalIcon = ({ color = 'cryst', className = 'w-full h-full' }) =>
       </defs>
 
       {/* MAIN CRYSTAL CONTAINER (Horizontally widened prismatic obelisk) */}
-      <g filter={`url(#${p}-crystal-glow)`} transform="translate(208, 443) scale(1.45, 1) translate(-204, -443)">
+      <g transform="translate(208, 443) scale(1.45, 1) translate(-204, -443)">
         <g clipPath={`url(#${p}-crystal-silhouette)`}>
           {/* Base Fallback Fill */}
           <polygon points="204,24 106,232 132,626 202,862 256,632 302,228" fill="#8c96bd" />
@@ -309,13 +298,13 @@ export const CrystalIcon = ({ color = 'cryst', className = 'w-full h-full' }) =>
 
           {/* Prismatic Color Dispersion Streaks (Chromatic Aberration Effect) */}
           <g opacity="0.65">
-            <polygon points="106,232 156,192 148,302 108,255" fill="#ffb078" filter={`url(#${p}-soft-glow)`} />
-            <polygon points="248,412 268,382 262,435" fill="#ff9d66" filter={`url(#${p}-flare-blur)`} />
-            <polygon points="244,418 264,392 256,445" fill="#5ce1ff" filter={`url(#${p}-flare-blur)`} />
-            <polygon points="148,298 168,340 142,415" fill="#52b7ff" filter={`url(#${p}-soft-glow)`} />
-            <polygon points="168,340 196,420 162,445" fill="#c17aff" filter={`url(#${p}-soft-glow)`} />
-            <polygon points="248,505 266,535 235,565" fill="#ffae78" filter={`url(#${p}-flare-blur)`} />
-            <polygon points="238,518 256,548 228,578" fill="#47d4ff" filter={`url(#${p}-flare-blur)`} />
+            <polygon points="106,232 156,192 148,302 108,255" fill="#ffb078" opacity="0.45" />
+            <polygon points="248,412 268,382 262,435" fill="#ff9d66" opacity="0.5" />
+            <polygon points="244,418 264,392 256,445" fill="#5ce1ff" opacity="0.5" />
+            <polygon points="148,298 168,340 142,415" fill="#52b7ff" opacity="0.45" />
+            <polygon points="168,340 196,420 162,445" fill="#c17aff" opacity="0.45" />
+            <polygon points="248,505 266,535 235,565" fill="#ffae78" opacity="0.5" />
+            <polygon points="238,518 256,548 228,578" fill="#47d4ff" opacity="0.5" />
           </g>
 
           {/* Soft Caustic Light Pockets */}
@@ -397,51 +386,51 @@ export const CrystalIcon = ({ color = 'cryst', className = 'w-full h-full' }) =>
 
         {/* ==================== 8. EXTERNAL SPECULAR STARBURSTS & EDGE BLOOMS ==================== */}
         {/* Top Left Shoulder Main Sunburst Flare */}
-        <g transform="translate(110, 230)" filter={`url(#${p}-flare-blur)`}>
-          <circle cx="0" cy="0" r="14" fill="#fff4e6" opacity="0.85" />
-          <path d="M-32,-8 L0,-3 L32,8 L0,3 Z" fill="#ffffff" />
-          <path d="M-8,28 L-3,0 L8,-28 L3,0 Z" fill="#ffffff" />
+        <g transform="translate(110, 230)">
+          <circle cx="0" cy="0" r="16" fill={`url(#${p}-flare-glow)`} />
+          <path d="M-32,-8 L0,-3 L32,8 L0,3 Z" fill="#ffffff" opacity="0.95" />
+          <path d="M-8,28 L-3,0 L8,-28 L3,0 Z" fill="#ffffff" opacity="0.95" />
           <circle cx="0" cy="0" r="5" fill="#ffffff" />
         </g>
 
         {/* Upper Crown Right Specular Glint */}
-        <g transform="translate(228, 152)" filter={`url(#${p}-flare-blur)`}>
-          <circle cx="0" cy="0" r="10" fill="#ffffff" opacity="0.8" />
-          <path d="M-22,-12 L0,-2 L22,12 L0,2 Z" fill="#ffffff" />
-          <path d="M-12,22 L-2,0 L12,-22 L2,0 Z" fill="#ffffff" />
+        <g transform="translate(228, 152)">
+          <circle cx="0" cy="0" r="12" fill={`url(#${p}-flare-glow)`} />
+          <path d="M-22,-12 L0,-2 L22,12 L0,2 Z" fill="#ffffff" opacity="0.9" />
+          <path d="M-12,22 L-2,0 L12,-22 L2,0 Z" fill="#ffffff" opacity="0.9" />
         </g>
 
         {/* Mid-Core Prismatic Node Glint */}
-        <g transform="translate(194, 456)" filter={`url(#${p}-flare-blur)`}>
-          <circle cx="0" cy="0" r="12" fill="#e8f8ff" opacity="0.85" />
-          <path d="M-24,0 L0,-2 L24,0 L0,2 Z" fill="#ffffff" />
-          <path d="M0,-24 L-2,0 L0,24 L2,0 Z" fill="#ffffff" />
+        <g transform="translate(194, 456)">
+          <circle cx="0" cy="0" r="14" fill={`url(#${p}-flare-glow)`} />
+          <path d="M-24,0 L0,-2 L24,0 L0,2 Z" fill="#ffffff" opacity="0.9" />
+          <path d="M0,-24 L-2,0 L0,24 L2,0 Z" fill="#ffffff" opacity="0.9" />
         </g>
 
         {/* Lower Central Heart Glint */}
-        <g transform="translate(200, 608)" filter={`url(#${p}-flare-blur)`}>
-          <circle cx="0" cy="0" r="14" fill="#ffffff" opacity="0.9" />
-          <path d="M-26,-6 L0,-2 L26,6 L0,2 Z" fill="#ffffff" />
-          <path d="M-6,26 L-2,0 L6,-26 L2,0 Z" fill="#ffffff" />
+        <g transform="translate(200, 608)">
+          <circle cx="0" cy="0" r="16" fill={`url(#${p}-flare-glow)`} />
+          <path d="M-26,-6 L0,-2 L26,6 L0,2 Z" fill="#ffffff" opacity="0.95" />
+          <path d="M-6,26 L-2,0 L6,-26 L2,0 Z" fill="#ffffff" opacity="0.95" />
         </g>
 
         {/* Lower Left Pavilion Flare */}
-        <g transform="translate(154, 654)" filter={`url(#${p}-flare-blur)`}>
-          <circle cx="0" cy="0" r="10" fill="#ffebd6" opacity="0.9" />
-          <path d="M-20,-10 L0,-2 L20,10 L0,2 Z" fill="#ffffff" />
-          <path d="M-10,20 L-2,0 L10,-20 L2,0 Z" fill="#ffffff" />
+        <g transform="translate(154, 654)">
+          <circle cx="0" cy="0" r="12" fill={`url(#${p}-flare-glow)`} />
+          <path d="M-20,-10 L0,-2 L20,10 L0,2 Z" fill="#ffffff" opacity="0.9" />
+          <path d="M-10,20 L-2,0 L10,-20 L2,0 Z" fill="#ffffff" opacity="0.9" />
         </g>
 
         {/* Micro Sparkle Accents */}
-        <circle cx="294" cy="232" r="3.5" fill="#ffffff" filter={`url(#${p}-flare-blur)`} />
-        <circle cx="252" cy="410" r="4" fill="#ffffff" filter={`url(#${p}-flare-blur)`} />
-        <circle cx="140" cy="442" r="3.5" fill="#ffffff" filter={`url(#${p}-flare-blur)`} />
-        <circle cx="248" cy="528" r="3.5" fill="#ffffff" filter={`url(#${p}-flare-blur)`} />
-        <circle cx="204" cy="28" r="2.5" fill="#ffffff" filter={`url(#${p}-flare-blur)`} />
-        <circle cx="202" cy="856" r="2.5" fill="#ffffff" filter={`url(#${p}-flare-blur)`} />
+        <circle cx="294" cy="232" r="3.5" fill="#ffffff" opacity="0.9" />
+        <circle cx="252" cy="410" r="4" fill="#ffffff" opacity="0.9" />
+        <circle cx="140" cy="442" r="3.5" fill="#ffffff" opacity="0.9" />
+        <circle cx="248" cy="528" r="3.5" fill="#ffffff" opacity="0.9" />
+        <circle cx="204" cy="28" r="2.5" fill="#ffffff" opacity="0.9" />
+        <circle cx="202" cy="856" r="2.5" fill="#ffffff" opacity="0.9" />
       </g>
     </svg>
   );
-};
+});
 
 export default CrystalIcon;
