@@ -305,24 +305,18 @@ export const PrizeFloatingButton = ({
           isDragging ? 'cursor-grabbing' : 'cursor-grab active:scale-95'
         } transition-transform duration-150 ease-out`}
       >
-        {/* Outer Machined Neumorphic Bezel Shell (Compact on mobile: 44px vs desktop 56px) */}
+        {/* Outer Machined Neumorphic Bezel Shell */}
         <div
-          className={`w-11 h-11 sm:w-14 sm:h-14 rounded-2xl sm:rounded-3xl bg-[#ebedf2] p-1 border border-white/90 transition-all duration-200 ${
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-[#ebedf2] p-1 border border-white/90 transition-all duration-200 ${
             isDragging
               ? 'shadow-[0_14px_30px_rgba(0,0,0,0.22),0_4px_10px_rgba(0,0,0,0.12)] ring-2 ring-white/90 ring-offset-2 ring-offset-black/15'
-              : 'shadow-[3px_3px_10px_#b8c2d0,-3px_-3px_10px_#ffffff] sm:shadow-[4px_4px_12px_#b8c2d0,-4px_-4px_12px_#ffffff] group-hover:shadow-[5px_5px_14px_#a8b4c4,-5px_-5px_14px_#ffffff]'
+              : 'shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] sm:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] group-hover:shadow-[inset_4px_4px_10px_#b8c2d0,inset_-4px_-4px_10px_#ffffff]'
           }`}
         >
-          {/* Inner Luminous Sky Blue Gemstone Core (Exact Palette Match to Attendee Orb) */}
-          <div className="w-full h-full rounded-xl sm:rounded-2xl bg-gradient-to-b from-[#bae6fd] via-[#38bdf8] via-[#0284c7] to-[#1a7afc] flex flex-col items-center justify-center relative overflow-hidden border border-white/50 shadow-[inset_0_2px_4px_rgba(255,255,255,0.75),inset_0_-2px_4px_rgba(0,0,0,0.3)]">
-            {/* Ambient Cyan Aura (Breathing pulse matching Orb) */}
-            <div className="absolute inset-0 m-auto w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-sky-300/30 blur-xs pointer-events-none animate-pulse" />
-
-            {/* Specular Diagonal Glass Sheen */}
-            <div className="absolute -top-6 -left-6 w-14 h-14 bg-gradient-to-br from-white/40 via-white/10 to-transparent rotate-45 pointer-events-none" />
-
-            {/* 3D Radiant Golden Reward Chest with Hexagonal Crystal Clasp */}
-            <div className="relative z-10 w-full h-full flex items-center justify-center p-1 sm:p-1.5 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-translate-y-0.5 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
+          {/* Inner Clean White Core with Inward Soft Shadows */}
+          <div className="w-full h-full rounded-lg sm:rounded-xl bg-white flex flex-col items-center justify-center relative overflow-hidden border border-slate-100 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.06),inset_-2px_-2px_4px_rgba(255,255,255,0.9)]">
+            {/* 3D Radiant Reward Chest */}
+            <div className="relative z-10 w-full h-full flex items-center justify-center p-1 sm:p-1.5 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-translate-y-0.5 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
               <RewardChestIcon className="w-full h-full object-contain" />
             </div>
           </div>
