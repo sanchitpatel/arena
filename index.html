@@ -29,8 +29,22 @@
   </head>
   <body class="bg-[#e4f0fa] text-zinc-900 antialiased selection:bg-white/20 selection:text-white">
     <div id="root">
-      <!-- Instant pre-hydration splash to eliminate plain white flash on cold load -->
-      <div style="position:fixed;inset:0;background:url('/images/arena-bg.webp') center/cover no-repeat;z-index:0;"></div>
+      <!-- Instant Frame-0 Pre-Hydration Loading Screen (Exact 1:1 match to ArenaLoadingScreen) -->
+      <div style="position:fixed;inset:0;background:#e4f0fa;display:flex;align-items:center;justify-content:center;user-select:none;overflow:hidden;z-index:9999;">
+        <img src="/images/arena-bg.webp" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none;" />
+        <div style="position:absolute;inset:0;background:radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);pointer-events:none;"></div>
+        <div style="position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+          <!-- Exact Phosphor CircleNotch SVG (Regular weight, 38px, #0ea5e9 sky-500) -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" style="width:38px;height:38px;fill:#0ea5e9;animation:arena-spin 1s linear infinite;">
+            <path d="M232,128a104,104,0,0,1-208,0c0-41,23.81-78.36,60.66-95.27a8,8,0,0,1,6.68,14.54C60.15,61.59,40,93.27,40,128a88,88,0,0,0,176,0c0-34.73-20.15-66.41-51.34-80.73a8,8,0,0,1,6.68-14.54C208.19,49.64,232,87,232,128Z" />
+          </svg>
+        </div>
+      </div>
+      <style>
+        @keyframes arena-spin {
+          to { transform: rotate(360deg); }
+        }
+      </style>
     </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

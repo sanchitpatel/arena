@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { LoginView } from './LoginView';
+import { DashboardShell } from './DashboardShell';
 import { FrostMountainBackground } from '../common/FrostMountainBackground';
 import { CircleNotch } from '@phosphor-icons/react/dist/icons/CircleNotch';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 
-// Lazy-load heavy dashboard views to enable sub-second initial onboarding paint
-const DashboardShell = lazy(() => import('./DashboardShell').then(m => ({ default: m.DashboardShell })));
+// Lazy-load individual heavy dashboard views on demand
 const NewPatientView = lazy(() => import('./NewPatientView').then(m => ({ default: m.NewPatientView })));
 const ExistingPatientView = lazy(() => import('./ExistingPatientView').then(m => ({ default: m.ExistingPatientView })));
 const DoctorDashboardView = lazy(() => import('./DoctorDashboardView').then(m => ({ default: m.DoctorDashboardView })));
