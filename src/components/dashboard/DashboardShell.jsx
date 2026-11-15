@@ -575,7 +575,6 @@ export const DashboardShell = ({
                 if (typeof onTabChange === 'function') onTabChange('ideas');
                 if (typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('arena:open-ideas'));
-                  window.dispatchEvent(new CustomEvent('arena:open-prizes'));
                 }
               }}
               title="Ideas Pitch Wall"
