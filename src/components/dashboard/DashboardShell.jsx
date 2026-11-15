@@ -4,6 +4,7 @@ import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarChe
 import Logo from '../Logo';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
+import NotificationSliderCard from './NotificationSliderCard';
 import { getPlayerId, getOrbNumber } from '../../utils/playerId';
 import {
   getPendingNotificationCount,
@@ -15,15 +16,23 @@ export const DashboardShell = ({
   onTabChange,
   player,
   onSignOut,
-  children
+  children,
+  isNotificationOpen: propNotificationOpen,
+  onToggleNotification: propToggleNotification,
+  onCloseNotification: propCloseNotification,
 }) => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [qrModalOpen, setQrModalOpen] = useState(null); // 'badge' | null
+  const [internalNotificationOpen, setInternalNotificationOpen] = useState(false);
   const profileRef = useRef(null);
   const mobileProfileRef = useRef(null);
   const mobileProfileBtnRef = useRef(null);
+
+  const isNotificationOpen = propNotificationOpen !== undefined ? propNotificationOpen : internalNotificationOpen;
+  const toggleNotification = propToggleNotification || (() => setInternalNotificationOpen((prev) => !prev));
+  const closeNotification = propCloseNotification || (() => setInternalNotificationOpen(false));
 
   // Player identity fallback resolution
   const guestId = player?.guest_id || getPlayerId() || 'Guest001';
@@ -103,6 +112,30 @@ export const DashboardShell = ({
       window.removeEventListener('arena:open-map', handleOpenMap);
     };
   }, [onTabChange]);
+
+  // Listen for global custom events to open or close notifications
+  useEffect(() => {
+    const handleOpenNotifications = () => {
+      if (propToggleNotification && !isNotificationOpen) {
+        propToggleNotification();
+      } else {
+        setInternalNotificationOpen(true);
+      }
+    };
+    const handleCloseNotifications = () => {
+      if (propCloseNotification) {
+        propCloseNotification();
+      } else {
+        setInternalNotificationOpen(false);
+      }
+    };
+    window.addEventListener('arena:open-notifications', handleOpenNotifications);
+    window.addEventListener('arena:close-notifications', handleCloseNotifications);
+    return () => {
+      window.removeEventListener('arena:open-notifications', handleOpenNotifications);
+      window.removeEventListener('arena:close-notifications', handleCloseNotifications);
+    };
+  }, [propToggleNotification, propCloseNotification, isNotificationOpen]);
 
   const handleSignOutClick = () => {
     setProfileMenuOpen(false);
@@ -189,11 +222,19 @@ export const DashboardShell = ({
 
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const isNotification = item.id === 'notifications';
+            const isActive = isNotification ? isNotificationOpen : activeTab === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => onTabChange(item.id)}
+                onClick={() => {
+                  if (isNotification) {
+                    toggleNotification();
+                  } else {
+                    closeNotification();
+                    onTabChange(item.id);
+                  }
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left text-sm group cursor-pointer transition-colors duration-100 active:scale-[0.98] ${isActive
                   ? 'bg-[#ebedf2] text-zinc-900 shadow-[3px_3px_8px_#c6ced9,-3px_-3px_8px_#ffffff] border border-white font-bold'
                   : 'text-zinc-600 hover:text-zinc-900 hover:shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] font-medium border border-transparent'
@@ -303,6 +344,7 @@ export const DashboardShell = ({
               <button
                 key={item.id}
                 onClick={() => {
+                  closeNotification();
                   onTabChange(item.id);
                   setMobileProfileOpen(false);
                 }}
@@ -361,30 +403,30 @@ export const DashboardShell = ({
             {/* Notification Option (Two-layer GPU opacity cross-fade: zero flicker, instant & butter-smooth) */}
             <button
               type="button"
-              onClick={() => onTabChange('notifications')}
+              onClick={toggleNotification}
               title="WhatsApp Notifications"
               className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
             >
               {/* Default / Inactive State Layer (Fades out when active) */}
               <span
                 className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 pointer-events-none ${
-                  activeTab === 'notifications' ? 'opacity-0' : 'opacity-100'
+                  isNotificationOpen ? 'opacity-0' : 'opacity-100'
                 }`}
               />
 
               {/* Active State Layer (Fades in when active) */}
               <span
                 className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 pointer-events-none ${
-                  activeTab === 'notifications' ? 'opacity-100' : 'opacity-0'
+                  isNotificationOpen ? 'opacity-100' : 'opacity-0'
                 }`}
               />
 
               {/* Bell Icon (Smoothly transitions color on top) */}
               <Bell
                 size={23}
-                weight={activeTab === 'notifications' ? 'fill' : 'regular'}
+                weight={isNotificationOpen ? 'fill' : 'regular'}
                 className={`relative z-10 transition-colors duration-150 ${
-                  activeTab === 'notifications' ? 'text-white' : 'text-zinc-600 hover:text-zinc-900'
+                  isNotificationOpen ? 'text-white' : 'text-zinc-600 hover:text-zinc-900'
                 }`}
               />
 
@@ -399,6 +441,7 @@ export const DashboardShell = ({
             <button
               type="button"
               onClick={() => {
+                closeNotification();
                 if (typeof onTabChange === 'function') onTabChange('ideas');
                 if (typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('arena:open-ideas'));
@@ -436,6 +479,7 @@ export const DashboardShell = ({
             <button
               type="button"
               onClick={() => {
+                closeNotification();
                 if (typeof onTabChange === 'function') onTabChange('map');
                 if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-map'));
               }}
@@ -511,6 +555,18 @@ export const DashboardShell = ({
         </div>,
         document.body
       )}
+
+      {/* Top-Down Notification Slider Card (Slides down from behind top nav bar on top of active page) */}
+      <NotificationSliderCard
+        isOpen={isNotificationOpen}
+        onClose={closeNotification}
+        onNavigate={(tab) => {
+          closeNotification();
+          if (typeof onTabChange === 'function') {
+            onTabChange(tab);
+          }
+        }}
+      />
     </div>
   );
 };

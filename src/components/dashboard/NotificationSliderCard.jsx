@@ -31,6 +31,7 @@ export const NotificationSliderCard = ({
   onClose,
   onNavigate,
 }) => {
+  const [shouldRender, setShouldRender] = useState(propIsOpen);
   const [isOpen, setIsOpen] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -71,6 +72,7 @@ export const NotificationSliderCard = ({
   // Entrance & Exit animation orchestration
   useEffect(() => {
     if (propIsOpen) {
+      setShouldRender(true);
       setDragOffset(0);
       setIsDragging(false);
 
@@ -87,6 +89,11 @@ export const NotificationSliderCard = ({
       setIsOpen(false);
       setDragOffset(0);
       setIsDragging(false);
+
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, 280);
+      return () => clearTimeout(timer);
     }
   }, [propIsOpen]);
 
@@ -98,17 +105,19 @@ export const NotificationSliderCard = ({
 
     setTimeout(() => {
       onClose?.();
+      setShouldRender(false);
     }, 280);
   };
 
   // Close on Escape key
   useEffect(() => {
+    if (!shouldRender) return;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') animateDismiss();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [shouldRender]);
 
   // Lock background and main screen scrolling while the notification slider is open
   useEffect(() => {
@@ -239,6 +248,8 @@ export const NotificationSliderCard = ({
         : 'transform 260ms cubic-bezier(0.32, 0.72, 0, 1)',
       willChange: 'transform',
     };
+
+  if (!shouldRender && !propIsOpen) return null;
 
   return (
     <>
