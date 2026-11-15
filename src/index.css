@@ -338,6 +338,62 @@ html.lenis body {
   pointer-events: none;
 }
 
+/* 10. Floating Prize Chest Periodic Specular Shine (Gradual, luxurious slow 6.2s cycle) */
+@keyframes chestSheen {
+  0% {
+    transform: translate(-170%, -170%) rotate(25deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.55;
+  }
+  28% {
+    opacity: 0.95;
+  }
+  44% {
+    opacity: 0.55;
+  }
+  54% {
+    transform: translate(170%, 170%) rotate(25deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(170%, 170%) rotate(25deg);
+    opacity: 0;
+  }
+}
+
+@keyframes chestGlintTwinkle {
+  0%, 20% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  29% {
+    transform: scale(1.65) rotate(45deg);
+    opacity: 1;
+  }
+  38% {
+    transform: scale(0) rotate(90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0) rotate(90deg);
+    opacity: 0;
+  }
+}
+
+.chest-sheen-sweep {
+  animation: chestSheen 6.2s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+.chest-glint-twinkle {
+  animation: chestGlintTwinkle 6.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

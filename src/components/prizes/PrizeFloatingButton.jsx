@@ -68,9 +68,9 @@ export const PrizeFloatingButton = ({
     const rect = el?.getBoundingClientRect();
     const isDesktop = window.innerWidth >= 768;
 
-    // Measured element dimensions (scaled down for mobile view: 44px mobile, 56px desktop)
-    const width = (rect && rect.width > 0) ? rect.width : (isDesktop ? 56 : 44);
-    const height = (rect && rect.height > 0) ? rect.height : (isDesktop ? 56 : 44);
+    // Measured element dimensions (52px mobile, 60px desktop)
+    const width = (rect && rect.width > 0) ? rect.width : (isDesktop ? 60 : 52);
+    const height = (rect && rect.height > 0) ? rect.height : (isDesktop ? 60 : 52);
     const pad = 10;
 
     // 1. Top Nav Bar Clearance (stops icon from gliding into or over top nav)
@@ -307,17 +307,34 @@ export const PrizeFloatingButton = ({
       >
         {/* Outer Machined Neumorphic Bezel Shell */}
         <div
-          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-[#ebedf2] p-1 border border-white/90 transition-all duration-200 ${
+          className={`w-[52px] h-[52px] sm:w-[60px] sm:h-[60px] rounded-xl sm:rounded-2xl bg-[#ebedf2] p-1 border border-white/90 transition-all duration-200 ${
             isDragging
               ? 'shadow-[0_14px_30px_rgba(0,0,0,0.22),0_4px_10px_rgba(0,0,0,0.12)] ring-2 ring-white/90 ring-offset-2 ring-offset-black/15'
-              : 'shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] sm:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] group-hover:shadow-[inset_4px_4px_10px_#b8c2d0,inset_-4px_-4px_10px_#ffffff]'
+              : 'shadow-[inset_0_3px_5px_#ffffff,inset_0_-3px_6px_rgba(0,0,0,0.18)] sm:shadow-[inset_0_4px_7px_#ffffff,inset_0_-4px_8px_rgba(0,0,0,0.22)] group-hover:shadow-[inset_0_4px_8px_#ffffff,inset_0_-5px_9px_rgba(0,0,0,0.26)]'
           }`}
         >
-          {/* Inner Clean White Core with Inward Soft Shadows */}
-          <div className="w-full h-full rounded-lg sm:rounded-xl bg-white flex flex-col items-center justify-center relative overflow-hidden border border-slate-100 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.06),inset_-2px_-2px_4px_rgba(255,255,255,0.9)]">
+          {/* Inner Clean White Core with Inward Soft Shadows (White at Top, Black at Bottom) */}
+          <div className="w-full h-full rounded-lg sm:rounded-xl bg-white flex flex-col items-center justify-center relative overflow-hidden border border-slate-100 shadow-[inset_0_2px_4px_rgba(255,255,255,1),inset_0_-3px_5px_rgba(0,0,0,0.14)]">
             {/* 3D Radiant Reward Chest */}
-            <div className="relative z-10 w-full h-full flex items-center justify-center p-1 sm:p-1.5 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-translate-y-0.5 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
-              <RewardChestIcon className="w-full h-full object-contain" />
+            <div className="relative z-10 w-full h-full flex items-center justify-center sm:p-1 transition-transform duration-200 ease-out group-hover:scale-110 group-hover:-translate-y-0.5 filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
+              <RewardChestIcon className="w-full h-full object-contain scale-115 sm:scale-120" />
+            </div>
+
+            {/* Periodic Wide Specular Sheen Sweep (Synchronized with Map Crystal Shine) */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+              <div
+                className="chest-sheen-sweep absolute -inset-[100%] pointer-events-none"
+                style={{
+                  background: 'linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.03) 35%, rgba(255,255,255,0.25) 44%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0.95) 52%, rgba(255,255,255,0.85) 54%, rgba(255,255,255,0.25) 60%, rgba(255,255,255,0.03) 69%, transparent 79%)',
+                }}
+              />
+            </div>
+
+            {/* Synchronized Specular Starburst Flash (Enlarged with celestial bloom) */}
+            <div className="absolute top-0.5 right-1 sm:top-1 sm:right-1.5 pointer-events-none z-30 chest-glint-twinkle">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 sm:w-6 sm:h-6 text-white fill-white filter drop-shadow-[0_0_6px_rgba(255,255,255,1)] drop-shadow-[0_0_12px_rgba(186,230,253,0.85)]">
+                <path d="M12 0 L14.2 9.8 L24 12 L14.2 14.2 L12 24 L9.8 14.2 L0 12 L9.8 9.8 Z" />
+              </svg>
             </div>
           </div>
         </div>
