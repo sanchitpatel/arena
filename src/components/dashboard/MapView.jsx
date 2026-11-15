@@ -175,7 +175,7 @@ const playCrystalChime = () => {
  * 3D Prismatic Quartz Crystal Icon
  * Exact SVG design built from public/crystal.md
  */
-const FloatingGemIcon = React.memo(function FloatingGemIcon({ color = 'amber', gradient = 'from-amber-400 to-yellow-600', isCompleted = false }) {
+const FloatingGemIcon = React.memo(function FloatingGemIcon({ color = 'amber', gradient = 'from-amber-400 to-yellow-600', isCompleted = false, delay = 0 }) {
   if (isCompleted) {
     return (
       <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-[0_0_14px_rgba(16,185,129,0.8),inset_0_2px_4px_rgba(255,255,255,0.6)] border-2 border-white scale-105">
@@ -186,7 +186,7 @@ const FloatingGemIcon = React.memo(function FloatingGemIcon({ color = 'amber', g
 
   return (
     <div className="relative w-9 h-12 sm:w-12 sm:h-16 flex items-center justify-center">
-      <CrystalIcon color={color} className="w-full h-full" />
+      <CrystalIcon color={color} delay={delay} className="w-full h-full" />
     </div>
   );
 });
@@ -516,7 +516,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                     {/* ========================================================
                         A. FLOATING GEMS (Tasks Pinned to Specific Rooms)
                         ======================================================== */}
-                    {MAP_TASKS.map((quest) => {
+                    {MAP_TASKS.map((quest, idx) => {
                       const isCompleted = completedQuestIds.includes(quest.id);
                       const isSelected = selectedQuest?.id === quest.id;
 
@@ -534,24 +534,14 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
                             onClick={(e) => handleGemClick(e, quest)}
                             className="relative pointer-events-auto cursor-pointer flex flex-col items-center"
                           >
-                            {/* Luminous Prismatic Crystal with Perfectly Concentric Glowing Base */}
+                            {/* Luminous Prismatic Crystal */}
                             <div className="relative z-10 w-11 h-15 sm:w-12 sm:h-16 flex items-center justify-center transition-transform duration-200 group-hover:scale-125">
-                              {/* Beacon Sonar Ground Pulse (Concentric behind crystal center) */}
-                              {!isCompleted && (
-                                <div
-                                  className="absolute inset-0 m-auto w-12 h-12 rounded-full animate-beacon-pulse pointer-events-none z-0"
-                                  style={{
-                                    background: `radial-gradient(circle, ${quest.glowColor} 0%, rgba(165, 180, 252, 0.25) 50%, transparent 72%)`,
-                                    willChange: 'transform, opacity',
-                                  }}
-                                />
-                              )}
-
                               <div className="relative z-10 w-full h-full flex items-center justify-center">
                                 <FloatingGemIcon
                                   color={quest.gemColor}
                                   gradient={quest.gradient}
                                   isCompleted={isCompleted}
+                                  delay={(idx * 0.6) % 3.6}
                                 />
                               </div>
                             </div>

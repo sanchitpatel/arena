@@ -4,7 +4,7 @@ import React from 'react';
  * 3D Prismatic Quartz Crystal Obelisk
  * Exact SVG design built from public/crystal.md
  */
-export const CrystalIcon = React.memo(function CrystalIcon({ color = 'cryst', className = 'w-full h-full' }) {
+export const CrystalIcon = React.memo(function CrystalIcon({ color = 'cryst', className = 'w-full h-full', delay = 0 }) {
   const p = color || 'cryst';
 
   return (
@@ -23,6 +23,15 @@ export const CrystalIcon = React.memo(function CrystalIcon({ color = 'cryst', cl
           <stop offset="70%" stopColor="#9cb4f8" stopOpacity="0.15" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </radialGradient>
+
+        {/* Periodic Specular Light Sheen Gradient (Vector-only, 0 raster blur) */}
+        <linearGradient id={`${p}-gleam-sheen`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="35%" stopColor="#ffffff" stopOpacity="0.08" />
+          <stop offset="50%" stopColor="#ffffff" stopOpacity="0.75" />
+          <stop offset="65%" stopColor="#ffffff" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </linearGradient>
 
         {/* Clip Path for the Exact Outer Silhouette */}
         <clipPath id={`${p}-crystal-silhouette`}>
@@ -382,6 +391,18 @@ export const CrystalIcon = React.memo(function CrystalIcon({ color = 'cryst', cl
             stroke={`url(#${p}-edge-bevel-shine)`}
             strokeWidth="3"
           />
+
+          {/* Periodic Specular Sheen Sweep (100% GPU Compositor Animation) */}
+          <g className="crystal-sheen-sweep" style={{ animationDelay: `${-delay}s` }}>
+            <rect
+              x="-60"
+              y="-120"
+              width="520"
+              height="240"
+              fill={`url(#${p}-gleam-sheen)`}
+              transform="rotate(-20 200 0)"
+            />
+          </g>
         </g>
 
         {/* ==================== 8. EXTERNAL SPECULAR STARBURSTS & EDGE BLOOMS ==================== */}
