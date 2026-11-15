@@ -72,7 +72,7 @@ export const DashboardShell = ({
           return sum + (task?.points || 0);
         }, 0);
         setQuestBonusPoints(points);
-      } catch {}
+      } catch { }
     };
 
     window.addEventListener('storage', updateQuestPoints);
@@ -318,31 +318,27 @@ export const DashboardShell = ({
                 <div className="relative w-9 h-9 shrink-0 flex items-center justify-center">
                   {/* Inactive Icon Background Layer */}
                   <span
-                    className={`absolute inset-0 rounded-xl bg-[#ebedf2] shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
-                      isActive ? 'opacity-0' : 'opacity-100'
-                    }`}
+                    className={`absolute inset-0 rounded-xl bg-[#ebedf2] shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${isActive ? 'opacity-0' : 'opacity-100'
+                      }`}
                   />
                   {/* Active Icon Background Layer */}
                   <span
-                    className={`absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
-                      isActive ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    className={`absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${isActive ? 'opacity-100' : 'opacity-0'
+                      }`}
                   />
                   {/* Dual-Icon Crossfade */}
                   <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
                     <Icon
                       size={24}
                       weight="duotone"
-                      className={`absolute text-zinc-500 group-hover:text-zinc-900 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
-                        isActive ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
-                      }`}
+                      className={`absolute text-zinc-500 group-hover:text-zinc-900 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${isActive ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                        }`}
                     />
                     <Icon
                       size={24}
                       weight="bold"
-                      className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
-                        isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                      }`}
+                      className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                        }`}
                     />
                   </div>
                 </div>
@@ -448,33 +444,29 @@ export const DashboardShell = ({
                   onTabChange(item.id);
                   setMobileProfileOpen(false);
                 }}
-                className={`flex-1 flex flex-col items-center justify-end py-0.5 px-0.5 rounded-2xl active:scale-95 transition-transform duration-100 ease-out cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] ${
-                  isCenterScanner ? '-mt-1 sm:-mt-2.5' : ''
-                }`}
+                className={`flex-1 flex flex-col items-center justify-end py-0.5 px-0.5 rounded-2xl active:scale-95 transition-transform duration-100 ease-out cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] ${isCenterScanner ? '-mt-1 sm:-mt-2.5' : ''
+                  }`}
               >
                 <div className="relative">
                   {/* Stable-sized icon container preventing layout shifts */}
                   <div
-                    className={`relative ${
-                      isCenterScanner
+                    className={`relative ${isCenterScanner
                         ? 'w-12 h-11 mb-0.5'
                         : 'w-10 h-9 mb-0.5'
-                    } flex items-center justify-center`}
+                      } flex items-center justify-center`}
                   >
                     {/* Inactive Clay Background Layer */}
                     <span
-                      className={`absolute inset-0 rounded-xl transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
-                        isCenterScanner
+                      className={`absolute inset-0 rounded-xl transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${isCenterScanner
                           ? 'bg-[#ebedf2] shadow-[3px_3px_6px_#c2c9d4,-3px_-3px_6px_#ffffff] border border-white/80'
                           : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
-                      } ${isActive ? 'opacity-0' : 'opacity-100'}`}
+                        } ${isActive ? 'opacity-0' : 'opacity-100'}`}
                     />
 
                     {/* Active Dark Gradient Background Layer */}
                     <span
-                      className={`absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
-                        isActive ? 'opacity-100' : 'opacity-0'
-                      }`}
+                      className={`absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${isActive ? 'opacity-100' : 'opacity-0'
+                        }`}
                     />
 
                     {/* Dual-Icon Crossfade Layer (Duotone Inactive vs Bold Active) */}
@@ -482,16 +474,14 @@ export const DashboardShell = ({
                       <Icon
                         size={isCenterScanner ? 29 : 23}
                         weight="duotone"
-                        className={`absolute text-zinc-500 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
-                          isActive ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
-                        }`}
+                        className={`absolute text-zinc-500 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${isActive ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                          }`}
                       />
                       <Icon
                         size={isCenterScanner ? 29 : 23}
                         weight="bold"
-                        className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
-                          isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                        }`}
+                        className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                          }`}
                       />
                     </div>
                   </div>
@@ -503,11 +493,9 @@ export const DashboardShell = ({
                   )}
                 </div>
                 <span
-                  className={`${
-                    isCenterScanner ? 'text-[10.5px]' : 'text-[10px]'
-                  } font-bold tracking-tight truncate transition-colors duration-150 ease-out ${
-                    isActive ? 'text-zinc-900' : 'text-zinc-500'
-                  }`}
+                  className={`${isCenterScanner ? 'text-[10.5px]' : 'text-[10px]'
+                    } font-bold tracking-tight truncate transition-colors duration-150 ease-out ${isActive ? 'text-zinc-900' : 'text-zinc-500'
+                    }`}
                 >
                   {item.label}
                 </span>
@@ -541,16 +529,14 @@ export const DashboardShell = ({
             >
               {/* Default / Inactive State Layer (Fades out when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
-                  isNotificationOpen ? 'opacity-0' : 'opacity-100'
-                }`}
+                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${isNotificationOpen ? 'opacity-0' : 'opacity-100'
+                  }`}
               />
 
               {/* Active State Layer (Fades in when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
-                  isNotificationOpen ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${isNotificationOpen ? 'opacity-100' : 'opacity-0'
+                  }`}
               />
 
               {/* Dual-Icon Cross-Fade: Inactive Regular Icon vs Active Fill Icon (Pure opacity cross-fade, zero wobble) */}
@@ -558,16 +544,14 @@ export const DashboardShell = ({
                 <Bell
                   size={23}
                   weight="regular"
-                  className={`absolute text-zinc-600 transition-opacity duration-150 ease-out will-change-[opacity] ${
-                    isNotificationOpen ? 'opacity-0' : 'opacity-100'
-                  }`}
+                  className={`absolute text-zinc-600 transition-opacity duration-150 ease-out will-change-[opacity] ${isNotificationOpen ? 'opacity-0' : 'opacity-100'
+                    }`}
                 />
                 <Bell
                   size={23}
                   weight="fill"
-                  className={`absolute text-white transition-opacity duration-150 ease-out will-change-[opacity] ${
-                    isNotificationOpen ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className={`absolute text-white transition-opacity duration-150 ease-out will-change-[opacity] ${isNotificationOpen ? 'opacity-100' : 'opacity-0'
+                    }`}
                 />
               </div>
 
@@ -593,16 +577,14 @@ export const DashboardShell = ({
             >
               {/* Default / Inactive State Layer (Fades out when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
-                  (activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-0' : 'opacity-100'
-                }`}
+                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${(activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-0' : 'opacity-100'
+                  }`}
               />
 
               {/* Active State Layer (Fades in when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
-                  (activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${(activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-100' : 'opacity-0'
+                  }`}
               />
 
               {/* Dual-Icon Cross-Fade: Inactive Regular Icon vs Active Fill Icon */}
@@ -610,16 +592,14 @@ export const DashboardShell = ({
                 <Lightbulb
                   size={23}
                   weight="regular"
-                  className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
-                    (activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
-                  }`}
+                  className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${(activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                    }`}
                 />
                 <Lightbulb
                   size={23}
                   weight="fill"
-                  className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
-                    (activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                  }`}
+                  className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${(activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                    }`}
                 />
               </div>
             </button>
@@ -637,31 +617,27 @@ export const DashboardShell = ({
             >
               {/* Default / Inactive State Layer (Fades out when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
-                  activeTab === 'map' ? 'opacity-0' : 'opacity-100'
-                }`}
+                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${activeTab === 'map' ? 'opacity-0' : 'opacity-100'
+                  }`}
               />
 
               {/* Active State Layer (Fades in when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${
-                  activeTab === 'map' ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${activeTab === 'map' ? 'opacity-100' : 'opacity-0'
+                  }`}
               />
 
               {/* Dual-Color Cross-Fade: Inactive text-zinc-600 vs Active text-white */}
               <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
                 <ArenaMapIcon
                   size={27}
-                  className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
-                    activeTab === 'map' ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
-                  }`}
+                  className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${activeTab === 'map' ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                    }`}
                 />
                 <ArenaMapIcon
                   size={27}
-                  className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${
-                    activeTab === 'map' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                  }`}
+                  className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${activeTab === 'map' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+                    }`}
                 />
               </div>
             </button>
