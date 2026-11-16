@@ -207,7 +207,7 @@ export const LoginView = ({ onEnterArena }) => {
         </div>
 
         {/* Neumorphic Main Onboarding Card */}
-        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-[2.5rem] p-4 sm:p-9 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
+        <div className="bg-[#F5F6F7]/80 border border-slate-300/60 rounded-[2.5rem] p-4 sm:p-9 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6]">
           {isLoading && !guestId ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
               <CircleNotch size={32} className="animate-spin text-slate-500" />
@@ -237,7 +237,7 @@ export const LoginView = ({ onEnterArena }) => {
 
                 <div className="mt-4 text-center">
                   <span
-                    className="font-arena inline-block px-3.5 py-1 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[12.5px] tracking-wider shadow-sm"
+                    className="font-arena inline-block px-3.5 py-0.5 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[12.5px] tracking-wider shadow-sm"
                     style={{ WebkitTextStroke: '0.5px' }}
                   >
                     {guestId || 'Guest...'}

@@ -473,13 +473,13 @@ export const DashboardShell = ({
                     {/* Dual-Icon Crossfade Layer (Duotone Inactive vs Bold Active) */}
                     <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
                       <Icon
-                        size={isCenterScanner ? 29 : 23}
+                        size={isCenterScanner ? 31 : 25}
                         weight="duotone"
-                        className={`absolute text-zinc-500 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${isActive ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                        className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${isActive ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
                           }`}
                       />
                       <Icon
-                        size={isCenterScanner ? 29 : 23}
+                        size={isCenterScanner ? 31 : 25}
                         weight="bold"
                         className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
                           }`}

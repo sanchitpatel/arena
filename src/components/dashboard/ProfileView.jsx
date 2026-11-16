@@ -659,12 +659,12 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
 
             <div className="mt-3.5 text-center">
               <span
-                className="font-arena inline-block px-3.5 py-1 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[12.5px] tracking-wider shadow-sm"
+                className="font-arena inline-block px-3.5 py-0.5 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[12.5px] tracking-wider shadow-sm"
                 style={{ WebkitTextStroke: '0.5px', fontWeight: 400 }}
               >
                 {guestId}
               </span>
-              <p className="text-[11px] text-zinc-500/80 mt-1">
+              <p className="text-[11px] text-zinc-500/90 mt-1">
                 Your assigned player identity on venue network
               </p>
             </div>
@@ -673,8 +673,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           {/* Username Input Field */}
           <div className="space-y-1.5">
             <div className="min-h-[20px] flex items-center justify-between pl-1 pr-1">
-              <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5">
-                <User size={15} weight="bold" className="text-zinc-500" />
+              <label className="text-[12px] font-bold tracking-wider text-zinc-600/90 flex items-center gap-1.5">
+                <User size={16} weight="bold" className="text-zinc-600" />
                 Username
               </label>
               {renderFieldStatus('username')}
@@ -690,7 +690,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
                 maxLength={16}
                 autoComplete="off"
                 spellCheck="false"
-                className="w-full py-2.5 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-[13px] rounded-3xl border border-transparent shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus-visible:outline-none focus-visible:ring-0 selection:bg-sky-200 selection:text-zinc-900 transition-colors duration-150 placeholder:text-zinc-400"
+                className="w-full py-2.5 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-[13px] rounded-3xl border border-white shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 focus-visible:outline-none focus-visible:ring-0 selection:bg-sky-200 selection:text-zinc-900 transition-colors duration-150 placeholder:text-zinc-400"
                 style={{ outline: 'none', WebkitTapHighlightColor: 'transparent' }}
               />
             </div>
@@ -704,8 +704,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           {/* Curated Lorelei Avatar Selector Tray */}
           <div className="space-y-1.5">
             <div className="min-h-[20px] flex items-center justify-between pl-1 pr-1">
-              <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5">
-                <UserCircle size={19} weight="bold" className="text-zinc-500/80" />
+              <label className="text-[12px] font-bold tracking-wider text-zinc-600/90 flex items-center gap-1.5">
+                <UserCircle size={20} weight="bold" className="text-zinc-600/80" />
                 Choose Avatar
               </label>
               {renderFieldStatus('avatar')}
@@ -739,8 +739,8 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           ======================================================== */}
       <div className="space-y-1.5">
         <div className="min-h-[20px] flex items-center justify-between pl-1 pr-1">
-          <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5">
-            <SlidersHorizontal size={17} weight="bold" className="text-zinc-500" />
+          <label className="text-[12px] font-bold tracking-wider text-zinc-600/90 flex items-center gap-1.5">
+            <SlidersHorizontal size={18} weight="bold" className="text-zinc-600" />
             Permissions
           </label>
           <span className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
@@ -754,7 +754,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
           </span>
         </div>
 
-        <div className="bg-[#ebedf2] border border-slate-300/60 rounded-2xl p-2.5 sm:p-3 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6] space-y-2">
+        <div className="bg-[#F2F7FC]/90 border border-slate-300/60 rounded-2xl p-2.5 sm:p-3 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6] space-y-2">
           {/* 1. Camera Permission Toggle Row */}
           <div>
             <div
@@ -764,7 +764,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-[#ebedf2] shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] border border-white/80 flex items-center justify-center shrink-0">
                   <Camera
-                    size={17}
+                    size={18}
                     weight="bold"
                     className={cameraGranted ? 'text-sky-600/90 transition-colors' : 'text-zinc-500 transition-colors'}
                   />
@@ -824,7 +824,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-[#ebedf2] shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] border border-white/80 flex items-center justify-center shrink-0">
                   <Microphone
-                    size={17}
+                    size={18}
                     weight="bold"
                     className={micGranted ? 'text-sky-600/90 transition-colors' : 'text-zinc-500 transition-colors'}
                   />
@@ -884,7 +884,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-[#ebedf2] shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] border border-white/80 flex items-center justify-center shrink-0">
                   <Compass
-                    size={18}
+                    size={19}
                     weight="bold"
                     className={gyroGranted ? 'text-sky-600/90 transition-colors' : 'text-zinc-500 transition-colors'}
                   />
@@ -938,7 +938,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
       {/* ========================================================
           3. SESSION & ACCOUNT CARD (Single horizontal row)
           ======================================================== */}
-      <div className="bg-[#ebedf2] border border-slate-300/60 rounded-2xl p-2 sm:p-2.5 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6] flex items-center justify-between gap-3">
+      <div className="bg-[#F2F7FC]/90 border border-slate-300/60 rounded-2xl p-2 sm:p-2.5 shadow-[inset_4px_4px_10px_#ffffff,inset_-4px_-4px_10px_#c5ccd6] flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] border-2 border-white flex items-center justify-center overflow-hidden shrink-0 bg-white">
             <ArenaAvatar id={selectedAvatar} size="badge" className="w-full h-full" />
