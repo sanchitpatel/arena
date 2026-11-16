@@ -20,6 +20,8 @@ import {
   Dna,
   DeviceMobile,
   Check,
+  CaretUp,
+  CaretDown,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
@@ -144,6 +146,9 @@ export const IdeasPitchWallView = ({ player }) => {
       return [];
     }
   });
+
+  // Sort order: 'votes' | 'recent'
+  const [sortBy, setSortBy] = useState('votes');
 
   // Submit Idea Form State (Simple: Idea/Problem & Description)
   const [formTitle, setFormTitle] = useState('');
@@ -286,10 +291,15 @@ export const IdeasPitchWallView = ({ player }) => {
     }, 200);
   };
 
-  // Accumulated pitches sorted by votes
+  // Accumulated pitches sorted by votes or recent
   const sortedPitches = useMemo(() => {
-    return [...pitches].sort((a, b) => b.votes - a.votes);
-  }, [pitches]);
+    return [...pitches].sort((a, b) => {
+      if (sortBy === 'votes') {
+        return b.votes - a.votes;
+      }
+      return (b.timestamp || 0) - (a.timestamp || 0);
+    });
+  }, [pitches, sortBy]);
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-5 pb-20 font-sans select-none">
@@ -490,7 +500,28 @@ export const IdeasPitchWallView = ({ player }) => {
           SECTION 2: ACCUMULATED EVENT PITCHES & VOTING (Browse & Vote)
           ======================================================== */}
       {activeSection === 'wall' && (
-        <div className="!mt-6 sm:!mt-7 space-y-3 sm:space-y-4 animate-in fade-in duration-150">
+        <div className="!mt-6 sm:!mt-7 space-y-4 animate-in fade-in duration-150">
+          {/* Section Header: Title, Subtitle & Sort Control */}
+          <div className="flex items-center justify-between gap-3 px-1">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight">
+                Event Ideas ({sortedPitches.length})
+              </h2>
+              <p className="text-xs sm:text-[13px] text-zinc-500 font-medium mt-0.5">
+                All submitted pitches for this event. Vote for the ideas you like.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSortBy((prev) => (prev === 'votes' ? 'recent' : 'votes'))}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ebedf2] border border-white/90 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] active:shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] text-xs font-bold text-zinc-700 hover:text-zinc-900 transition-all cursor-pointer select-none shrink-0"
+              title="Click to toggle sorting"
+            >
+              <span>{sortBy === 'votes' ? 'Top Voted' : 'Latest'}</span>
+              <CaretDown size={13} weight="bold" className="text-zinc-500" />
+            </button>
+          </div>
+
           {/* Pitch Cards Feed */}
           {sortedPitches.length === 0 ? (
             <div className="bg-[#ebedf2] border border-white/80 rounded-[28px] p-8 text-center shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] space-y-3">
@@ -513,121 +544,91 @@ export const IdeasPitchWallView = ({ player }) => {
               </button>
             </div>
           ) : (
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-3 sm:space-y-3.5">
               {sortedPitches.map((pitch) => {
                 const hasVoted = votedIds.includes(pitch.id);
                 const isCurrentUserPitch =
                   pitch.isMyPitch || pitch.guestId === guestId;
 
+                // Collect distinct tags for the pitch
+                const tagsList = Array.from(
+                  new Set(
+                    [
+                      pitch.category,
+                      pitch.stage && pitch.stage !== 'Concept' ? pitch.stage : null,
+                      ...(pitch.tags || []),
+                    ].filter(Boolean)
+                  )
+                );
+
                 return (
                   <div
                     key={pitch.id}
-                    className="bg-[#ebedf2] border border-white/90 rounded-[28px] p-4 sm:p-5 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] space-y-3 transition-all duration-200"
+                    className="bg-[#ebedf2] border border-white/90 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] flex items-center justify-between gap-3 sm:gap-4 transition-all duration-200"
                   >
-                    {/* Card Header Row: Presenter Info & Badges */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-9 h-9 rounded-full border border-white shadow-sm overflow-hidden flex items-center justify-center shrink-0">
-                          <ArenaAvatar id={pitch.avatar || '1'} size="badge" className="w-full h-full" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-zinc-900 truncate">
-                              {pitch.presenter}
+                    {/* Left: Presenter Avatar in Inset Soft Squircle */}
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#F2F7FC] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center shrink-0 overflow-hidden self-start sm:self-center">
+                      <ArenaAvatar
+                        id={pitch.avatar || '1'}
+                        size="badge"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Middle: Title, Description & Tags */}
+                    <div className="flex-1 min-w-0 py-0.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="text-sm sm:text-[15px] font-bold text-zinc-900 tracking-tight leading-snug">
+                          {pitch.title}
+                        </h3>
+                        {isCurrentUserPitch && (
+                          <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-800 border border-amber-500/30 shrink-0">
+                            You
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs sm:text-[13px] text-zinc-600 font-medium leading-relaxed mt-1 line-clamp-2 sm:line-clamp-none">
+                        {pitch.summary}
+                      </p>
+
+                      {tagsList.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          {tagsList.map((tag, idx) => (
+                            <span
+                              key={`${tag}-${idx}`}
+                              className="text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#F2F7FC] text-zinc-600 border border-white/80 shadow-[inset_1px_1px_2px_#c8d0db,inset_-1px_-1px_2px_#ffffff]"
+                            >
+                              {tag}
                             </span>
-                            {pitch.role && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-500/10 text-blue-700 border border-blue-500/20 shrink-0">
-                                {pitch.role}
-                              </span>
-                            )}
-                            {isCurrentUserPitch && (
-                              <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-800 border border-amber-500/30 shrink-0">
-                                You
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-zinc-400 font-medium">
-                            {pitch.timeAgo || 'Recently'}
-                          </span>
+                          ))}
                         </div>
-                      </div>
-
-                      {/* Category & Stage Pill */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span
-                          className="font-arena text-[9.5px] tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-700 shadow-sm"
-                          style={{ WebkitTextStroke: '0.3px' }}
-                        >
-                          {pitch.category}
-                        </span>
-                        <span className="text-[9.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#F2F7FC] text-zinc-600 border border-white/80 shadow-[inset_1px_1px_2px_#c8d0db,inset_-1px_-1px_2px_#ffffff]">
-                          {pitch.stage}
-                        </span>
-                      </div>
+                      )}
                     </div>
 
-                    {/* Card Title */}
-                    <h3
-                      className="font-arena text-[14px] sm:text-[15px] font-black text-zinc-900 tracking-wide leading-snug"
-                      style={{ WebkitTextStroke: '0.4px' }}
+                    {/* Right: Vertical Upvote Capsule */}
+                    <button
+                      type="button"
+                      onClick={() => handleVote(pitch.id)}
+                      className={`w-14 sm:w-16 h-16 sm:h-18 rounded-2xl flex flex-col items-center justify-center cursor-pointer select-none transition-all duration-150 shrink-0 active:scale-90 ${
+                        hasVoted
+                          ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
+                          : 'bg-[#ebedf2] border border-white/90 text-zinc-700 hover:text-zinc-900 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] hover:shadow-[1px_1px_3px_#c8d0db,-1px_-1px_3px_#ffffff]'
+                      }`}
+                      title={hasVoted ? 'Click to revoke your vote' : 'Click to vote for this idea'}
                     >
-                      {pitch.title}
-                    </h3>
-
-                    {/* Card Description */}
-                    <p className="text-[12.5px] sm:text-[13px] text-zinc-600 font-medium leading-relaxed">
-                      {pitch.summary}
-                    </p>
-
-                    {/* Card Clinical Focus Tags */}
-                    {pitch.tags && pitch.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-0.5">
-                        {pitch.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 border border-emerald-500/20"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Card Footer: Live Ballot / Vote Action */}
-                    <div className="pt-2 border-t border-zinc-300/60 shadow-[0_1px_0_#ffffff] flex items-center justify-between gap-3">
-                      {/* Submitter Handle / Status Capsule */}
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-zinc-400">
-                        <User size={13} weight="bold" />
-                        <span className="truncate">{pitch.guestId || 'Arena Innovator'}</span>
-                      </div>
-
-                      {/* Tactile Vote / Ballot Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleVote(pitch.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer select-none active:scale-[0.92] ${
-                          hasVoted
-                            ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff]'
-                            : 'bg-[#ebedf2] text-zinc-700 hover:text-zinc-900 border border-white/90 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] hover:shadow-[1px_1px_3px_#c8d0db,-1px_-1px_3px_#ffffff]'
-                        }`}
-                      >
-                        <Lightbulb
-                          size={15}
-                          weight={hasVoted ? 'fill' : 'bold'}
-                          className={hasVoted ? 'text-amber-400' : 'text-zinc-500'}
-                        />
-                        <span>{hasVoted ? 'Ballot Cast' : 'Vote Pitch'}</span>
-                        <span
-                          className={`ml-0.5 px-2 py-0.5 rounded-full text-[10.5px] font-black ${
-                            hasVoted
-                              ? 'bg-white/20 text-white'
-                              : 'bg-[#F2F7FC] text-zinc-800 border border-white/80 shadow-[inset_1px_1px_2px_#c8d0db,inset_-1px_-1px_2px_#ffffff]'
-                          }`}
-                        >
-                          {pitch.votes}
-                        </span>
-                      </button>
-                    </div>
+                      <CaretUp
+                        size={18}
+                        weight="bold"
+                        className={`transition-colors ${hasVoted ? 'text-amber-400' : 'text-zinc-500'}`}
+                      />
+                      <span className="text-sm sm:text-base font-extrabold leading-none my-0.5">
+                        {pitch.votes}
+                      </span>
+                      <span className="text-[9px] sm:text-[9.5px] font-bold uppercase tracking-wider opacity-75">
+                        Votes
+                      </span>
+                    </button>
                   </div>
                 );
               })}
