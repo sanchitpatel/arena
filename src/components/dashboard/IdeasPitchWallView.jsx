@@ -454,7 +454,7 @@ export const IdeasPitchWallView = ({ player }) => {
         <form
           onSubmit={handleSubmitPitch}
           noValidate
-          className="bg-[#ebedf2] border border-white/80 rounded-[1rem] p-5 sm:p-8 shadow-[-3px_-3px_10px_rgba(0,0,0,0.06),3px_3px_10px_rgba(255,255,255,0.65),inset_4px_4px_12px_#ffffff,inset_-4px_-4px_12px_rgba(0,0,0,0.14)] space-y-4 sm:space-y-5 animate-in fade-in duration-150"
+          className="!mt-8 sm:!mt-7 bg-[#ebedf2] border border-white/80 rounded-[1rem] p-5 sm:p-8 shadow-[-3px_-3px_10px_rgba(0,0,0,0.06),3px_3px_10px_rgba(255,255,255,0.65),inset_4px_4px_12px_#ffffff,inset_-4px_-4px_12px_rgba(0,0,0,0.14)] space-y-4 sm:space-y-5 animate-in fade-in duration-150"
         >
           {/* Field 1: Idea / Problem */}
           <div>
@@ -528,7 +528,7 @@ export const IdeasPitchWallView = ({ player }) => {
           SECTION 2: ACCUMULATED EVENT PITCHES & VOTING (Browse & Vote)
           ======================================================== */}
       {activeSection === 'wall' && (
-        <div className="space-y-4 animate-in fade-in duration-150">
+        <div className="!mt-8 sm:!mt-7 space-y-4 animate-in fade-in duration-150">
           {/* Quick Pitch Invite Card */}
           <div
             onClick={() => setActiveSection('pitch')}
