@@ -355,35 +355,67 @@ export const IdeasPitchWallView = ({ player }) => {
       </div>
 
       {/* ========================================================
-          TWO-SECTION SWITCHER (Tactile Clay Segmented Control)
+          TWO-SECTION SWITCHER (Fixed-Dimension Smooth Crossfade Switcher)
           1. Submit Idea (Left)
           2. Explore & Vote (Right)
           ======================================================== */}
-      <div className="bg-[#F5F6F7]/80 p-0.5 rounded-2xl border border-white/80 shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff] flex items-center gap-1">
+      <div 
+        role="tablist"
+        aria-label="Pitch wall section toggle"
+        className="w-full bg-[#F5F6F7]/80 p-1 rounded-2xl border border-white/80 shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff] relative flex items-center select-none gap-1 overflow-hidden"
+      >
+        {/* Left Tab: Submit Idea (Constant Dimension) */}
         <button
           type="button"
+          role="tab"
+          aria-selected={activeSection === 'pitch'}
           onClick={() => setActiveSection('pitch')}
-          className={`flex-1 py-2 px-3 rounded-xl text-[13px] sm:text-sm font-semibold sm:font-bold flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer select-none active:scale-[0.98] ${
-            activeSection === 'pitch'
-              ? 'bg-gradient-to-b from-zinc-900 to-black text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6] border border-zinc-800/80'
-              : 'text-zinc-700 hover:text-zinc-900 hover:shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff]'
-          }`}
+          className="flex-1 relative py-2 px-3 rounded-xl text-[13px] sm:text-sm flex items-center justify-center cursor-pointer select-none text-center whitespace-nowrap overflow-hidden active:scale-[0.98]"
         >
-          <PencilSimple size={19} weight="bold" />
-          <span>Submit Idea</span>
+          {/* Active Dark Gradient Pill (Fades in/out smoothly without resizing) */}
+          <span
+            aria-hidden="true"
+            className={`absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-900 to-black shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6] border border-zinc-800/80 pointer-events-none transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              activeSection === 'pitch' ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+          <span
+            className={`relative z-10 flex items-center justify-center gap-2 transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              activeSection === 'pitch'
+                ? 'text-white font-bold'
+                : 'text-zinc-700 hover:text-zinc-900 font-semibold'
+            }`}
+          >
+            <PencilSimple size={19} weight="bold" className="shrink-0" />
+            <span>Submit Idea</span>
+          </span>
         </button>
 
+        {/* Right Tab: Explore & Vote (Constant Dimension) */}
         <button
           type="button"
+          role="tab"
+          aria-selected={activeSection === 'wall'}
           onClick={() => setActiveSection('wall')}
-          className={`flex-1 py-2 px-3 rounded-xl text-[13px] sm:text-sm font-semibold sm:font-bold flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer select-none active:scale-[0.98] ${
-            activeSection === 'wall'
-              ? 'bg-gradient-to-b from-zinc-900 to-black text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6] border border-zinc-800/80'
-              : 'text-zinc-700 hover:text-zinc-900 hover:shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff]'
-          }`}
+          className="flex-1 relative py-2 px-3 rounded-xl text-[13px] sm:text-sm flex items-center justify-center cursor-pointer select-none text-center whitespace-nowrap overflow-hidden active:scale-[0.98]"
         >
-          <Stack size={19} weight="bold" />
-          <span>Explore & Vote</span>
+          {/* Active Dark Gradient Pill (Fades in/out smoothly without resizing) */}
+          <span
+            aria-hidden="true"
+            className={`absolute inset-0 rounded-xl bg-gradient-to-b from-zinc-900 to-black shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6] border border-zinc-800/80 pointer-events-none transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              activeSection === 'wall' ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+          <span
+            className={`relative z-10 flex items-center justify-center gap-2 transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              activeSection === 'wall'
+                ? 'text-white font-bold'
+                : 'text-zinc-700 hover:text-zinc-900 font-semibold'
+            }`}
+          >
+            <Stack size={19} weight="bold" className="shrink-0" />
+            <span>Explore & Vote</span>
+          </span>
         </button>
       </div>
 
