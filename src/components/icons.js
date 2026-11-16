@@ -91,6 +91,7 @@ export { Medal } from '@phosphor-icons/react/dist/icons/Medal';
 export { MapPin } from '@phosphor-icons/react/dist/icons/MapPin';
 export { Pause } from '@phosphor-icons/react/dist/icons/Pause';
 export { PaperPlaneTilt } from '@phosphor-icons/react/dist/icons/PaperPlaneTilt';
+export { PencilSimple } from '@phosphor-icons/react/dist/icons/PencilSimple';
 export { Phone } from '@phosphor-icons/react/dist/icons/Phone';
 export { PhoneCall } from '@phosphor-icons/react/dist/icons/PhoneCall';
 export { Plant } from '@phosphor-icons/react/dist/icons/Plant';

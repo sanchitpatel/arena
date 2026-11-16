@@ -12,6 +12,8 @@ import {
   MagnifyingGlass,
   User,
   PaperPlaneTilt,
+  PencilSimple,
+  Stack,
   Clock,
   ArrowRight,
   Brain,
@@ -125,8 +127,8 @@ export const IdeasPitchWallView = ({ player }) => {
   const displayName = player?.name || guestId || 'Player';
   const avatar = player?.avatar || '1';
 
-  // Active view section: 'wall' (Browse & Vote) | 'pitch' (Submit Idea)
-  const [activeSection, setActiveSection] = useState('wall');
+  // Active view section: 'pitch' (Submit Idea) | 'wall' (Explore & Vote)
+  const [activeSection, setActiveSection] = useState('pitch');
 
   // Pitches state with localStorage persistence
   const [pitches, setPitches] = useState(() => {
@@ -338,56 +340,50 @@ export const IdeasPitchWallView = ({ player }) => {
       )}
 
       {/* ========================================================
-          TOP HEADER TITLE
+          TOP HEADER TITLE & DESCRIPTION
           ======================================================== */}
       <div className="text-center pt-1 pb-1">
         <h1
-          className="font-arena text-xl sm:text-2xl font-black tracking-wider text-zinc-800 uppercase"
-          style={{ WebkitTextStroke: '1.2px currentColor' }}
+          className="font-arena text-2xl sm:text-2xl font-black tracking-tighter text-zinc-700 uppercase"
+          style={{ WebkitTextStroke: '1.6px currentColor' }}
         >
           Pitch Wall
         </h1>
+        <p className="text-[11px] sm:text-[13px] text-zinc-500 font-medium max-w-md mx-auto leading-relaxed">
+          Share your ideas/Problems & vote for the best pitches of the event.
+        </p>
       </div>
 
       {/* ========================================================
           TWO-SECTION SWITCHER (Tactile Clay Segmented Control)
-          1. Browse & Vote Pitches
-          2. Submit Your Pitch
+          1. Submit Idea (Left)
+          2. Explore & Vote (Right)
           ======================================================== */}
-      <div className="bg-[#ebedf2] p-1.5 rounded-2xl border border-white/80 shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff] flex items-center gap-1.5">
+      <div className="bg-[#F5F6F7]/80 p-0.5 rounded-2xl border border-white/80 shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff] flex items-center gap-1">
         <button
           type="button"
-          onClick={() => setActiveSection('wall')}
-          className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer select-none active:scale-[0.98] ${
-            activeSection === 'wall'
+          onClick={() => setActiveSection('pitch')}
+          className={`flex-1 py-2 px-3 rounded-xl text-[13px] sm:text-sm font-semibold sm:font-bold flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer select-none active:scale-[0.98] ${
+            activeSection === 'pitch'
               ? 'bg-gradient-to-b from-zinc-900 to-black text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6] border border-zinc-800/80'
-              : 'text-zinc-600 hover:text-zinc-900 hover:shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff]'
+              : 'text-zinc-700 hover:text-zinc-900 hover:shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff]'
           }`}
         >
-          <Lightbulb size={16} weight={activeSection === 'wall' ? 'fill' : 'bold'} />
-          <span>Browse Pitches</span>
-          <span
-            className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-              activeSection === 'wall'
-                ? 'bg-white/20 text-white'
-                : 'bg-zinc-300/60 text-zinc-700'
-            }`}
-          >
-            {pitches.length}
-          </span>
+          <PencilSimple size={19} weight="bold" />
+          <span>Submit Idea</span>
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveSection('pitch')}
-          className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer select-none active:scale-[0.98] ${
-            activeSection === 'pitch'
+          onClick={() => setActiveSection('wall')}
+          className={`flex-1 py-2 px-3 rounded-xl text-[13px] sm:text-sm font-semibold sm:font-bold flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer select-none active:scale-[0.98] ${
+            activeSection === 'wall'
               ? 'bg-gradient-to-b from-zinc-900 to-black text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6] border border-zinc-800/80'
-              : 'text-zinc-600 hover:text-zinc-900 hover:shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff]'
+              : 'text-zinc-700 hover:text-zinc-900 hover:shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff]'
           }`}
         >
-          <Plus size={16} weight="bold" />
-          <span>Pitch an Idea</span>
+          <Stack size={19} weight="bold" />
+          <span>Explore & Vote</span>
         </button>
       </div>
 
