@@ -21,50 +21,13 @@ import {
   Dna,
   DeviceMobile,
   Check,
-  Stethoscope,
-  Code,
-  Handshake,
-  FirstAid,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
+import { normalizePitchTitle, normalizePitchDescription } from '../../utils/sanitize';
 
 const STORAGE_VOTES_KEY = 'arena_pitch_wall_votes';
 const STORAGE_CUSTOM_PITCHES_KEY = 'arena_pitch_wall_custom_pitches';
-
-// Roles tailored for Doctors and Engineers in Arena
-const ROLES = [
-  { id: 'Doctor / Clinician', label: 'Doctor / Clinician', icon: Stethoscope },
-  { id: 'Engineer / Tech', label: 'Engineer / Tech', icon: Code },
-  { id: 'Joint Med-Tech', label: 'Joint Med-Tech', icon: Handshake },
-];
-
-// Clinical & Engineering Domain Tracks
-const DOMAIN_TRACKS = [
-  { id: 'Clinical AI & Scribes', label: 'Clinical AI & Scribes', icon: Brain },
-  { id: 'MedTech & Hardware', label: 'MedTech & Hardware', icon: Atom },
-  { id: 'Hospital & ER Ops', label: 'Hospital & ER Ops', icon: FirstAid },
-  { id: 'BioTech & Diagnostics', label: 'BioTech & Diagnostics', icon: Dna },
-  { id: 'Digital Health Apps', label: 'Digital Health Apps', icon: DeviceMobile },
-  { id: 'Surgical & Robotics', label: 'Surgical & Robotics', icon: Sparkle },
-];
-
-// Maturity stages acknowledging doctors with unmet clinical problems vs engineers with prototypes
-const STAGE_OPTIONS = [
-  { id: 'Clinical Need', label: 'Clinical Need', hint: 'Unmet clinical problem' },
-  { id: 'Prototype Demo', label: 'Prototype Demo', hint: 'Working MVP / demo' },
-  { id: 'Live / In-Clinic', label: 'Live / In-Clinic', hint: 'Tested with clinicians' },
-];
-
-// Rapid 1-tap clinical focus tags for busy clinicians and engineers
-const QUICK_PROBLEM_TAGS = [
-  'Doctor Burnout',
-  'Diagnostic Speed',
-  'Patient Safety',
-  'Emergency & ICU',
-  'Cost Reduction',
-  'Remote Triage',
-];
 
 const CATEGORIES = [
   { id: 'All', label: 'All', icon: Sparkle },
@@ -197,27 +160,40 @@ export const IdeasPitchWallView = ({ player }) => {
   const [sortBy, setSortBy] = useState('votes'); // 'votes' | 'recent'
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Submit Idea Form State (Customized for Doctors & Engineers)
+  // Submit Idea Form State (Simple: Idea/Problem & Description)
   const [formTitle, setFormTitle] = useState('');
-  const [formRole, setFormRole] = useState('Doctor / Clinician');
-  const [formDomain, setFormDomain] = useState('Clinical AI & Scribes');
-  const [formStage, setFormStage] = useState('Clinical Need');
-  const [selectedTags, setSelectedTags] = useState(['Doctor Burnout']);
   const [formPitch, setFormPitch] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleTitleChange = (e) => {
+    // Real-time normalization prevents malicious scripts/tags from ever entering state
+    const normalized = normalizePitchTitle(e.target.value, 100);
+    setFormTitle(normalized);
+    if (errors.title) setErrors((prev) => ({ ...prev, title: '' }));
+  };
+
+  const handlePitchChange = (e) => {
+    // Real-time normalization prevents malicious scripts/tags from ever entering state
+    const normalized = normalizePitchDescription(e.target.value, 500);
+    setFormPitch(normalized);
+    if (errors.pitch) setErrors((prev) => ({ ...prev, pitch: '' }));
+  };
+
   const validate = () => {
     const newErrors = {};
-    if (!formTitle.trim()) {
+    const cleanTitle = normalizePitchTitle(formTitle, 100).trim();
+    const cleanPitch = normalizePitchDescription(formPitch, 500).trim();
+
+    if (!cleanTitle) {
       newErrors.title = 'Idea or Problem title is required.';
-    } else if (formTitle.trim().length < 4) {
+    } else if (cleanTitle.length < 4) {
       newErrors.title = 'Title must be at least 4 characters.';
     }
-    if (!formPitch.trim()) {
-      newErrors.pitch = 'Elevator pitch is required.';
-    } else if (formPitch.trim().length < 15) {
-      newErrors.pitch = 'Please provide at least 15 characters explaining your problem & solution.';
+    if (!cleanPitch) {
+      newErrors.pitch = 'Description is required.';
+    } else if (cleanPitch.length < 15) {
+      newErrors.pitch = 'Please provide at least 15 characters explaining your idea or problem.';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -273,18 +249,19 @@ export const IdeasPitchWallView = ({ player }) => {
 
     setIsSubmitting(true);
 
+    const cleanTitle = normalizePitchTitle(formTitle, 100).trim();
+    const cleanPitch = normalizePitchDescription(formPitch, 500).trim();
+
     const newPitch = {
       id: `pitch-${Date.now()}`,
-      title: formTitle.trim(),
-      category: formDomain,
+      title: cleanTitle,
+      category: 'General',
       presenter: displayName,
       avatar: String(avatar),
       guestId: guestId,
-      role: formRole,
-      stage: formStage,
-      tags: selectedTags,
-      summary: formPitch.trim(),
+      summary: cleanPitch,
       votes: 1, // User gets an immediate self-vote
+      stage: 'Concept',
       timeAgo: 'Just now',
       timestamp: Date.now(),
       isMyPitch: true,
@@ -309,10 +286,6 @@ export const IdeasPitchWallView = ({ player }) => {
 
       // Reset form fields
       setFormTitle('');
-      setFormRole('Doctor / Clinician');
-      setFormDomain('Clinical AI & Scribes');
-      setFormStage('Clinical Need');
-      setSelectedTags(['Doctor Burnout']);
       setFormPitch('');
       setErrors({});
       setIsSubmitting(false);
@@ -397,7 +370,7 @@ export const IdeasPitchWallView = ({ player }) => {
       {/* ========================================================
           TOP HEADER TITLE & DESCRIPTION
           ======================================================== */}
-      <div className="text-center pt-1 pb-1">
+      <div className="text-center pt-1 pb-2">
         <h1
           className="font-arena text-2xl sm:text-2xl font-black tracking-tighter text-zinc-700 uppercase"
           style={{ WebkitTextStroke: '1.6px currentColor' }}
@@ -475,7 +448,7 @@ export const IdeasPitchWallView = ({ player }) => {
       </div>
 
       {/* ========================================================
-          SECTION 1: PITCH AN IDEA (Doctor & Engineer Focused Form)
+          SECTION 1: PITCH AN IDEA (Simple 2-Field Form: Idea/Problem & Description)
           ======================================================== */}
       {activeSection === 'pitch' && (
         <form
@@ -483,7 +456,7 @@ export const IdeasPitchWallView = ({ player }) => {
           noValidate
           className="bg-[#ebedf2] border border-white/80 rounded-[1rem] p-5 sm:p-8 shadow-[-3px_-3px_10px_rgba(0,0,0,0.06),3px_3px_10px_rgba(255,255,255,0.65),inset_4px_4px_12px_#ffffff,inset_-4px_-4px_12px_rgba(0,0,0,0.14)] space-y-4 sm:space-y-5 animate-in fade-in duration-150"
         >
-          {/* Field 1: Concept / Project Title */}
+          {/* Field 1: Idea / Problem */}
           <div>
             <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
               Idea / Problem <span className="text-rose-500 font-bold">*</span>
@@ -496,11 +469,8 @@ export const IdeasPitchWallView = ({ player }) => {
                 type="text"
                 placeholder="e.g. AI OPD Scribe, Smart ICU Alert..."
                 value={formTitle}
-                onChange={(e) => {
-                  setFormTitle(e.target.value);
-                  if (errors.title) setErrors((prev) => ({ ...prev, title: '' }));
-                }}
-                maxLength={90}
+                onChange={handleTitleChange}
+                maxLength={100}
                 style={{ outline: 'none' }}
                 className={`w-full pl-11 pr-4 py-2.5 sm:py-3 bg-[#F2F7FC] rounded-2xl text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium ${
                   errors.title ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(244,63,94,0.6)]' : ''
@@ -512,148 +482,23 @@ export const IdeasPitchWallView = ({ player }) => {
             )}
           </div>
 
-          {/* Field 2: I Am Pitching As (Tailored for Doctors & Engineers) */}
-          <div>
-            <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
-              I Am Pitching As <span className="text-zinc-400 font-normal lowercase">(tailor perspective)</span>
-            </label>
-            <div 
-              role="radiogroup" 
-              aria-label="Role selection"
-              className="w-full h-[40px] sm:h-[44px] p-1 bg-[#F2F7FC] rounded-2xl shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] relative flex items-center select-none gap-1 overflow-hidden"
-            >
-              {ROLES.map((role) => {
-                const isSelected = formRole === role.id;
-                const Icon = role.icon;
-                return (
-                  <button
-                    key={role.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    onClick={() => setFormRole(role.id)}
-                    className={`flex-1 relative h-full rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 ease-out flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer select-none text-center whitespace-nowrap overflow-hidden active:scale-[0.98] ${
-                      isSelected
-                        ? 'bg-gradient-to-b from-zinc-900 to-black text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6] border border-zinc-800/80 font-black'
-                        : 'text-zinc-600 hover:text-zinc-900 font-semibold'
-                    }`}
-                  >
-                    <Icon size={15} weight={isSelected ? 'bold' : 'regular'} className="shrink-0" />
-                    <span className="truncate">{role.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Field 3: Domain Track */}
-          <div>
-            <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
-              Domain Track <span className="text-rose-500 font-bold">*</span>
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
-              {DOMAIN_TRACKS.map((track) => {
-                const isSelected = formDomain === track.id;
-                const Icon = track.icon;
-                return (
-                  <button
-                    key={track.id}
-                    type="button"
-                    onClick={() => setFormDomain(track.id)}
-                    className={`py-2.5 px-3 rounded-2xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none active:scale-[0.97] border ${
-                      isSelected
-                        ? 'bg-gradient-to-b from-zinc-900 to-black text-white border-zinc-800 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6]'
-                        : 'bg-[#F2F7FC] text-zinc-700 hover:text-zinc-900 border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
-                    }`}
-                  >
-                    <Icon size={16} weight={isSelected ? 'bold' : 'regular'} className={`shrink-0 ${isSelected ? 'text-white' : 'text-zinc-500'}`} />
-                    <span className="truncate">{track.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Field 4: Project Maturity Stage */}
-          <div>
-            <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
-              Project Maturity Stage <span className="text-zinc-400 font-normal lowercase">(where is it today?)</span>
-            </label>
-            <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-              {STAGE_OPTIONS.map((st) => {
-                const isSelected = formStage === st.id;
-                return (
-                  <button
-                    key={st.id}
-                    type="button"
-                    onClick={() => setFormStage(st.id)}
-                    className={`py-2 sm:py-2.5 px-2 rounded-2xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex flex-col items-center justify-center text-center cursor-pointer select-none active:scale-[0.97] border ${
-                      isSelected
-                        ? 'bg-gradient-to-b from-zinc-900 to-black text-white border-zinc-800 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6]'
-                        : 'bg-[#F2F7FC] text-zinc-700 hover:text-zinc-900 border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
-                    }`}
-                  >
-                    <span className="truncate">{st.label}</span>
-                    <span className={`text-[9px] font-medium hidden sm:block ${isSelected ? 'text-zinc-300' : 'text-zinc-400'}`}>
-                      {st.hint}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Field 5: Target Problem Tags */}
-          <div>
-            <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
-              Target Clinical Problem / Focus <span className="text-zinc-400 font-normal lowercase">(tap to tag)</span>
-            </label>
-            <div className="flex flex-wrap gap-1.5 sm:gap-2">
-              {QUICK_PROBLEM_TAGS.map((tag) => {
-                const isSelected = selectedTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => {
-                      setSelectedTags((prev) =>
-                        prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-                      );
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all duration-150 cursor-pointer select-none active:scale-95 flex items-center gap-1.5 border ${
-                      isSelected
-                        ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-800 shadow-[inset_1px_1px_2px_rgba(16,185,129,0.2)]'
-                        : 'bg-[#F2F7FC] border-white/80 text-zinc-600 hover:text-zinc-900 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
-                    }`}
-                  >
-                    {isSelected && <Check size={12} weight="bold" className="text-emerald-700" />}
-                    <span>{tag}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Field 6: 60-Second Elevator Pitch */}
+          {/* Field 2: Description */}
           <div>
             <div className="flex items-center justify-between mb-1.5 ml-1 mr-1">
               <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider">
-                60-Second Elevator Pitch <span className="text-rose-500 font-bold">*</span>
+                Description <span className="text-rose-500 font-bold">*</span>
               </label>
-              <span className={`text-[10.5px] font-bold ${formPitch.length > 280 ? 'text-amber-600' : 'text-zinc-400'}`}>
-                {formPitch.length}/280
+              <span className={`text-[10.5px] font-bold ${formPitch.length > 500 ? 'text-amber-600' : 'text-zinc-400'}`}>
+                {formPitch.length}/500
               </span>
             </div>
             <div className="relative group">
               <textarea
-                rows={3}
-                maxLength={350}
-                placeholder="Explain the specific clinical pain point, your proposed technical approach, and how it impacts doctors or patients in 2-3 crisp sentences..."
+                rows={4}
+                maxLength={500}
+                placeholder="Describe the clinical problem or idea in detail (what is the problem, your solution, and the impact)..."
                 value={formPitch}
-                onChange={(e) => {
-                  setFormPitch(e.target.value);
-                  if (errors.pitch) setErrors((prev) => ({ ...prev, pitch: '' }));
-                }}
+                onChange={handlePitchChange}
                 style={{ outline: 'none' }}
                 className={`w-full p-3.5 sm:p-4 bg-[#F2F7FC] rounded-2xl text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(244,63,94,0.6)] font-medium leading-relaxed ${
                   errors.pitch ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(244,63,94,0.6)]' : 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)]'
@@ -673,7 +518,7 @@ export const IdeasPitchWallView = ({ player }) => {
               className="w-full sm:w-auto min-w-[280px] py-3.5 px-8 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black text-white font-bold text-sm rounded-2xl sm:rounded-full transition-all duration-150 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.98] cursor-pointer border border-zinc-800/80 disabled:opacity-60 group"
             >
               <PaperPlaneTilt size={18} weight="bold" className="shrink-0 transition-transform duration-200 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-              <span>{isSubmitting ? 'Publishing Pitch...' : 'Publish Pitch to Arena Wall'}</span>
+              <span>{isSubmitting ? 'Submitting...' : 'Submit'}</span>
             </button>
           </div>
         </form>
