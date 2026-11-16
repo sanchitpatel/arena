@@ -516,7 +516,7 @@ export const DashboardShell = ({
         {/* ========================================================
             TOP TRANSPARENT APP BAR (Fixed height, zero jump / zero scale on click)
             ======================================================== */}
-        <header className="sticky top-0 z-40 w-full bg-[#f0f2f5]/40 backdrop-blur-md border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
+        <header className="sticky top-0 z-40 w-full bg-[#f0f2f5]/80 backdrop-blur-xl border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
           {/* Brand Name */}
           <span className="font-arena text-xl -ml-1 sm:text-lg font-black tracking-wider text-zinc-900 shrink-0">
             ARENA
@@ -533,7 +533,7 @@ export const DashboardShell = ({
             >
               {/* Default / Inactive State Layer (Fades out when active) */}
               <span
-                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${isNotificationOpen ? 'opacity-0' : 'opacity-100'
+                className={`absolute inset-0 rounded-lg bg-[#F5F6F7] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${isNotificationOpen ? 'opacity-0' : 'opacity-100'
                   }`}
               />
 
@@ -548,7 +548,7 @@ export const DashboardShell = ({
                 <Bell
                   size={23}
                   weight="regular"
-                  className={`absolute text-zinc-600 transition-opacity duration-150 ease-out will-change-[opacity] ${isNotificationOpen ? 'opacity-0' : 'opacity-100'
+                  className={`absolute text-zinc-700 transition-opacity duration-150 ease-out will-change-[opacity] ${isNotificationOpen ? 'opacity-0' : 'opacity-100'
                     }`}
                 />
                 <Bell
@@ -596,7 +596,7 @@ export const DashboardShell = ({
                 <Lightbulb
                   size={23}
                   weight="regular"
-                  className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${(activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                  className={`absolute text-zinc-700 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${(activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
                     }`}
                 />
                 <Lightbulb
@@ -635,7 +635,7 @@ export const DashboardShell = ({
               <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
                 <ArenaMapIcon
                   size={27}
-                  className={`absolute text-zinc-600 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${activeTab === 'map' ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                  className={`absolute text-zinc-700 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${activeTab === 'map' ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
                     }`}
                 />
                 <ArenaMapIcon

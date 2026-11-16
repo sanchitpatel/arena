@@ -7,21 +7,22 @@ import React from 'react';
  *
  * Supports two viewport modes:
  * 1. Fullscreen (clampToBars=false): For Onboarding/Login and Loading screens.
- * 2. Unobscured Center Viewport (clampToBars=true):
- *    Limits the image strictly between the bottom of the top navigation bar (y=48px)
- *    and the top of the mobile bottom tab bar (bottom=64px, md:bottom=0).
- *    Ensures 100% of the mountain peaks and bottom crystals are fully visible
- *    without being occluded or cropped by either navigation bar.
+ * 2. Bottom-Clamped Viewport (clampToBars=true):
+ *    Expands continuously behind the top navigation bar (top-0) so the frosted
+ *    header blurs the mountain peaks, while clamping strictly above the mobile
+ *    bottom tab bar (bottom=64px, md:bottom=0) to keep all bottom crystals visible.
  */
 export const FrostMountainBackground = React.memo(function FrostMountainBackground({
   hasSidebar = false,
   clampToBars = false,
+  clampTop = false,
+  clampBottom = clampToBars,
   className = '',
 }) {
   const sidebarClasses = hasSidebar ? 'md:left-60 lg:left-64' : '';
-  const viewportBounds = clampToBars
-    ? 'top-[48px] sm:top-[52px] bottom-[64px] md:bottom-0'
-    : 'top-0 bottom-0';
+  const viewportBounds = `${clampTop ? 'top-[48px] sm:top-[52px]' : 'top-0'} ${
+    clampBottom ? 'bottom-[64px] md:bottom-0' : 'bottom-0'
+  }`;
 
   return (
     <div
