@@ -480,7 +480,7 @@ export const IdeasPitchWallView = ({ player }) => {
         <form
           onSubmit={handleSubmitPitch}
           noValidate
-          className="bg-[#ebedf2] border border-white/80 rounded-[1rem] p-6 sm:p-9 shadow-[-3px_-3px_10px_rgba(0,0,0,0.06),3px_3px_10px_rgba(255,255,255,0.65),inset_4px_4px_12px_#ffffff,inset_-4px_-4px_12px_rgba(0,0,0,0.14)] animate-in fade-in duration-150"
+          className="bg-[#ebedf2]/80 border border-white/80 rounded-[1rem] p-6 sm:p-9 shadow-[-3px_-3px_10px_rgba(0,0,0,0.06),3px_3px_10px_rgba(255,255,255,0.65),inset_4px_4px_12px_#ffffff,inset_-4px_-4px_12px_rgba(0,0,0,0.14)] animate-in fade-in duration-150"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
