@@ -59,19 +59,20 @@ function ArenaLoadingScreen() {
 
 /**
  * Route Mappings for Clean Native Mobile URLs (Zero '#' in URLs)
- * - /arena          -> Main Game/Onboarding View (Root Tab)
+ * - /profile        -> Player Identity & Profile (Default Root Tab)
+ * - /arena          -> Main Game/Quests View
  * - /leaderboard    -> Live Scoreboard / Rankings
  * - /live           -> Active Challenge / Round View
  * - /notifications  -> Event Announcements / Notifications
  */
-const ROOT_TAB = 'new-patient';
-const ROOT_PATH = '/arena';
+const ROOT_TAB = 'profile';
+const ROOT_PATH = '/profile';
 
 const TAB_TO_PATH = {
+  'profile': '/profile',
   'new-patient': '/arena',
   'existing-patient': '/leaderboard',
   'dashboard': '/wallet',
-  'profile': '/profile',
   'scanner': '/scanner',
   'ideas': '/ideas',
   'prizes': '/ideas',
@@ -79,20 +80,20 @@ const TAB_TO_PATH = {
 };
 
 const PATH_TO_TAB = {
+  '/profile': 'profile',
   '/arena': 'new-patient',
   '/leaderboard': 'existing-patient',
   '/live': 'dashboard',
   '/wallet': 'dashboard',
-  '/notifications': 'new-patient',
+  '/notifications': 'profile',
   '/records': 'existing-patient',
-  '/profile': 'profile',
   '/scanner': 'scanner',
   '/scan': 'scanner',
   '/ideas': 'ideas',
   '/pitch-wall': 'ideas',
   '/prizes': 'ideas',
   '/map': 'map',
-  '/': 'new-patient',
+  '/': 'profile',
 };
 
 function parsePathToTab(pathname) {

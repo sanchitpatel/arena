@@ -61,7 +61,7 @@ export default function App() {
   }, []);
 
   const navigateToApp = () => {
-    window.history.pushState(null, '', '/arena');
+    window.history.pushState(null, '', '/profile');
     setRoute('app');
   };
 

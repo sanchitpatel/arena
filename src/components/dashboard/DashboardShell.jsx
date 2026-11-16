@@ -452,15 +452,15 @@ export const DashboardShell = ({
                   {/* Stable-sized icon container preventing layout shifts */}
                   <div
                     className={`relative ${isCenterScanner
-                        ? 'w-12 h-11 mb-0.5'
-                        : 'w-10 h-9 mb-0.5'
+                      ? 'w-12 h-11 mb-0.5'
+                      : 'w-10 h-9 mb-0.5'
                       } flex items-center justify-center`}
                   >
                     {/* Inactive Clay Background Layer */}
                     <span
                       className={`absolute inset-0 rounded-xl transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${isCenterScanner
-                          ? 'bg-[#ebedf2] shadow-[3px_3px_6px_#c2c9d4,-3px_-3px_6px_#ffffff] border border-white/80'
-                          : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
+                        ? 'bg-[#ebedf2] shadow-[3px_3px_6px_#c2c9d4,-3px_-3px_6px_#ffffff] border border-white/80'
+                        : 'bg-[#ebedf2] shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
                         } ${isActive ? 'opacity-0' : 'opacity-100'}`}
                     />
 
@@ -516,7 +516,7 @@ export const DashboardShell = ({
         {/* ========================================================
             TOP TRANSPARENT APP BAR (Fixed height, zero jump / zero scale on click)
             ======================================================== */}
-        <header className="sticky top-0 z-40 w-full bg-[#f0f2f5]/80 backdrop-blur-md border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
+        <header className="sticky top-0 z-40 w-full bg-[#f0f2f5]/40 backdrop-blur-md border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
           {/* Brand Name */}
           <span className="font-arena text-xl -ml-1 sm:text-lg font-black tracking-wider text-zinc-900 shrink-0">
             ARENA
