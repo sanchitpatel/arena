@@ -338,38 +338,15 @@ export const IdeasPitchWallView = ({ player }) => {
       )}
 
       {/* ========================================================
-          TOP HEADER: Brand Identity & Attendee Status Capsule
+          TOP HEADER TITLE
           ======================================================== */}
-      <div className="bg-[#ebedf2] border border-white/80 rounded-[26px] p-3.5 sm:p-4 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-b from-zinc-900 to-black text-amber-400 border border-zinc-800/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] flex items-center justify-center shrink-0">
-            <Lightbulb size={22} weight="fill" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="font-arena text-sm sm:text-base font-black tracking-wider text-zinc-900 truncate">
-              ARENA PITCH WALL
-            </h1>
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider truncate mt-0.5">
-              Live Crowd-Sourced Ideas & Peer Ballots
-            </p>
-          </div>
-        </div>
-
-        {/* Presenter Identity Capsule */}
-        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-[#F2F7FC] border border-white/80 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] shrink-0">
-          <div className="w-6 h-6 rounded-full border border-white shadow-sm overflow-hidden flex items-center justify-center shrink-0">
-            <ArenaAvatar id={avatar} size="badge" className="w-full h-full" />
-          </div>
-          <span
-            className="font-arena text-[10.5px] font-bold text-zinc-700 tracking-wider hidden sm:inline"
-            style={{ WebkitTextStroke: '0.3px' }}
-          >
-            {displayName}
-          </span>
-          <span className="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-800 border border-amber-500/30">
-            Orb #{orbNumber}
-          </span>
-        </div>
+      <div className="text-center pt-1 pb-1">
+        <h1
+          className="font-arena text-xl sm:text-2xl font-black tracking-wider text-zinc-800 uppercase"
+          style={{ WebkitTextStroke: '1.2px currentColor' }}
+        >
+          Pitch Wall
+        </h1>
       </div>
 
       {/* ========================================================
