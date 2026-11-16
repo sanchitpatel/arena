@@ -626,7 +626,7 @@ export const MapView = ({ player, onNavigate, isActive = true }) => {
         </div>
 
         {/* Floorplan Tap Tip */}
-        <p className="text-[11px] text-zinc-400 font-semibold text-center mt-2 leading-snug shrink-0">
+        <p className="text-[11px] text-zinc-700 font-semibold text-center mt-2 leading-snug shrink-0">
           Tap any floating Crystal to view quest details
         </p>
       </div>

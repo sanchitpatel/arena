@@ -21,6 +21,9 @@ import {
   Dna,
   DeviceMobile,
   Check,
+  HourglassHigh,
+  Phone,
+  Users,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
@@ -159,13 +162,70 @@ export const IdeasPitchWallView = ({ player }) => {
   const [sortBy, setSortBy] = useState('votes'); // 'votes' | 'recent'
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Submit Idea Form State
-  const [formTitle, setFormTitle] = useState('');
-  const [formCategory, setFormCategory] = useState('AI & Agents');
-  const [formStage, setFormStage] = useState('Concept');
-  const [formSummary, setFormSummary] = useState('');
-  const [formError, setFormError] = useState('');
+  // Submit Idea Form State (Mirrored from NewPatientView)
+  const [formData, setFormData] = useState({
+    name: '',
+    age: '',
+    gender: 'Female',
+    phone: '',
+    guardian: '',
+    address: '',
+  });
+  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleNameChange = (e) => {
+    const val = e.target.value;
+    setFormData((prev) => ({ ...prev, name: val }));
+    if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
+  };
+
+  const handleAgeChange = (e) => {
+    const val = e.target.value.replace(/[^0-9]/g, '');
+    if (val.length <= 3) {
+      setFormData((prev) => ({ ...prev, age: val }));
+      if (errors.age) setErrors((prev) => ({ ...prev, age: '' }));
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const val = e.target.value.replace(/[^0-9]/g, '');
+    if (val.length <= 10) {
+      setFormData((prev) => ({ ...prev, phone: val }));
+      if (errors.phone) setErrors((prev) => ({ ...prev, phone: '' }));
+    }
+  };
+
+  const handleGuardianChange = (e) => {
+    setFormData((prev) => ({ ...prev, guardian: e.target.value }));
+  };
+
+  const handleAddressChange = (e) => {
+    setFormData((prev) => ({ ...prev, address: e.target.value }));
+    if (errors.address) setErrors((prev) => ({ ...prev, address: '' }));
+  };
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.name?.trim()) {
+      newErrors.name = 'Patient Full Name is required.';
+    }
+    if (!formData.age?.trim()) {
+      newErrors.age = 'Age is required.';
+    }
+    const digitsOnly = (formData.phone || '').replace(/[^0-9]/g, '');
+    if (!digitsOnly) {
+      newErrors.phone = 'Mobile number is required.';
+    } else if (digitsOnly.length !== 10) {
+      newErrors.phone = 'Please enter a valid 10-digit mobile number.';
+    }
+    const trimmedAddress = (formData.address || '').trim();
+    if (!trimmedAddress) {
+      newErrors.address = 'Address is required.';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // Toast feedback state
   const [toastMessage, setToastMessage] = useState(null);
@@ -213,32 +273,20 @@ export const IdeasPitchWallView = ({ player }) => {
   // Handle new pitch submission
   const handleSubmitPitch = (e) => {
     e.preventDefault();
-    if (!formTitle.trim()) {
-      setFormError('Please enter a clear project or concept title.');
-      return;
-    }
-    if (formTitle.trim().length < 5) {
-      setFormError('Title must be at least 5 characters long.');
-      return;
-    }
-    if (!formSummary.trim() || formSummary.trim().length < 20) {
-      setFormError('Please describe your pitch in at least 20 characters.');
-      return;
-    }
+    if (!validate()) return;
 
     setIsSubmitting(true);
-    setFormError('');
 
     const newPitch = {
       id: `pitch-${Date.now()}`,
-      title: formTitle.trim(),
-      category: formCategory,
+      title: formData.name.trim(),
+      category: formData.gender,
       presenter: displayName,
       avatar: String(avatar),
       guestId: guestId,
-      summary: formSummary.trim(),
+      summary: formData.address.trim(),
       votes: 1, // User gets an immediate self-vote
-      stage: formStage,
+      stage: formData.age ? `Age ${formData.age}` : 'Concept',
       timeAgo: 'Just now',
       timestamp: Date.now(),
       isMyPitch: true,
@@ -262,9 +310,15 @@ export const IdeasPitchWallView = ({ player }) => {
       } catch {}
 
       // Reset form fields
-      setFormTitle('');
-      setFormSummary('');
-      setFormStage('Concept');
+      setFormData({
+        name: '',
+        age: '',
+        gender: 'Female',
+        phone: '',
+        guardian: '',
+        address: '',
+      });
+      setErrors({});
       setIsSubmitting(false);
 
       // Switch back to wall view so user sees their new pitch live
@@ -302,7 +356,7 @@ export const IdeasPitchWallView = ({ player }) => {
   }, [pitches, selectedCategory, searchQuery, sortBy]);
 
   return (
-    <div className="w-full max-w-[480px] md:max-w-4xl mx-auto px-2 sm:px-4 space-y-4 sm:space-y-5 pb-20 font-sans select-none">
+    <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-5 pb-20 font-sans select-none">
       {/* Floating Arena Toast Notification */}
       {toastMessage && (
         <div className="fixed top-14 sm:top-16 left-1/2 -translate-x-1/2 z-[100] w-[92%] sm:w-auto max-w-sm bg-[#ebedf2]/95 backdrop-blur-xl border border-white/90 rounded-2xl px-4 py-3 shadow-[inset_2px_2px_4px_#ffffff,inset_-2px_-2px_4px_#c5ccd6,0_8px_24px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3 duration-200">
@@ -420,155 +474,197 @@ export const IdeasPitchWallView = ({ player }) => {
       </div>
 
       {/* ========================================================
-          SECTION 1: PITCH AN IDEA (Direct In-Canvas Pitch Submission)
+          SECTION 1: PITCH AN IDEA (Direct Form Shell from NewPatientView)
           ======================================================== */}
       {activeSection === 'pitch' && (
-        <div className="bg-[#ebedf2] border border-white/90 rounded-[28px] p-4.5 sm:p-6 shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] space-y-4 animate-in fade-in duration-150">
-          {/* Section Sub-Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-zinc-300/60">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-[#F2F7FC] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-700 shrink-0">
-                <PaperPlaneTilt size={18} weight="bold" />
+        <form
+          onSubmit={handleSubmitPitch}
+          noValidate
+          className="bg-[#ebedf2] border border-white/80 rounded-[1rem] p-6 sm:p-9 shadow-[-3px_-3px_10px_rgba(0,0,0,0.06),3px_3px_10px_rgba(255,255,255,0.65),inset_4px_4px_12px_#ffffff,inset_-4px_-4px_12px_rgba(0,0,0,0.14)] animate-in fade-in duration-150"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Patient Name */}
+            <div>
+              <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1 sm:mb-2 ml-1">
+                Patient Full Name <span className="text-rose-500 font-bold">*</span>
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
+                  <User size={19} weight="bold" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. Ananya Sharma"
+                  value={formData.name}
+                  onChange={handleNameChange}
+                  style={{ outline: 'none' }}
+                  className={`w-full pl-11 pr-4 py-2.5 bg-[#F2F7FC] rounded-full text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium ${
+                    errors.name ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1px_rgba(244,63,94,0.4)]' : ''
+                  }`}
+                />
               </div>
-              <div className="min-w-0">
-                <h2 className="font-arena text-xs sm:text-sm font-black tracking-wide text-zinc-900">
-                  SUBMIT BREAKTHROUGH PITCH
-                </h2>
-                <p className="text-[11px] text-zinc-500 font-medium">
-                  Publish to the venue wall to earn +10 PTS and gather peer votes
-                </p>
+              {errors.name && (
+                <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1 -mb-2 sm:-mb-3">{errors.name}</p>
+              )}
+            </div>
+
+            {/* Age & Gender Side-by-Side */}
+            <div className="flex flex-row items-start gap-3 sm:gap-4">
+              {/* Age */}
+              <div className="w-[105px] sm:w-[140px] shrink-0">
+                <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider -mt-1 sm:mt-0 mb-1 sm:mb-2 ml-1">
+                  Age <span className="text-rose-500 font-bold">*</span>
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
+                    <HourglassHigh size={19} weight="bold" />
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="e.g. 28"
+                    value={formData.age}
+                    onChange={handleAgeChange}
+                    style={{ outline: 'none' }}
+                    className={`w-full pl-11 pr-3 py-2.5 bg-[#F2F7FC] rounded-full text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium ${
+                      errors.age ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1px_rgba(244,63,94,0.4)]' : ''
+                    }`}
+                  />
+                </div>
+                {errors.age && (
+                  <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1 -mb-1 sm:-mb-3">{errors.age}</p>
+                )}
               </div>
+
+              {/* Gender Toggle */}
+              <div className="flex-1 min-w-0">
+                <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider -mt-1 sm:mt-0 mb-1 sm:mb-2 ml-1">
+                  Gender <span className="text-rose-500 font-bold">*</span>
+                </label>
+                <div 
+                  role="radiogroup" 
+                  aria-label="Gender selection"
+                  className="w-full h-[38px] sm:h-[41px] p-1 bg-[#F2F7FC] rounded-2xl shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] relative flex items-center select-none gap-1 overflow-hidden"
+                >
+                  {/* Three Buttons: Female, Male, Trans */}
+                  {['Female', 'Male', 'Trans'].map((genderOption) => {
+                    const isSelected = formData.gender === genderOption;
+                    return (
+                      <button
+                        key={genderOption}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        onClick={() => setFormData((prev) => ({ ...prev, gender: genderOption }))}
+                        className={`relative h-full rounded-full text-[11px] sm:text-xs font-bold transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center cursor-pointer select-none text-center whitespace-nowrap overflow-hidden ${
+                          isSelected
+                            ? genderOption === 'Female'
+                              ? 'flex-[1.8] sm:flex-[2] bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 font-black pl-7 sm:pl-8 pr-2 sm:pr-2.5'
+                              : genderOption === 'Male'
+                              ? 'flex-[1.8] sm:flex-[2] bg-sky-500/15 border border-sky-500/30 text-sky-800 font-black pl-7 sm:pl-8 pr-2 sm:pr-2.5'
+                              : 'flex-[1.8] sm:flex-[2] bg-purple-500/15 border border-purple-500/30 text-purple-800 font-black pl-7 sm:pl-8 pr-2 sm:pr-2.5'
+                            : 'flex-1 text-zinc-600 hover:text-zinc-900 active:scale-[0.98] border border-transparent px-1'
+                        }`}
+                      >
+                        {/* Circle Thumb */}
+                        {isSelected && (
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-0.5 sm:left-0.5 top-0.5 bottom-0.5 aspect-square rounded-full bg-[#ebedf2] shadow-[inset_2px_2px_4px_#ffffff,inset_-2px_-2px_4px_rgba(0,0,0,0.22)] border border-white/20 pointer-events-none transition-all duration-300 animate-in fade-in zoom-in-90"
+                          />
+                        )}
+                        <span className="truncate">{genderOption}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Number */}
+            <div>
+              <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider -mt-1 sm:mt-2 mb-1 sm:mb-2 ml-1">
+                Mobile Number <span className="text-emerald-700 font-bold normal-case">(WhatsApp)</span> <span className="text-rose-500 font-bold">*</span>
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
+                  <Phone size={19} weight="bold" />
+                </div>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="10-digit number"
+                  value={formData.phone}
+                  onChange={handlePhoneChange}
+                  style={{ outline: 'none' }}
+                  className={`w-full pl-11 pr-4 py-2.5 bg-[#F2F7FC] rounded-full text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium ${
+                    errors.phone ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1px_rgba(244,63,94,0.4)]' : ''
+                  }`}
+                />
+              </div>
+              {errors.phone && (
+                <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1 -mb-1 sm:-mb-3">{errors.phone}</p>
+              )}
+            </div>
+
+            {/* Guardian */}
+            <div>
+              <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider -mt-1 sm:mt-2 mb-1 sm:mb-2 ml-1">
+                Guardian
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
+                  <Users size={19} weight="bold" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. Rajesh Sharma"
+                  value={formData.guardian}
+                  onChange={handleGuardianChange}
+                  style={{ outline: 'none' }}
+                  className="w-full pl-11 pr-4 py-2.5 bg-[#F2F7FC] rounded-full text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Address */}
+            <div className="md:col-span-2">
+              <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider -mt-1 sm:mt-2 mb-1 sm:mb-2 ml-1">
+                Address <span className="text-rose-500 font-bold">*</span>
+              </label>
+              <div className="relative group">
+                <textarea
+                  rows={3}
+                  placeholder="Enter complete residential address, city..."
+                  value={formData.address}
+                  onChange={handleAddressChange}
+                  style={{ outline: 'none' }}
+                  className={`w-full p-4 bg-[#F2F7FC] rounded-2xl text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out resize-none font-medium ${
+                    errors.address ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1px_rgba(244,63,94,0.4)]' : ''
+                  }`}
+                />
+              </div>
+              {errors.address && (
+                <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1 -mb-1 sm:-mb-3">{errors.address}</p>
+              )}
             </div>
           </div>
 
-          {/* Validation Error Banner */}
-          {formError && (
-            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-              <X size={15} weight="bold" className="shrink-0" />
-              <span>{formError}</span>
-            </div>
-          )}
-
-          {/* Submission Form */}
-          <form onSubmit={handleSubmitPitch} className="space-y-4">
-            {/* Concept Title Field */}
-            <div className="space-y-1.5">
-              <label className="text-[11.5px] font-bold tracking-wider text-zinc-500 uppercase pl-1 flex items-center gap-1.5">
-                <Lightbulb size={14} weight="bold" className="text-zinc-500" />
-                <span>Concept / Project Title</span>
-              </label>
-              <input
-                type="text"
-                value={formTitle}
-                onChange={(e) => {
-                  setFormTitle(e.target.value);
-                  if (formError) setFormError('');
-                }}
-                placeholder="e.g. Autonomous Drone Defibrillator Dispatch"
-                maxLength={70}
-                className="w-full py-2.5 px-4 bg-[#F2F7FC] text-zinc-900 font-semibold text-[13px] rounded-2xl border border-transparent shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 selection:bg-sky-200 transition-colors duration-150 placeholder:text-zinc-400"
-              />
-            </div>
-
-            {/* Category / Domain Selector (Visual Tactile Pills) */}
-            <div className="space-y-1.5">
-              <label className="text-[11.5px] font-bold tracking-wider text-zinc-500 uppercase pl-1">
-                Domain Track
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {CATEGORIES.filter((c) => c.id !== 'All').map((cat) => {
-                  const isSelected = formCategory === cat.id;
-                  const Icon = cat.icon;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setFormCategory(cat.id)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer select-none active:scale-95 ${
-                        isSelected
-                          ? 'bg-gradient-to-b from-zinc-900 to-black text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_4px_#c5ccd6] border border-zinc-800'
-                          : 'bg-[#F2F7FC] text-zinc-600 hover:text-zinc-900 border border-white/80 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff]'
-                      }`}
-                    >
-                      <Icon size={14} weight={isSelected ? 'bold' : 'duotone'} />
-                      <span className="truncate">{cat.label}</span>
-                    </button>
-                  );
-                })}
+          {/* Submit Action Button (Our current form button style) */}
+          <div className="mt-6 sm:mt-10 flex items-center justify-center">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full sm:w-auto py-3.5 px-9 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black text-white font-bold text-sm rounded-full transition-all duration-150 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.97] cursor-pointer border border-zinc-800/80 disabled:opacity-60 group"
+            >
+              <span>{isSubmitting ? 'Registering...' : 'Register Patient'}</span>
+              <div className="w-5 h-5 flex items-center justify-center pointer-events-none transition-transform duration-200 ease-out group-hover:translate-x-1.5">
+                <ArrowRight size={18} weight="bold" />
               </div>
-            </div>
-
-            {/* Stage Selector */}
-            <div className="space-y-1.5">
-              <label className="text-[11.5px] font-bold tracking-wider text-zinc-500 uppercase pl-1">
-                Project Maturity Stage
-              </label>
-              <div className="flex items-center gap-2">
-                {STAGES.map((stg) => {
-                  const isSelected = formStage === stg;
-                  return (
-                    <button
-                      key={stg}
-                      type="button"
-                      onClick={() => setFormStage(stg)}
-                      className={`flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer select-none active:scale-95 text-center ${
-                        isSelected
-                          ? 'bg-zinc-900 text-white shadow-[2px_2px_5px_#c5ccd6] border border-zinc-800'
-                          : 'bg-[#F2F7FC] text-zinc-600 hover:text-zinc-900 border border-white/80 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff]'
-                      }`}
-                    >
-                      {stg}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 60-Second Elevator Pitch Textarea */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between pl-1 pr-1">
-                <label className="text-[11.5px] font-bold tracking-wider text-zinc-500 uppercase">
-                  60-Second Elevator Pitch
-                </label>
-                <span className="text-[10.5px] font-semibold text-zinc-400">
-                  {formSummary.length}/280
-                </span>
-              </div>
-              <textarea
-                rows={3}
-                value={formSummary}
-                maxLength={280}
-                onChange={(e) => {
-                  setFormSummary(e.target.value);
-                  if (formError) setFormError('');
-                }}
-                placeholder="Explain the specific problem, your technical solution, and why it will succeed in 2-3 crisp sentences..."
-                className="w-full py-2.5 px-4 bg-[#F2F7FC] text-zinc-900 font-medium text-[13px] rounded-2xl border border-transparent shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 focus:ring-0 selection:bg-sky-200 transition-colors duration-150 placeholder:text-zinc-400 resize-none leading-relaxed"
-              />
-            </div>
-
-            {/* Submit Action Button */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 px-6 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black text-white font-bold text-sm rounded-full transition-all duration-150 ease-out flex items-center justify-center gap-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.97] cursor-pointer border border-zinc-800/80 disabled:opacity-60"
-              >
-                {isSubmitting ? (
-                  <>
-                    <CircleNotch size={17} className="animate-spin text-zinc-300" />
-                    <span>Publishing Pitch...</span>
-                  </>
-                ) : (
-                  <>
-                    <PaperPlaneTilt size={16} weight="bold" />
-                    <span>Publish Pitch to Arena Wall</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
+            </button>
+          </div>
+        </form>
       )}
 
       {/* ========================================================
