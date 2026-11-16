@@ -21,15 +21,50 @@ import {
   Dna,
   DeviceMobile,
   Check,
-  HourglassHigh,
-  Phone,
-  Users,
+  Stethoscope,
+  Code,
+  Handshake,
+  FirstAid,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 
 const STORAGE_VOTES_KEY = 'arena_pitch_wall_votes';
 const STORAGE_CUSTOM_PITCHES_KEY = 'arena_pitch_wall_custom_pitches';
+
+// Roles tailored for Doctors and Engineers in Arena
+const ROLES = [
+  { id: 'Doctor / Clinician', label: 'Doctor / Clinician', icon: Stethoscope },
+  { id: 'Engineer / Tech', label: 'Engineer / Tech', icon: Code },
+  { id: 'Joint Med-Tech', label: 'Joint Med-Tech', icon: Handshake },
+];
+
+// Clinical & Engineering Domain Tracks
+const DOMAIN_TRACKS = [
+  { id: 'Clinical AI & Scribes', label: 'Clinical AI & Scribes', icon: Brain },
+  { id: 'MedTech & Hardware', label: 'MedTech & Hardware', icon: Atom },
+  { id: 'Hospital & ER Ops', label: 'Hospital & ER Ops', icon: FirstAid },
+  { id: 'BioTech & Diagnostics', label: 'BioTech & Diagnostics', icon: Dna },
+  { id: 'Digital Health Apps', label: 'Digital Health Apps', icon: DeviceMobile },
+  { id: 'Surgical & Robotics', label: 'Surgical & Robotics', icon: Sparkle },
+];
+
+// Maturity stages acknowledging doctors with unmet clinical problems vs engineers with prototypes
+const STAGE_OPTIONS = [
+  { id: 'Clinical Need', label: 'Clinical Need', hint: 'Unmet clinical problem' },
+  { id: 'Prototype Demo', label: 'Prototype Demo', hint: 'Working MVP / demo' },
+  { id: 'Live / In-Clinic', label: 'Live / In-Clinic', hint: 'Tested with clinicians' },
+];
+
+// Rapid 1-tap clinical focus tags for busy clinicians and engineers
+const QUICK_PROBLEM_TAGS = [
+  'Doctor Burnout',
+  'Diagnostic Speed',
+  'Patient Safety',
+  'Emergency & ICU',
+  'Cost Reduction',
+  'Remote Triage',
+];
 
 const CATEGORIES = [
   { id: 'All', label: 'All', icon: Sparkle },
@@ -162,66 +197,27 @@ export const IdeasPitchWallView = ({ player }) => {
   const [sortBy, setSortBy] = useState('votes'); // 'votes' | 'recent'
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Submit Idea Form State (Mirrored from NewPatientView)
-  const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    gender: 'Female',
-    phone: '',
-    guardian: '',
-    address: '',
-  });
+  // Submit Idea Form State (Customized for Doctors & Engineers)
+  const [formTitle, setFormTitle] = useState('');
+  const [formRole, setFormRole] = useState('Doctor / Clinician');
+  const [formDomain, setFormDomain] = useState('Clinical AI & Scribes');
+  const [formStage, setFormStage] = useState('Clinical Need');
+  const [selectedTags, setSelectedTags] = useState(['Doctor Burnout']);
+  const [formPitch, setFormPitch] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleNameChange = (e) => {
-    const val = e.target.value;
-    setFormData((prev) => ({ ...prev, name: val }));
-    if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
-  };
-
-  const handleAgeChange = (e) => {
-    const val = e.target.value.replace(/[^0-9]/g, '');
-    if (val.length <= 3) {
-      setFormData((prev) => ({ ...prev, age: val }));
-      if (errors.age) setErrors((prev) => ({ ...prev, age: '' }));
-    }
-  };
-
-  const handlePhoneChange = (e) => {
-    const val = e.target.value.replace(/[^0-9]/g, '');
-    if (val.length <= 10) {
-      setFormData((prev) => ({ ...prev, phone: val }));
-      if (errors.phone) setErrors((prev) => ({ ...prev, phone: '' }));
-    }
-  };
-
-  const handleGuardianChange = (e) => {
-    setFormData((prev) => ({ ...prev, guardian: e.target.value }));
-  };
-
-  const handleAddressChange = (e) => {
-    setFormData((prev) => ({ ...prev, address: e.target.value }));
-    if (errors.address) setErrors((prev) => ({ ...prev, address: '' }));
-  };
-
   const validate = () => {
     const newErrors = {};
-    if (!formData.name?.trim()) {
-      newErrors.name = 'Patient Full Name is required.';
+    if (!formTitle.trim()) {
+      newErrors.title = 'Concept or clinical problem title is required.';
+    } else if (formTitle.trim().length < 4) {
+      newErrors.title = 'Title must be at least 4 characters.';
     }
-    if (!formData.age?.trim()) {
-      newErrors.age = 'Age is required.';
-    }
-    const digitsOnly = (formData.phone || '').replace(/[^0-9]/g, '');
-    if (!digitsOnly) {
-      newErrors.phone = 'Mobile number is required.';
-    } else if (digitsOnly.length !== 10) {
-      newErrors.phone = 'Please enter a valid 10-digit mobile number.';
-    }
-    const trimmedAddress = (formData.address || '').trim();
-    if (!trimmedAddress) {
-      newErrors.address = 'Address is required.';
+    if (!formPitch.trim()) {
+      newErrors.pitch = 'Elevator pitch is required.';
+    } else if (formPitch.trim().length < 15) {
+      newErrors.pitch = 'Please provide at least 15 characters explaining your problem & solution.';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -279,14 +275,16 @@ export const IdeasPitchWallView = ({ player }) => {
 
     const newPitch = {
       id: `pitch-${Date.now()}`,
-      title: formData.name.trim(),
-      category: formData.gender,
+      title: formTitle.trim(),
+      category: formDomain,
       presenter: displayName,
       avatar: String(avatar),
       guestId: guestId,
-      summary: formData.address.trim(),
+      role: formRole,
+      stage: formStage,
+      tags: selectedTags,
+      summary: formPitch.trim(),
       votes: 1, // User gets an immediate self-vote
-      stage: formData.age ? `Age ${formData.age}` : 'Concept',
       timeAgo: 'Just now',
       timestamp: Date.now(),
       isMyPitch: true,
@@ -310,14 +308,12 @@ export const IdeasPitchWallView = ({ player }) => {
       } catch {}
 
       // Reset form fields
-      setFormData({
-        name: '',
-        age: '',
-        gender: 'Female',
-        phone: '',
-        guardian: '',
-        address: '',
-      });
+      setFormTitle('');
+      setFormRole('Doctor / Clinician');
+      setFormDomain('Clinical AI & Scribes');
+      setFormStage('Clinical Need');
+      setSelectedTags(['Doctor Burnout']);
+      setFormPitch('');
       setErrors({});
       setIsSubmitting(false);
 
@@ -337,7 +333,12 @@ export const IdeasPitchWallView = ({ player }) => {
     return pitches
       .filter((pitch) => {
         const matchesCategory =
-          selectedCategory === 'All' || pitch.category === selectedCategory;
+          selectedCategory === 'All' ||
+          pitch.category === selectedCategory ||
+          (selectedCategory === 'AI & Agents' && (pitch.category.includes('AI') || pitch.category.includes('Scribe'))) ||
+          (selectedCategory === 'Hardware & Robotics' && (pitch.category.includes('Hardware') || pitch.category.includes('MedTech') || pitch.category.includes('Robotics') || pitch.category.includes('Devices'))) ||
+          (selectedCategory === 'BioTech & Health' && (pitch.category.includes('BioTech') || pitch.category.includes('Diagnostics') || pitch.category.includes('Hospital') || pitch.category.includes('Health') || pitch.category.includes('Ops'))) ||
+          (selectedCategory === 'Consumer Apps' && (pitch.category.includes('Apps') || pitch.category.includes('Patient')));
         const q = searchQuery.toLowerCase().trim();
         const matchesQuery =
           !q ||
@@ -474,194 +475,220 @@ export const IdeasPitchWallView = ({ player }) => {
       </div>
 
       {/* ========================================================
-          SECTION 1: PITCH AN IDEA (Direct Form Shell from NewPatientView)
+          SECTION 1: PITCH AN IDEA (Doctor & Engineer Focused Form)
           ======================================================== */}
       {activeSection === 'pitch' && (
         <form
           onSubmit={handleSubmitPitch}
           noValidate
-          className="bg-[#ebedf2]/80 border border-white/80 rounded-[1rem] p-6 sm:p-9 shadow-[-3px_-3px_10px_rgba(0,0,0,0.06),3px_3px_10px_rgba(255,255,255,0.65),inset_4px_4px_12px_#ffffff,inset_-4px_-4px_12px_rgba(0,0,0,0.14)] animate-in fade-in duration-150"
+          className="bg-[#ebedf2] border border-white/80 rounded-[1rem] p-5 sm:p-8 shadow-[-3px_-3px_10px_rgba(0,0,0,0.06),3px_3px_10px_rgba(255,255,255,0.65),inset_4px_4px_12px_#ffffff,inset_-4px_-4px_12px_rgba(0,0,0,0.14)] space-y-4 sm:space-y-5 animate-in fade-in duration-150"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* Patient Name */}
+          {/* Card Header matching screenshot */}
+          <div className="flex items-center gap-3 pb-4 border-b border-zinc-300/60 shadow-[0_1px_0_#ffffff]">
+            <div className="w-10 h-10 rounded-xl bg-[#F2F7FC] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-800 shrink-0">
+              <PaperPlaneTilt size={20} weight="bold" />
+            </div>
             <div>
-              <label className="block text-[12px] font-bold text-zinc-600/90 tracking-wider mb-1 sm:mb-2 ml-1">
-                Idea / Problem <span className="text-rose-500 font-bold">*</span>
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
-                  <Lightbulb size={19} weight="bold" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="e.g. Ananya Sharma"
-                  value={formData.name}
-                  onChange={handleNameChange}
-                  style={{ outline: 'none' }}
-                  className={`w-full pl-11 pr-4 py-2.5 bg-[#F2F7FC] rounded-full text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium ${
-                    errors.name ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1px_rgba(244,63,94,0.4)]' : ''
-                  }`}
-                />
-              </div>
-              {errors.name && (
-                <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1 -mb-2 sm:-mb-3">{errors.name}</p>
-              )}
-            </div>
-
-            {/* Age & Gender Side-by-Side */}
-            <div className="flex flex-row items-start gap-3 sm:gap-4">
-              {/* Age */}
-              <div className="w-[105px] sm:w-[140px] shrink-0">
-                <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider -mt-1 sm:mt-0 mb-1 sm:mb-2 ml-1">
-                  Age <span className="text-rose-500 font-bold">*</span>
-                </label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
-                    <HourglassHigh size={19} weight="bold" />
-                  </div>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="e.g. 28"
-                    value={formData.age}
-                    onChange={handleAgeChange}
-                    style={{ outline: 'none' }}
-                    className={`w-full pl-11 pr-3 py-2.5 bg-[#F2F7FC] rounded-full text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium ${
-                      errors.age ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1px_rgba(244,63,94,0.4)]' : ''
-                    }`}
-                  />
-                </div>
-                {errors.age && (
-                  <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1 -mb-1 sm:-mb-3">{errors.age}</p>
-                )}
-              </div>
-
-              {/* Gender Toggle */}
-              <div className="flex-1 min-w-0">
-                <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider -mt-1 sm:mt-0 mb-1 sm:mb-2 ml-1">
-                  Gender <span className="text-rose-500 font-bold">*</span>
-                </label>
-                <div 
-                  role="radiogroup" 
-                  aria-label="Gender selection"
-                  className="w-full h-[38px] sm:h-[41px] p-1 bg-[#F2F7FC] rounded-2xl shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] relative flex items-center select-none gap-1 overflow-hidden"
-                >
-                  {/* Three Buttons: Female, Male, Trans */}
-                  {['Female', 'Male', 'Trans'].map((genderOption) => {
-                    const isSelected = formData.gender === genderOption;
-                    return (
-                      <button
-                        key={genderOption}
-                        type="button"
-                        role="radio"
-                        aria-checked={isSelected}
-                        onClick={() => setFormData((prev) => ({ ...prev, gender: genderOption }))}
-                        className={`relative h-full rounded-full text-[11px] sm:text-xs font-bold transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center cursor-pointer select-none text-center whitespace-nowrap overflow-hidden ${
-                          isSelected
-                            ? genderOption === 'Female'
-                              ? 'flex-[1.8] sm:flex-[2] bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 font-black pl-7 sm:pl-8 pr-2 sm:pr-2.5'
-                              : genderOption === 'Male'
-                              ? 'flex-[1.8] sm:flex-[2] bg-sky-500/15 border border-sky-500/30 text-sky-800 font-black pl-7 sm:pl-8 pr-2 sm:pr-2.5'
-                              : 'flex-[1.8] sm:flex-[2] bg-purple-500/15 border border-purple-500/30 text-purple-800 font-black pl-7 sm:pl-8 pr-2 sm:pr-2.5'
-                            : 'flex-1 text-zinc-600 hover:text-zinc-900 active:scale-[0.98] border border-transparent px-1'
-                        }`}
-                      >
-                        {/* Circle Thumb */}
-                        {isSelected && (
-                          <span
-                            aria-hidden="true"
-                            className="absolute left-0.5 sm:left-0.5 top-0.5 bottom-0.5 aspect-square rounded-full bg-[#ebedf2] shadow-[inset_2px_2px_4px_#ffffff,inset_-2px_-2px_4px_rgba(0,0,0,0.22)] border border-white/20 pointer-events-none transition-all duration-300 animate-in fade-in zoom-in-90"
-                          />
-                        )}
-                        <span className="truncate">{genderOption}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile Number */}
-            <div>
-              <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider -mt-1 sm:mt-2 mb-1 sm:mb-2 ml-1">
-                Mobile Number <span className="text-emerald-700 font-bold normal-case">(WhatsApp)</span> <span className="text-rose-500 font-bold">*</span>
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
-                  <Phone size={19} weight="bold" />
-                </div>
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  placeholder="10-digit number"
-                  value={formData.phone}
-                  onChange={handlePhoneChange}
-                  style={{ outline: 'none' }}
-                  className={`w-full pl-11 pr-4 py-2.5 bg-[#F2F7FC] rounded-full text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium ${
-                    errors.phone ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1px_rgba(244,63,94,0.4)]' : ''
-                  }`}
-                />
-              </div>
-              {errors.phone && (
-                <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1 -mb-1 sm:-mb-3">{errors.phone}</p>
-              )}
-            </div>
-
-            {/* Guardian */}
-            <div>
-              <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider -mt-1 sm:mt-2 mb-1 sm:mb-2 ml-1">
-                Guardian
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
-                  <Users size={19} weight="bold" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="e.g. Rajesh Sharma"
-                  value={formData.guardian}
-                  onChange={handleGuardianChange}
-                  style={{ outline: 'none' }}
-                  className="w-full pl-11 pr-4 py-2.5 bg-[#F2F7FC] rounded-full text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium"
-                />
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="md:col-span-2">
-              <label className="block text-[12px] font-bold text-zinc-600/90 tracking-wider -mt-1 sm:mt-2 mb-1 sm:mb-2 ml-1">
-                Solution / Quick Pitch <span className="text-rose-500 font-bold">*</span>
-              </label>
-              <div className="relative group">
-                <textarea
-                  rows={3}
-                  placeholder="Enter complete residential address, city..."
-                  value={formData.address}
-                  onChange={handleAddressChange}
-                  style={{ outline: 'none' }}
-                  className={`w-full p-4 bg-[#F2F7FC] rounded-2xl text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out resize-none font-medium ${
-                    errors.address ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1px_rgba(244,63,94,0.4)]' : ''
-                  }`}
-                />
-              </div>
-              {errors.address && (
-                <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1 -mb-1 sm:-mb-3">{errors.address}</p>
-              )}
+              <h2 className="font-arena text-xs sm:text-sm font-black text-zinc-900 tracking-wider uppercase">
+                Submit Breakthrough Pitch
+              </h2>
+              <p className="text-[11px] text-zinc-500 font-medium">
+                Publish to the venue wall to earn +10 PTS and gather peer votes
+              </p>
             </div>
           </div>
 
-          {/* Submit Action Button (Our current form button style) */}
-          <div className="mt-6 sm:mt-10 flex items-center justify-center">
+          {/* Field 1: Concept / Project Title */}
+          <div>
+            <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
+              Concept / Project Title <span className="text-rose-500 font-bold">*</span>
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
+                <Lightbulb size={19} weight="bold" />
+              </div>
+              <input
+                type="text"
+                placeholder="e.g. Autonomous Drone Defibrillator Dispatch"
+                value={formTitle}
+                onChange={(e) => {
+                  setFormTitle(e.target.value);
+                  if (errors.title) setErrors((prev) => ({ ...prev, title: '' }));
+                }}
+                maxLength={90}
+                style={{ outline: 'none' }}
+                className={`w-full pl-11 pr-4 py-2.5 sm:py-3 bg-[#F2F7FC] rounded-2xl text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium ${
+                  errors.title ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(244,63,94,0.6)]' : ''
+                }`}
+              />
+            </div>
+            {errors.title && (
+              <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1.5">{errors.title}</p>
+            )}
+          </div>
+
+          {/* Field 2: I Am Pitching As (Tailored for Doctors & Engineers) */}
+          <div>
+            <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
+              I Am Pitching As <span className="text-zinc-400 font-normal lowercase">(tailor perspective)</span>
+            </label>
+            <div 
+              role="radiogroup" 
+              aria-label="Role selection"
+              className="w-full h-[40px] sm:h-[44px] p-1 bg-[#F2F7FC] rounded-2xl shadow-[inset_3px_3px_6px_#c8d0db,inset_-3px_-3px_6px_#ffffff] relative flex items-center select-none gap-1 overflow-hidden"
+            >
+              {ROLES.map((role) => {
+                const isSelected = formRole === role.id;
+                const Icon = role.icon;
+                return (
+                  <button
+                    key={role.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => setFormRole(role.id)}
+                    className={`flex-1 relative h-full rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 ease-out flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer select-none text-center whitespace-nowrap overflow-hidden active:scale-[0.98] ${
+                      isSelected
+                        ? 'bg-gradient-to-b from-zinc-900 to-black text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6] border border-zinc-800/80 font-black'
+                        : 'text-zinc-600 hover:text-zinc-900 font-semibold'
+                    }`}
+                  >
+                    <Icon size={15} weight={isSelected ? 'bold' : 'regular'} className="shrink-0" />
+                    <span className="truncate">{role.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Field 3: Domain Track */}
+          <div>
+            <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
+              Domain Track <span className="text-rose-500 font-bold">*</span>
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
+              {DOMAIN_TRACKS.map((track) => {
+                const isSelected = formDomain === track.id;
+                const Icon = track.icon;
+                return (
+                  <button
+                    key={track.id}
+                    type="button"
+                    onClick={() => setFormDomain(track.id)}
+                    className={`py-2.5 px-3 rounded-2xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-start gap-2 cursor-pointer select-none active:scale-[0.97] border ${
+                      isSelected
+                        ? 'bg-gradient-to-b from-zinc-900 to-black text-white border-zinc-800 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6]'
+                        : 'bg-[#F2F7FC] text-zinc-700 hover:text-zinc-900 border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
+                    }`}
+                  >
+                    <Icon size={16} weight={isSelected ? 'bold' : 'regular'} className={`shrink-0 ${isSelected ? 'text-white' : 'text-zinc-500'}`} />
+                    <span className="truncate">{track.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Field 4: Project Maturity Stage */}
+          <div>
+            <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
+              Project Maturity Stage <span className="text-zinc-400 font-normal lowercase">(where is it today?)</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+              {STAGE_OPTIONS.map((st) => {
+                const isSelected = formStage === st.id;
+                return (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => setFormStage(st.id)}
+                    className={`py-2 sm:py-2.5 px-2 rounded-2xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex flex-col items-center justify-center text-center cursor-pointer select-none active:scale-[0.97] border ${
+                      isSelected
+                        ? 'bg-gradient-to-b from-zinc-900 to-black text-white border-zinc-800 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.22),inset_0_2px_4px_rgba(255,255,255,0.4),2px_2px_5px_#c5ccd6]'
+                        : 'bg-[#F2F7FC] text-zinc-700 hover:text-zinc-900 border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
+                    }`}
+                  >
+                    <span className="truncate">{st.label}</span>
+                    <span className={`text-[9px] font-medium hidden sm:block ${isSelected ? 'text-zinc-300' : 'text-zinc-400'}`}>
+                      {st.hint}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Field 5: Target Problem Tags */}
+          <div>
+            <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
+              Target Clinical Problem / Focus <span className="text-zinc-400 font-normal lowercase">(tap to tag)</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {QUICK_PROBLEM_TAGS.map((tag) => {
+                const isSelected = selectedTags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTags((prev) =>
+                        prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                      );
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all duration-150 cursor-pointer select-none active:scale-95 flex items-center gap-1.5 border ${
+                      isSelected
+                        ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-800 shadow-[inset_1px_1px_2px_rgba(16,185,129,0.2)]'
+                        : 'bg-[#F2F7FC] border-white/80 text-zinc-600 hover:text-zinc-900 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]'
+                    }`}
+                  >
+                    {isSelected && <Check size={12} weight="bold" className="text-emerald-700" />}
+                    <span>{tag}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Field 6: 60-Second Elevator Pitch */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5 ml-1 mr-1">
+              <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider">
+                60-Second Elevator Pitch <span className="text-rose-500 font-bold">*</span>
+              </label>
+              <span className={`text-[10.5px] font-bold ${formPitch.length > 280 ? 'text-amber-600' : 'text-zinc-400'}`}>
+                {formPitch.length}/280
+              </span>
+            </div>
+            <div className="relative group">
+              <textarea
+                rows={3}
+                maxLength={350}
+                placeholder="Explain the specific clinical pain point, your proposed technical approach, and how it impacts doctors or patients in 2-3 crisp sentences..."
+                value={formPitch}
+                onChange={(e) => {
+                  setFormPitch(e.target.value);
+                  if (errors.pitch) setErrors((prev) => ({ ...prev, pitch: '' }));
+                }}
+                style={{ outline: 'none' }}
+                className={`w-full p-3.5 sm:p-4 bg-[#F2F7FC] rounded-2xl text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(244,63,94,0.6)] font-medium leading-relaxed ${
+                  errors.pitch ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(244,63,94,0.6)]' : 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)]'
+                }`}
+              />
+            </div>
+            {errors.pitch && (
+              <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1.5">{errors.pitch}</p>
+            )}
+          </div>
+
+          {/* Action Button: Publish Pitch to Arena Wall */}
+          <div className="pt-2 flex items-center justify-center">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full sm:w-auto py-3.5 px-9 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black text-white font-bold text-sm rounded-full transition-all duration-150 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.97] cursor-pointer border border-zinc-800/80 disabled:opacity-60 group"
+              className="w-full sm:w-auto min-w-[280px] py-3.5 px-8 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black text-white font-bold text-sm rounded-2xl sm:rounded-full transition-all duration-150 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.98] cursor-pointer border border-zinc-800/80 disabled:opacity-60 group"
             >
-              <span>{isSubmitting ? 'Submitting...' : 'Submit'}</span>
-              <div className="w-5 h-5 flex items-center justify-center pointer-events-none transition-transform duration-200 ease-out group-hover:translate-x-1.5">
-                <ArrowRight size={18} weight="bold" />
-              </div>
+              <PaperPlaneTilt size={18} weight="bold" className="shrink-0 transition-transform duration-200 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              <span>{isSubmitting ? 'Publishing Pitch...' : 'Publish Pitch to Arena Wall'}</span>
             </button>
           </div>
         </form>
@@ -818,6 +845,11 @@ export const IdeasPitchWallView = ({ player }) => {
                             <span className="text-xs font-bold text-zinc-900 truncate">
                               {pitch.presenter}
                             </span>
+                            {pitch.role && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-500/10 text-blue-700 border border-blue-500/20 shrink-0">
+                                {pitch.role}
+                              </span>
+                            )}
                             {isCurrentUserPitch && (
                               <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-800 border border-amber-500/30 shrink-0">
                                 You
@@ -856,6 +888,20 @@ export const IdeasPitchWallView = ({ player }) => {
                     <p className="text-[12.5px] sm:text-[13px] text-zinc-600 font-medium leading-relaxed">
                       {pitch.summary}
                     </p>
+
+                    {/* Card Clinical Focus Tags */}
+                    {pitch.tags && pitch.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {pitch.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 border border-emerald-500/20"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Card Footer: Live Ballot / Vote Action */}
                     <div className="pt-2 border-t border-zinc-300/60 shadow-[0_1px_0_#ffffff] flex items-center justify-between gap-3">
