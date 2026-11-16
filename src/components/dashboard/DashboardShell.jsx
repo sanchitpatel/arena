@@ -523,7 +523,7 @@ export const DashboardShell = ({
           </span>
 
           {/* Top Actions: Notification on left, Prizes in middle, Map on rightmost end */}
-          <div className="flex items-center gap-3 sm:gap-2">
+          <div className="flex items-center gap-3 -mr-1 sm:gap-2">
             {/* Notification Option (Two-layer GPU opacity cross-fade: zero scale wobble, rock-solid) */}
             <button
               type="button"
