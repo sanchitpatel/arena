@@ -3,7 +3,8 @@ import { LoginView } from './LoginView';
 import { DashboardShell } from './DashboardShell';
 import { FrostMountainBackground } from '../common/FrostMountainBackground';
 import { CircleNotch } from '@phosphor-icons/react/dist/icons/CircleNotch';
-import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
+import { claimOrRegisterGuest } from '../../services/arenaService';
 
 // Lazy-load individual heavy dashboard views on demand
 const NewPatientView = lazy(() => import('./NewPatientView').then(m => ({ default: m.NewPatientView })));
@@ -120,21 +121,45 @@ export default function DashboardApp() {
 
   // Track active player details (Guest ID, Orb Number, name, avatar)
   const [player, setPlayer] = useState(() => {
-    const gId = getPlayerId() || 'Guest001';
-    const orb = getOrbNumber(gId) || 1;
+    const gId = getPlayerId();
+    const storedOrb = getStoredOrbNumber();
+    const orb = (gId ? getOrbNumber(gId) : null) || storedOrb || '?';
     let storedName = '';
     let storedAvatar = '1';
     try {
       storedName = window.localStorage.getItem('arena_draft_username') || '';
       storedAvatar = window.localStorage.getItem('arena_draft_avatar') || '1';
-    } catch {}
+    } catch { }
     return {
-      guest_id: gId,
+      guest_id: gId || 'Guest...',
       orb_number: orb,
-      name: storedName || gId,
+      name: storedName || gId || 'Player',
       avatar: storedAvatar || '1',
     };
   });
+
+  // Re-sync freshest player identity and Orb from PostgreSQL when returning attendee loads session
+  useEffect(() => {
+    if (!isEntered) return;
+    let isMounted = true;
+    claimOrRegisterGuest().then((res) => {
+      if (isMounted && res?.success && res.data) {
+        setPlayer((prev) => ({
+          ...prev,
+          guest_id: res.data.guest_id || prev.guest_id,
+          orb_number: res.data.orb_number || prev.orb_number,
+          name: res.data.name || prev.name,
+          avatar: res.data.avatar || prev.avatar,
+          team: res.data.team || prev.team,
+        }));
+      }
+    }).catch((err) => {
+      console.warn('[DashboardApp] Player reconnection sync error:', err);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [isEntered]);
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(null);
@@ -162,7 +187,7 @@ export default function DashboardApp() {
         setIsEntered(false);
         try {
           window.sessionStorage.removeItem('arena_entered');
-        } catch {}
+        } catch { }
         return;
       }
 
@@ -216,7 +241,7 @@ export default function DashboardApp() {
   const handleEnterArena = (playerData) => {
     try {
       window.sessionStorage.setItem('arena_entered', 'true');
-    } catch {}
+    } catch { }
 
     if (playerData) {
       setPlayer(playerData);
@@ -242,7 +267,7 @@ export default function DashboardApp() {
   const handleSignOut = useCallback(() => {
     try {
       window.sessionStorage.removeItem('arena_entered');
-    } catch {}
+    } catch { }
 
     setIsEntered(false);
     setActiveTab(ROOT_TAB);

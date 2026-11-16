@@ -10,7 +10,7 @@ import { PrizeRoadModal } from '../prizes/PrizeRoadModal';
 import { calculatePrizeProgress } from '../../data/prizesData';
 import { FrostMountainBackground } from '../common/FrostMountainBackground';
 import { MAP_TASKS } from './MapView';
-import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 import {
   getPendingNotificationCount,
   subscribeToClinicRealtime
@@ -111,9 +111,9 @@ export const DashboardShell = ({
   }, [isNotificationOpen]);
 
   // Player identity fallback resolution
-  const guestId = player?.guest_id || getPlayerId() || 'Guest001';
-  const orbNumber = player?.orb_number || getOrbNumber(guestId) || 1;
-  const displayName = player?.name || guestId;
+  const guestId = player?.guest_id || getPlayerId() || null;
+  const orbNumber = player?.orb_number || (guestId ? getOrbNumber(guestId) : null) || getStoredOrbNumber() || '?';
+  const displayName = player?.name || guestId || 'Player';
   const avatar = player?.avatar || '1';
 
   useEffect(() => {

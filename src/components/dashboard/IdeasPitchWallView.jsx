@@ -21,7 +21,7 @@ import {
   Check,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 
 const STORAGE_VOTES_KEY = 'arena_pitch_wall_votes';
 const STORAGE_CUSTOM_PITCHES_KEY = 'arena_pitch_wall_custom_pitches';
@@ -120,9 +120,9 @@ const INITIAL_PITCHES = [
 
 export const IdeasPitchWallView = ({ player }) => {
   // Current user identity resolution
-  const guestId = player?.guest_id || getPlayerId() || 'Guest001';
-  const orbNumber = player?.orb_number || getOrbNumber(guestId) || 1;
-  const displayName = player?.name || guestId;
+  const guestId = player?.guest_id || getPlayerId() || null;
+  const orbNumber = player?.orb_number || (guestId ? getOrbNumber(guestId) : null) || getStoredOrbNumber() || '?';
+  const displayName = player?.name || guestId || 'Player';
   const avatar = player?.avatar || '1';
 
   // Active view section: 'wall' (Browse & Vote) | 'pitch' (Submit Idea)

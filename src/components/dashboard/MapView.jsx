@@ -18,7 +18,7 @@ import {
 } from '../icons';
 import ChatGPTOrb from './ChatGPTOrb';
 import { CrystalIcon } from './CrystalIcon';
-import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 import { OrbHeadingBeam, CompassToolbarButton, useDeviceHeading } from '../map/OrbHeadingBeam';
 import { QuestSliderCard } from '../map/QuestSliderCard';
 import { getInAppPermission, subscribeToPermissionChanges, isIosDevice } from '../../utils/mediaGuard';
@@ -192,9 +192,9 @@ const FloatingGemIcon = React.memo(function FloatingGemIcon({ color = 'amber', g
 });
 
 export const MapView = ({ player, onNavigate, isActive = true }) => {
-  const guestId = player?.guest_id || getPlayerId() || 'Guest001';
-  const orbNumber = player?.orb_number || getOrbNumber(guestId) || 1;
-  const displayName = player?.name || guestId;
+  const guestId = player?.guest_id || getPlayerId() || null;
+  const orbNumber = player?.orb_number || (guestId ? getOrbNumber(guestId) : null) || getStoredOrbNumber() || '?';
+  const displayName = player?.name || guestId || 'Player';
   const avatar = player?.avatar || '1';
 
   // Gesture & Transform state

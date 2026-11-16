@@ -11,6 +11,7 @@ const TWELVE_HOURS_MS = TWELVE_HOURS_SEC * 1000;
 const STORAGE_KEY_GUEST = 'arena_guest_id';
 const STORAGE_KEY_DEVICE = 'arena_device_id';
 const STORAGE_KEY_EXPIRES = 'arena_expires_at';
+const STORAGE_KEY_ORB = 'arena_orb_number';
 
 // Helper to read a cookie value
 export function getCookie(name) {
@@ -32,15 +33,30 @@ export function clearLocalPlayerData() {
     window.localStorage.removeItem(STORAGE_KEY_GUEST);
     window.localStorage.removeItem(STORAGE_KEY_DEVICE);
     window.localStorage.removeItem(STORAGE_KEY_EXPIRES);
+    window.localStorage.removeItem(STORAGE_KEY_ORB);
     window.localStorage.removeItem('arena_draft_username');
     window.localStorage.removeItem('arena_draft_avatar');
 
     // Expire cookies immediately
     setCookie(STORAGE_KEY_GUEST, '', 0);
     setCookie(STORAGE_KEY_DEVICE, '', 0);
+    setCookie(STORAGE_KEY_ORB, '', 0);
   } catch (err) {
     console.warn('[PlayerID] Error clearing player data:', err);
   }
+}
+
+// Helper to retrieve persisted official Orb number from localStorage or cookie
+export function getStoredOrbNumber() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const val = window.localStorage.getItem(STORAGE_KEY_ORB) || getCookie(STORAGE_KEY_ORB);
+    if (val) {
+      const parsed = parseInt(val, 10);
+      if (!isNaN(parsed) && parsed >= 1) return parsed;
+    }
+  } catch {}
+  return null;
 }
 
 // Formats number to standardized 3-digit padded string: 1 -> "Guest001", 42 -> "Guest042"
@@ -51,10 +67,17 @@ export function formatGuestId(num) {
 }
 
 // Extracts integer Orb Number from guestId string (e.g. "Guest043" -> 43, "Guest001" -> 1)
+// If guestId is invalid or not yet assigned, returns stored orb number or '?'
 export function getOrbNumber(guestId) {
-  if (!guestId) return 1;
+  if (!guestId) {
+    return getStoredOrbNumber() || '?';
+  }
   const digits = String(guestId).replace(/\D/g, '');
-  return parseInt(digits, 10) || 1;
+  if (!digits) {
+    return getStoredOrbNumber() || '?';
+  }
+  const parsed = parseInt(digits, 10);
+  return isNaN(parsed) || parsed < 1 ? (getStoredOrbNumber() || '?') : parsed;
 }
 
 /**
@@ -118,22 +141,31 @@ export function getPlayerId() {
 }
 
 /**
- * Saves ONLY the assigned Guest ID to localStorage and 12-hour Cookie.
+ * Saves identity credentials (Guest ID & Orb Number) to localStorage and 12-hour Cookie.
+ * Guarantees player recovers their exact assigned Orb across refreshes/network drops.
  * (No scores or game bodies are stored on the client).
  */
 export function savePlayerRecord(player) {
   if (typeof window === 'undefined' || !player) return;
 
   try {
-    const guestId = player.guest_id || player.name;
+    const guestId = player.guest_id || (/^guest\d+$/i.test(player.name) ? player.name : null);
     const expiresAt = String(Date.now() + TWELVE_HOURS_MS);
 
-    window.localStorage.setItem(STORAGE_KEY_GUEST, guestId);
-    window.localStorage.setItem(STORAGE_KEY_EXPIRES, expiresAt);
+    if (guestId) {
+      window.localStorage.setItem(STORAGE_KEY_GUEST, guestId);
+      setCookie(STORAGE_KEY_GUEST, guestId, TWELVE_HOURS_SEC);
+    }
 
-    setCookie(STORAGE_KEY_GUEST, guestId, TWELVE_HOURS_SEC);
+    const orbNum = player.orb_number || (guestId ? getOrbNumber(guestId) : null);
+    if (orbNum && orbNum !== '?') {
+      window.localStorage.setItem(STORAGE_KEY_ORB, String(orbNum));
+      setCookie(STORAGE_KEY_ORB, String(orbNum), TWELVE_HOURS_SEC);
+    }
+
+    window.localStorage.setItem(STORAGE_KEY_EXPIRES, expiresAt);
   } catch (err) {
-    console.warn('[PlayerID] Unable to persist guest ID:', err);
+    console.warn('[PlayerID] Unable to persist player identity:', err);
   }
 }
 

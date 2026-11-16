@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import QRCode, { toDataURL, toString } from 'qrcode';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import { Scan } from '../icons';
-import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 
 // Bulletproof helper to safely invoke QRCode methods across all bundlers / ESM environments
 const safeToDataURL = async (text, options) => {
@@ -51,7 +51,7 @@ export default function PlayerQRBadge({
     return String(rawId).trim();
   }, [rawId]);
 
-  const orbNumber = player?.orb_number || (guestId ? getOrbNumber(guestId) : 1);
+  const orbNumber = player?.orb_number || (guestId ? getOrbNumber(guestId) : null) || getStoredOrbNumber() || '?';
   const displayName = player?.name || guestId || 'Player';
   const avatar = player?.avatar || '1';
 

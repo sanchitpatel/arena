@@ -156,7 +156,7 @@ function useOrbGL(canvasRef, speed, onReady) {
 }
 
 export default function ChatGPTOrb({
-  orbNumber = 1,
+  orbNumber = '?',
   avatar = '1',
   size = 'w-24 h-24 sm:w-28 sm:h-28',
   speed = 0.75,
@@ -223,7 +223,7 @@ export default function ChatGPTOrb({
             } font-black leading-none tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,40,160,0.6)]`}
             style={{ WebkitTextStroke: numberSize ? '0.6px #a4a4a9ff' : '1px #a4a4a9ff', paintOrder: 'stroke fill' }}
           >
-            {orbNumber}
+            {(orbNumber !== null && orbNumber !== undefined && orbNumber !== '') ? orbNumber : '?'}
           </span>
         </div>
       </div>

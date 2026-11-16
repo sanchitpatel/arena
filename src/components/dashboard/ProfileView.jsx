@@ -17,7 +17,7 @@ import ArenaAvatar, { CURATED_AVATARS } from '../avatars/ArenaAvatar';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
 import { normalizePlayerInput, validatePlayerHandle } from '../../utils/sanitize';
 import { claimOrRegisterGuest } from '../../services/arenaService';
-import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 import {
   killAllMediaTracks,
   queryPermissionStatus,
@@ -31,8 +31,8 @@ const STORAGE_KEY_DRAFT_NAME = 'arena_draft_username';
 const STORAGE_KEY_DRAFT_AVATAR = 'arena_draft_avatar';
 
 export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
-  const guestId = player?.guest_id || getPlayerId() || 'Guest001';
-  const orbNumber = player?.orb_number || getOrbNumber(guestId) || 1;
+  const guestId = player?.guest_id || getPlayerId() || null;
+  const orbNumber = player?.orb_number || (guestId ? getOrbNumber(guestId) : null) || getStoredOrbNumber() || '?';
 
   const [playerName, setPlayerName] = useState(() => {
     return player?.name && player.name !== guestId ? player.name : '';

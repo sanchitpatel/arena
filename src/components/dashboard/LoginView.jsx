@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { claimOrRegisterGuest } from '../../services/arenaService';
-import { getPlayerId, getOrbNumber } from '../../utils/playerId';
+import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 import { normalizePlayerInput, validatePlayerHandle } from '../../utils/sanitize';
 import { CircleNotch } from '@phosphor-icons/react/dist/icons/CircleNotch';
 import { ArrowRight } from '@phosphor-icons/react/dist/icons/ArrowRight';
@@ -20,7 +20,7 @@ export const LoginView = ({ onEnterArena }) => {
   const [guestId, setGuestId] = useState(() => getPlayerId() || null);
   const [orbNumber, setOrbNumber] = useState(() => {
     const existing = getPlayerId();
-    return existing ? getOrbNumber(existing) : null;
+    return (existing ? getOrbNumber(existing) : null) || getStoredOrbNumber() || '?';
   });
 
   // Restore draft username from cache immediately on mount or refresh
@@ -57,7 +57,7 @@ export const LoginView = ({ onEnterArena }) => {
 
       if (res.success && res.data) {
         const assignedGuestId = res.data.guest_id;
-        const assignedOrb = res.data.orb_number || getOrbNumber(assignedGuestId);
+        const assignedOrb = res.data.orb_number || (assignedGuestId ? getOrbNumber(assignedGuestId) : null) || '?';
         setGuestId(assignedGuestId);
         setOrbNumber(assignedOrb);
 
@@ -175,7 +175,7 @@ export const LoginView = ({ onEnterArena }) => {
 
       const finalPlayer = res.success && res.data ? res.data : {
         guest_id: activeGuestId,
-        orb_number: orbNumber || 1,
+        orb_number: orbNumber || '?',
         name: displayName,
         avatar: selectedAvatar,
         team: selectedTeam,
@@ -229,7 +229,7 @@ export const LoginView = ({ onEnterArena }) => {
               {/* The Ethereal ChatGPT-Style Player Orb */}
               <div className="flex flex-col items-center justify-center pt-2">
                 <ChatGPTOrb
-                  orbNumber={orbNumber || 1}
+                  orbNumber={orbNumber || '?'}
                   avatar={selectedAvatar}
                   badge="avatar"
                   size="w-24 h-24 sm:w-28 sm:h-28"
