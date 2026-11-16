@@ -494,7 +494,7 @@ export const IdeasPitchWallView = ({ player }) => {
               </div>
               <input
                 type="text"
-                placeholder="e.g. Autonomous Drone Defibrillator Dispatch"
+                placeholder="e.g. AI OPD Scribe, Smart ICU Alert..."
                 value={formTitle}
                 onChange={(e) => {
                   setFormTitle(e.target.value);
