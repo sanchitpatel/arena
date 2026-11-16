@@ -210,7 +210,7 @@ export const IdeasPitchWallView = ({ player }) => {
   const validate = () => {
     const newErrors = {};
     if (!formTitle.trim()) {
-      newErrors.title = 'Concept or clinical problem title is required.';
+      newErrors.title = 'Idea or Problem title is required.';
     } else if (formTitle.trim().length < 4) {
       newErrors.title = 'Title must be at least 4 characters.';
     }
@@ -483,25 +483,10 @@ export const IdeasPitchWallView = ({ player }) => {
           noValidate
           className="bg-[#ebedf2] border border-white/80 rounded-[1rem] p-5 sm:p-8 shadow-[-3px_-3px_10px_rgba(0,0,0,0.06),3px_3px_10px_rgba(255,255,255,0.65),inset_4px_4px_12px_#ffffff,inset_-4px_-4px_12px_rgba(0,0,0,0.14)] space-y-4 sm:space-y-5 animate-in fade-in duration-150"
         >
-          {/* Card Header matching screenshot */}
-          <div className="flex items-center gap-3 pb-4 border-b border-zinc-300/60 shadow-[0_1px_0_#ffffff]">
-            <div className="w-10 h-10 rounded-xl bg-[#F2F7FC] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center text-zinc-800 shrink-0">
-              <PaperPlaneTilt size={20} weight="bold" />
-            </div>
-            <div>
-              <h2 className="font-arena text-xs sm:text-sm font-black text-zinc-900 tracking-wider uppercase">
-                Submit Breakthrough Pitch
-              </h2>
-              <p className="text-[11px] text-zinc-500 font-medium">
-                Publish to the venue wall to earn +10 PTS and gather peer votes
-              </p>
-            </div>
-          </div>
-
           {/* Field 1: Concept / Project Title */}
           <div>
             <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
-              Concept / Project Title <span className="text-rose-500 font-bold">*</span>
+              Idea / Problem <span className="text-rose-500 font-bold">*</span>
             </label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
@@ -523,7 +508,7 @@ export const IdeasPitchWallView = ({ player }) => {
               />
             </div>
             {errors.title && (
-              <p className="text-[10.5px] text-rose-600 font-medium ml-3 mt-1.5">{errors.title}</p>
+              <p className="text-[10.5px] text-rose-600 font-medium ml-1.5 mt-1.5">{errors.title}</p>
             )}
           </div>
 
