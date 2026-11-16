@@ -486,12 +486,12 @@ export const IdeasPitchWallView = ({ player }) => {
 
             {/* Patient Name */}
             <div>
-              <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1 sm:mb-2 ml-1">
-                Patient Full Name <span className="text-rose-500 font-bold">*</span>
+              <label className="block text-[12px] font-bold text-zinc-600/90 tracking-wider mb-1 sm:mb-2 ml-1">
+                Idea / Problem <span className="text-rose-500 font-bold">*</span>
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-zinc-400 group-focus-within:text-zinc-700 transition-colors">
-                  <User size={19} weight="bold" />
+                  <Lightbulb size={19} weight="bold" />
                 </div>
                 <input
                   type="text"
@@ -630,8 +630,8 @@ export const IdeasPitchWallView = ({ player }) => {
 
             {/* Address */}
             <div className="md:col-span-2">
-              <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider -mt-1 sm:mt-2 mb-1 sm:mb-2 ml-1">
-                Address <span className="text-rose-500 font-bold">*</span>
+              <label className="block text-[12px] font-bold text-zinc-600/90 tracking-wider -mt-1 sm:mt-2 mb-1 sm:mb-2 ml-1">
+                Solution / Quick Pitch <span className="text-rose-500 font-bold">*</span>
               </label>
               <div className="relative group">
                 <textarea
@@ -658,7 +658,7 @@ export const IdeasPitchWallView = ({ player }) => {
               disabled={isSubmitting}
               className="w-full sm:w-auto py-3.5 px-9 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black text-white font-bold text-sm rounded-full transition-all duration-150 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.97] cursor-pointer border border-zinc-800/80 disabled:opacity-60 group"
             >
-              <span>{isSubmitting ? 'Registering...' : 'Register Patient'}</span>
+              <span>{isSubmitting ? 'Submitting...' : 'Submit'}</span>
               <div className="w-5 h-5 flex items-center justify-center pointer-events-none transition-transform duration-200 ease-out group-hover:translate-x-1.5">
                 <ArrowRight size={18} weight="bold" />
               </div>
