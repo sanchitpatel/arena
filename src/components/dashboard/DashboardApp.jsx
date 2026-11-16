@@ -10,6 +10,7 @@ import { claimOrRegisterGuest } from '../../services/arenaService';
 const NewPatientView = lazy(() => import('./NewPatientView').then(m => ({ default: m.NewPatientView })));
 const ExistingPatientView = lazy(() => import('./ExistingPatientView').then(m => ({ default: m.ExistingPatientView })));
 const DoctorDashboardView = lazy(() => import('./DoctorDashboardView').then(m => ({ default: m.DoctorDashboardView })));
+const WalletView = lazy(() => import('./WalletView').then(m => ({ default: m.WalletView })));
 const NotificationView = lazy(() => import('./NotificationView').then(m => ({ default: m.NotificationView })));
 const ProfileView = lazy(() => import('./ProfileView').then(m => ({ default: m.ProfileView })));
 const ScannerView = lazy(() => import('./ScannerView').then(m => ({ default: m.ScannerView })));
@@ -25,6 +26,7 @@ const prefetchDashboard = () => {
     import('./NewPatientView');
     import('./ExistingPatientView');
     import('./DoctorDashboardView');
+    import('./WalletView');
     import('./NotificationView');
     import('./ProfileView');
     import('./ScannerView');
@@ -310,9 +312,9 @@ export default function DashboardApp() {
           />
         </div>
         <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
-          <DoctorDashboardView
-            selectedDate={selectedDate}
-            onSelectDate={handleSelectDate}
+          <WalletView
+            player={player}
+            onNavigate={handleTabChange}
           />
         </div>
         <div className={activeTab === 'profile' ? 'block' : 'hidden'}>
