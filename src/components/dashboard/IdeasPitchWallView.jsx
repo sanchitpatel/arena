@@ -9,7 +9,6 @@ import {
   CheckCircle,
   CircleNotch,
   X,
-  MagnifyingGlass,
   User,
   PaperPlaneTilt,
   PencilSimple,
@@ -28,15 +27,6 @@ import { normalizePitchTitle, normalizePitchDescription } from '../../utils/sani
 
 const STORAGE_VOTES_KEY = 'arena_pitch_wall_votes';
 const STORAGE_CUSTOM_PITCHES_KEY = 'arena_pitch_wall_custom_pitches';
-
-const CATEGORIES = [
-  { id: 'All', label: 'All', icon: Sparkle },
-  { id: 'AI & Agents', label: 'AI & Agents', icon: Brain },
-  { id: 'Hardware & Robotics', label: 'Hardware', icon: Atom },
-  { id: 'Web3 & Systems', label: 'Web3', icon: Crown },
-  { id: 'BioTech & Health', label: 'BioTech', icon: Dna },
-  { id: 'Consumer Apps', label: 'Consumer', icon: DeviceMobile },
-];
 
 const STAGES = ['Concept', 'Prototype Demo', 'Live Beta'];
 
@@ -154,11 +144,6 @@ export const IdeasPitchWallView = ({ player }) => {
       return [];
     }
   });
-
-  // Feed filtering & sorting
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [sortBy, setSortBy] = useState('votes'); // 'votes' | 'recent'
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Submit Idea Form State (Simple: Idea/Problem & Description)
   const [formTitle, setFormTitle] = useState('');
@@ -301,33 +286,10 @@ export const IdeasPitchWallView = ({ player }) => {
     }, 200);
   };
 
-  // Filtered and sorted pitches
-  const filteredPitches = useMemo(() => {
-    return pitches
-      .filter((pitch) => {
-        const matchesCategory =
-          selectedCategory === 'All' ||
-          pitch.category === selectedCategory ||
-          (selectedCategory === 'AI & Agents' && (pitch.category.includes('AI') || pitch.category.includes('Scribe'))) ||
-          (selectedCategory === 'Hardware & Robotics' && (pitch.category.includes('Hardware') || pitch.category.includes('MedTech') || pitch.category.includes('Robotics') || pitch.category.includes('Devices'))) ||
-          (selectedCategory === 'BioTech & Health' && (pitch.category.includes('BioTech') || pitch.category.includes('Diagnostics') || pitch.category.includes('Hospital') || pitch.category.includes('Health') || pitch.category.includes('Ops'))) ||
-          (selectedCategory === 'Consumer Apps' && (pitch.category.includes('Apps') || pitch.category.includes('Patient')));
-        const q = searchQuery.toLowerCase().trim();
-        const matchesQuery =
-          !q ||
-          pitch.title.toLowerCase().includes(q) ||
-          pitch.summary.toLowerCase().includes(q) ||
-          pitch.presenter.toLowerCase().includes(q) ||
-          pitch.category.toLowerCase().includes(q);
-        return matchesCategory && matchesQuery;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'votes') {
-          return b.votes - a.votes;
-        }
-        return (b.timestamp || 0) - (a.timestamp || 0);
-      });
-  }, [pitches, selectedCategory, searchQuery, sortBy]);
+  // Accumulated pitches sorted by votes
+  const sortedPitches = useMemo(() => {
+    return [...pitches].sort((a, b) => b.votes - a.votes);
+  }, [pitches]);
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-5 pb-20 font-sans select-none">
@@ -528,120 +490,18 @@ export const IdeasPitchWallView = ({ player }) => {
           SECTION 2: ACCUMULATED EVENT PITCHES & VOTING (Browse & Vote)
           ======================================================== */}
       {activeSection === 'wall' && (
-        <div className="!mt-8 sm:!mt-7 space-y-4 animate-in fade-in duration-150">
-          {/* Quick Pitch Invite Card */}
-          <div
-            onClick={() => setActiveSection('pitch')}
-            className="bg-[#ebedf2] border border-white/80 rounded-2xl p-3 sm:p-3.5 shadow-[inset_2px_2px_5px_#ffffff,inset_-2px_-2px_5px_#c5ccd6] flex items-center justify-between gap-3 cursor-pointer group active:scale-[0.99] transition-all"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-b from-zinc-900 to-black text-white flex items-center justify-center shrink-0 shadow-sm">
-                <Plus size={16} weight="bold" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-zinc-900 truncate">
-                  Got a breakthrough concept?
-                </p>
-                <p className="text-[10.5px] text-zinc-500 font-medium truncate">
-                  Pitch it to the venue wall and earn +10 PTS
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F2F7FC] border border-white/80 text-xs font-bold text-zinc-700 shadow-[inset_1px_1px_2px_#c8d0db,inset_-1px_-1px_2px_#ffffff] group-hover:text-zinc-900 shrink-0">
-              <span>Pitch</span>
-              <ArrowRight size={13} weight="bold" />
-            </div>
-          </div>
-
-          {/* Filter, Sort & Search Toolbar */}
-          <div className="bg-[#ebedf2] border border-white/80 rounded-2xl p-2.5 sm:p-3 shadow-[inset_2px_2px_5px_#ffffff,inset_-2px_-2px_5px_#c5ccd6] space-y-2.5">
-            {/* Search Input Well */}
-            <div className="relative">
-              <MagnifyingGlass
-                size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
-              />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search ideas, tech, or presenters..."
-                className="w-full pl-9 pr-8 py-2 bg-[#F2F7FC] text-zinc-900 font-semibold text-xs rounded-xl border border-transparent shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] outline-none focus:outline-none focus:border-zinc-400 placeholder:text-zinc-400"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-zinc-200 text-zinc-600 flex items-center justify-center hover:text-zinc-900 active:scale-90 cursor-pointer"
-                >
-                  <X size={11} weight="bold" />
-                </button>
-              )}
-            </div>
-
-            {/* Category Pills & Sort Segment */}
-            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-              <div className="flex items-center gap-1.5 shrink-0">
-                {CATEGORIES.map((cat) => {
-                  const isSelected = selectedCategory === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setSelectedCategory(cat.id)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all duration-150 cursor-pointer select-none active:scale-95 shrink-0 ${
-                        isSelected
-                          ? 'bg-zinc-900 text-white shadow-[2px_2px_4px_#c5ccd6] border border-zinc-800'
-                          : 'bg-[#F2F7FC] text-zinc-600 hover:text-zinc-900 border border-white/80 shadow-[inset_1px_1px_2px_#c8d0db,inset_-1px_-1px_2px_#ffffff]'
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Sort Toggle (Top Voted vs Recent) */}
-              <div className="flex items-center p-0.5 rounded-full bg-[#F2F7FC] border border-white/80 shadow-[inset_1px_1px_2px_#c8d0db,inset_-1px_-1px_2px_#ffffff] shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setSortBy('votes')}
-                  title="Sort by most voted"
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
-                    sortBy === 'votes'
-                      ? 'bg-zinc-900 text-white shadow-sm'
-                      : 'text-zinc-500 hover:text-zinc-800'
-                  }`}
-                >
-                  Top Voted
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSortBy('recent')}
-                  title="Sort by newest"
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
-                    sortBy === 'recent'
-                      ? 'bg-zinc-900 text-white shadow-sm'
-                      : 'text-zinc-500 hover:text-zinc-800'
-                  }`}
-                >
-                  Latest
-                </button>
-              </div>
-            </div>
-          </div>
-
+        <div className="!mt-6 sm:!mt-7 space-y-3 sm:space-y-4 animate-in fade-in duration-150">
           {/* Pitch Cards Feed */}
-          {filteredPitches.length === 0 ? (
+          {sortedPitches.length === 0 ? (
             <div className="bg-[#ebedf2] border border-white/80 rounded-[28px] p-8 text-center shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-[#F2F7FC] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] flex items-center justify-center mx-auto text-zinc-400">
                 <Lightbulb size={24} weight="duotone" />
               </div>
               <h3 className="font-arena text-sm font-bold text-zinc-900">
-                NO PITCHES FOUND
+                NO PITCHES YET
               </h3>
               <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-                No ideas match your filter or search query. Be the first to pitch one in this category!
+                Be the first to pitch an idea to the event wall!
               </p>
               <button
                 type="button"
@@ -649,12 +509,12 @@ export const IdeasPitchWallView = ({ player }) => {
                 className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-b from-zinc-900 to-black text-white text-xs font-bold shadow-[2px_2px_5px_#c5ccd6] active:scale-95 cursor-pointer"
               >
                 <Plus size={14} weight="bold" />
-                <span>Submit a Pitch Idea</span>
+                <span>Submit Idea</span>
               </button>
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4">
-              {filteredPitches.map((pitch) => {
+              {sortedPitches.map((pitch) => {
                 const hasVoted = votedIds.includes(pitch.id);
                 const isCurrentUserPitch =
                   pitch.isMyPitch || pitch.guestId === guestId;
