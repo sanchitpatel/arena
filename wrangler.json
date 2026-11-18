@@ -20,12 +20,6 @@
     "PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_4Zuy1bxqLNdbflwxdFvz7w_InZ5nP5-",
     "PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_4Zuy1bxqLNdbflwxdFvz7w_InZ5nP5-"
   },
-  "routes": [
-    {
-      "pattern": "arena.bmiil.com",
-      "custom_domain": true
-    }
-  ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
