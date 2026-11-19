@@ -139,6 +139,7 @@ export function ChessView({ player, onBack }) {
   // Guard flags
   const hasClaimedTimeoutRef = useRef(false);
   const botTimeoutRef = useRef(null);
+  const lastInteractionRef = useRef({ time: 0, square: null });
 
   // Unlock audio on first touch
   useEffect(() => {
@@ -644,6 +645,8 @@ export function ChessView({ player, onBack }) {
   // --------------------------------------------------------------------------
   const handlePieceDrop = useCallback(
     ({ sourceSquare, targetSquare }) => {
+      setSelectedSquare(null);
+      setSquareStyles({});
       if (!targetSquare || !isMyTurn) return false;
       return makeMove(sourceSquare, targetSquare);
     },
@@ -651,42 +654,71 @@ export function ChessView({ player, onBack }) {
   );
 
   // --------------------------------------------------------------------------
-  // TAP-TO-MOVE HANDLER
+  // DRAG LIFECYCLE HANDLERS (Highlights valid moves while dragging)
+  // --------------------------------------------------------------------------
+  const handlePieceDrag = useCallback(
+    ({ square }) => {
+      if (!square || !isMyTurn) return;
+      setSelectedSquare(square);
+      const moves = chessRef.current.moves({ square, verbose: true });
+      const newStyles = {
+        [square]: { backgroundColor: 'rgba(56, 189, 248, 0.45)' },
+      };
+      moves.forEach((m) => {
+        newStyles[m.to] = {
+          background: m.captured
+            ? 'radial-gradient(circle, rgba(239, 68, 68, 0.75) 30%, transparent 32%)'
+            : 'radial-gradient(circle, rgba(56, 189, 248, 0.65) 25%, transparent 27%)',
+          borderRadius: '50%',
+        };
+      });
+      setSquareStyles(newStyles);
+    },
+    [isMyTurn]
+  );
+
+  const handlePieceDragCancel = useCallback(() => {
+    setSelectedSquare(null);
+    setSquareStyles({});
+  }, []);
+
+  const canDragPiece = useCallback(
+    ({ piece }) => {
+      if (!isMyTurn) return false;
+      const pieceColor = piece?.pieceType?.[0];
+      return pieceColor === playerColor;
+    },
+    [isMyTurn, playerColor]
+  );
+
+  // --------------------------------------------------------------------------
+  // TAP-TO-MOVE HANDLER (Fluid 1-Tap Activation & Clean Deselection)
   // --------------------------------------------------------------------------
   const handleSquareClick = useCallback(
     ({ square }) => {
-      if (!isMyTurn) return;
+      if (!isMyTurn || !square) return;
 
-      if (!selectedSquare) {
-        const piece = chessRef.current.get(square);
-        if (piece && piece.color === playerColor) {
-          setSelectedSquare(square);
-          const moves = chessRef.current.moves({ square, verbose: true });
-          const newStyles = {
-            [square]: { backgroundColor: 'rgba(56, 189, 248, 0.45)' },
-          };
-          moves.forEach((m) => {
-            newStyles[m.to] = {
-              background: m.captured
-                ? 'radial-gradient(circle, rgba(239, 68, 68, 0.7) 30%, transparent 32%)'
-                : 'radial-gradient(circle, rgba(56, 189, 248, 0.6) 25%, transparent 27%)',
-              borderRadius: '50%',
-            };
-          });
-          setSquareStyles(newStyles);
-          triggerHaptic(10);
+      const now = performance.now();
+      if (
+        lastInteractionRef.current.square === square &&
+        now - lastInteractionRef.current.time < 120
+      ) {
+        return; // Suppress duplicate event from piece + square bubbling
+      }
+      lastInteractionRef.current = { time: now, square };
+
+      const clickedPiece = chessRef.current.get(square);
+
+      // Case 1: Tapping one of own pieces
+      if (clickedPiece && clickedPiece.color === playerColor) {
+        // If tapping the already selected piece: toggle off
+        if (selectedSquare === square) {
+          setSelectedSquare(null);
+          setSquareStyles({});
+          return;
         }
-        return;
-      }
 
-      if (selectedSquare === square) {
-        setSelectedSquare(null);
-        setSquareStyles({});
-        return;
-      }
-
-      const targetPiece = chessRef.current.get(square);
-      if (targetPiece && targetPiece.color === playerColor) {
+        // Immediately select this piece and calculate legal moves
         setSelectedSquare(square);
         const moves = chessRef.current.moves({ square, verbose: true });
         const newStyles = {
@@ -695,8 +727,8 @@ export function ChessView({ player, onBack }) {
         moves.forEach((m) => {
           newStyles[m.to] = {
             background: m.captured
-              ? 'radial-gradient(circle, rgba(239, 68, 68, 0.7) 30%, transparent 32%)'
-              : 'radial-gradient(circle, rgba(56, 189, 248, 0.6) 25%, transparent 27%)',
+              ? 'radial-gradient(circle, rgba(239, 68, 68, 0.75) 30%, transparent 32%)'
+              : 'radial-gradient(circle, rgba(56, 189, 248, 0.65) 25%, transparent 27%)',
             borderRadius: '50%',
           };
         });
@@ -705,7 +737,19 @@ export function ChessView({ player, onBack }) {
         return;
       }
 
-      makeMove(selectedSquare, square);
+      // Case 2: A piece is already selected, and user taps a destination square
+      if (selectedSquare) {
+        const moves = chessRef.current.moves({ square: selectedSquare, verbose: true });
+        const isLegal = moves.some((m) => m.to === square);
+
+        if (isLegal) {
+          makeMove(selectedSquare, square);
+        } else {
+          // If tapped an illegal square: deselect immediately so piece never freezes or gets trapped
+          setSelectedSquare(null);
+          setSquareStyles({});
+        }
+      }
     },
     [isMyTurn, selectedSquare, playerColor, makeMove]
   );
@@ -977,13 +1021,27 @@ export function ChessView({ player, onBack }) {
       </div>
 
       {/* CHESSBOARD (Mobile 1:1 Locked Viewport) */}
-      <div className="w-full aspect-square relative rounded-md overflow-hidden shadow-2xl border border-zinc-800 touch-none bg-zinc-950">
+      <div className="w-full aspect-square relative rounded-md shadow-2xl border border-zinc-800 touch-none bg-zinc-950">
         <Chessboard
           options={{
             position: fen,
             boardOrientation,
             onPieceDrop: handlePieceDrop,
             onSquareClick: handleSquareClick,
+            onPieceClick: ({ square }) => handleSquareClick({ square }),
+            onPieceDrag: handlePieceDrag,
+            onPieceDragCancel: handlePieceDragCancel,
+            canDragPiece,
+            dragActivationDistance: 7,
+            allowDragOffBoard: true,
+            draggingPieceGhostStyle: {
+              opacity: 0.85,
+            },
+            draggingPieceStyle: {
+              transform: 'scale(1.15)',
+              filter: 'drop-shadow(0 10px 20px rgba(0, 0, 0, 0.45))',
+              zIndex: 100,
+            },
             squareStyles,
             animationDurationInMs: 150,
             darkSquareStyle: { backgroundColor: '#455871ff' },

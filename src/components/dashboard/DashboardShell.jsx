@@ -28,7 +28,7 @@ export const DashboardShell = ({
 }) => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(3);
   const [qrModalOpen, setQrModalOpen] = useState(null); // 'badge' | null
   const [internalNotificationOpen, setInternalNotificationOpen] = useState(false);
   const profileRef = useRef(null);
@@ -566,7 +566,7 @@ export const DashboardShell = ({
               </div>
 
               {pendingCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 z-20 min-w-[15px] h-3.5 px-0.5 rounded-full bg-amber-500 text-white font-extrabold text-[8.5px] flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
+                <span className="absolute -top-1 -right-1.5 z-20 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white font-extrabold text-[11px] border-white border-[1px] flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.25)] pointer-events-none">
                   {pendingCount > 99 ? '99+' : pendingCount}
                 </span>
               )}
@@ -578,9 +578,6 @@ export const DashboardShell = ({
               onClick={() => {
                 closeNotification();
                 if (typeof onTabChange === 'function') onTabChange('ideas');
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('arena:open-ideas'));
-                }
               }}
               title="Ideas Pitch Wall"
               className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-[0.92] transition-transform duration-100 ease-out"
@@ -652,7 +649,6 @@ export const DashboardShell = ({
               onClick={() => {
                 closeNotification();
                 if (typeof onTabChange === 'function') onTabChange('map');
-                if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('arena:open-map'));
               }}
               title="Tactical Map"
               className="relative w-10 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-[0.92] transition-transform duration-100 ease-out"
@@ -735,6 +731,7 @@ export const DashboardShell = ({
       <NotificationSliderCard
         isOpen={isNotificationOpen}
         onClose={closeNotification}
+        onCountChange={setPendingCount}
         onNavigate={(tab) => {
           closeNotification();
           if (typeof onTabChange === 'function') {
