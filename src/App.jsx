@@ -24,6 +24,7 @@ const VALID_APP_PATHS = new Set([
   '/pitch-wall',
   '/wallet',
   '/map',
+  '/chess',
 ]);
 
 function resolveRoute() {

@@ -1,13 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import {
-  Bell,
-  CheckCircle,
-  WhatsappLogo,
-  ChatCircleDots,
-  ArrowRight,
-  CaretLeft,
-  CaretRight,
-} from '../icons';
+import { Clock } from '../icons';
 import {
   fetchNotificationQueue,
   subscribeToClinicRealtime,
@@ -209,17 +201,9 @@ export const NotificationSliderCard = ({
   const activeItem = queue[currentIndex] || null;
   const hasItems = queue.length > 0;
 
-  const displayTitle = activeItem
-    ? (activeItem.patient_name ? `Alert for ${activeItem.patient_name}` : activeItem.title || 'Arena Dispatch Alert')
-    : 'All Notifications Clear';
-
-  const displayDescription = activeItem
-    ? (activeItem.message || activeItem.details || 'New event activity reported on venue network. Review alert details below.')
-    : 'All arena systems are operational. No pending alerts, challenges, or unread WhatsApp reminders on venue network.';
-
-  const displayCategory = activeItem?.message_type === 'whatsapp'
-    ? 'WHATSAPP DISPATCH'
-    : 'ARENA DISPATCH';
+  const displayDescription = hasItems && activeItem
+    ? (activeItem.message || activeItem.details || 'New activity reported on arena network.')
+    : "You're all caught up. No new notifications or activity alerts at this time.";
 
   // Dynamic transform styles: gradual, physical drawer curves
   const cardStyle = isDragging
@@ -251,7 +235,7 @@ export const NotificationSliderCard = ({
       />
 
       {/* Sheet Container: Positioned at top-0 z-[38] to emerge downwards from behind the top nav bar (z-40) */}
-      <div className="fixed top-0 left-0 right-0 z-[38] pointer-events-none flex justify-center px-1.5 sm:px-4">
+      <div className="fixed top-0 left-0 right-0 z-[38] pointer-events-none flex justify-center px-2 sm:px-4">
         <div
           ref={sheetRef}
           onPointerDown={handlePointerDown}
@@ -259,108 +243,26 @@ export const NotificationSliderCard = ({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onWheel={handleWheel}
-          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+4.5rem)] min-h-[330px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-b-[28px] sm:rounded-b-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-4.5 pb-2 select-none touch-none cursor-grab active:cursor-grabbing flex flex-col justify-between"
+          className="pointer-events-auto w-full max-w-full sm:max-w-[440px] md:max-w-[460px] h-auto min-h-[145px] max-h-[180px] md:min-h-[110px] md:max-h-[135px] bg-[#ebedf2] border border-white/90 rounded-b-[24px] sm:rounded-b-[28px] md:rounded-[24px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-5 pb-2 select-none touch-none cursor-grab active:cursor-grabbing flex flex-col justify-between"
           style={cardStyle}
         >
-          {/* Top Section: Header */}
-          <div className="shrink-0">
-            {/* Header Content */}
-            <div className="flex items-center gap-3 pb-3 mb-1.5 border-b border-zinc-300/60 shadow-[0_1px_0_#ffffff]">
-              {/* Tactile Icon Tile */}
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] flex items-center justify-center shrink-0">
-                {activeItem?.message_type === 'whatsapp' ? (
-                  <WhatsappLogo size={24} weight="bold" className="text-emerald-400" />
-                ) : (
-                  <Bell size={24} weight="bold" className="text-white" />
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                {/* Badges: Category Pill + Status */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span
-                    className="font-arena text-[10.5px] tracking-wider px-2.5 py-0.5 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-700 shadow-sm"
-                    style={{ WebkitTextStroke: '0.4px' }}
-                  >
-                    {displayCategory}
-                  </span>
-
-                  {hasItems && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#F2F7FC] text-amber-700 border border-white/80 shadow-[inset_1px_1px_2px_#c8d0db,inset_-1px_-1px_2px_#ffffff]">
-                      {queue.length} PENDING
-                    </span>
-                  )}
-                </div>
-
-                {/* Title */}
-                <h3
-                  className="font-arena text-[14px] sm:text-[15px] font-black text-zinc-900 tracking-wide mt-1.5 truncate"
-                  style={{ WebkitTextStroke: '0.5px' }}
-                >
-                  {displayTitle}
-                </h3>
-              </div>
-
-              {/* Multiple Items Pagination Controls */}
-              {queue.length > 1 && (
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentIndex((prev) => (prev > 0 ? prev - 1 : queue.length - 1));
-                    }}
-                    className="w-7 h-7 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] active:scale-90 flex items-center justify-center text-zinc-600 hover:text-zinc-900 transition-transform cursor-pointer"
-                    title="Previous Notification"
-                  >
-                    <CaretLeft size={14} weight="bold" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentIndex((prev) => (prev < queue.length - 1 ? prev + 1 : 0));
-                    }}
-                    className="w-7 h-7 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[2px_2px_4px_#c8d0db,-2px_-2px_4px_#ffffff] active:scale-90 flex items-center justify-center text-zinc-600 hover:text-zinc-900 transition-transform cursor-pointer"
-                    title="Next Notification"
-                  >
-                    <CaretRight size={14} weight="bold" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Middle Section: Description (Vertically Centered Compartment with Equal Height) */}
-          <div className="flex-1 min-h-0 flex items-center py-2 px-1">
-            <p className="text-[12.5px] sm:text-[13px] text-zinc-600 leading-relaxed font-medium line-clamp-3 sm:line-clamp-4">
+          {/* Main Content & Auto-Clear Notice */}
+          <div className="flex-1 flex flex-col items-center justify-center text-center py-2 px-1 gap-2">
+            <p className="text-[12.5px] sm:text-[13px] text-zinc-600 leading-relaxed font-medium">
               {displayDescription}
             </p>
-          </div>
 
-          {/* Bottom Section: Footer Actions */}
-          <div className="shrink-0 flex items-center justify-between gap-2.5 pt-2.5 border-t border-zinc-300/60 shadow-[0_1px_0_#ffffff]">
-            {/* Tactile Status Capsule */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F2F7FC] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff]">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Status</span>
-              <span className="font-arena text-xs sm:text-sm font-black text-emerald-600 tracking-wider">
-                {hasItems ? `${queue.length} PENDING` : 'ALL CAUGHT UP'}
+            {/* Tactile Auto-Clear Info Capsule */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F2F7FC] border border-white/80 shadow-[inset_1.5px_1.5px_3px_#c8d0db,inset_-1.5px_-1.5px_3px_#ffffff] w-fit">
+              <Clock size={13} weight="bold" className="text-zinc-500 shrink-0" />
+              <span className="text-[11px] font-semibold text-zinc-500 tracking-tight">
+                Notifications auto-clear after 24 hrs
               </span>
             </div>
-
-            {/* Action CTA Button (Signature Arena Pill) */}
-            <button
-              type="button"
-              onClick={animateDismiss}
-              className="py-2.5 px-5 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white text-xs font-bold rounded-full transition-all duration-150 ease-out flex items-center gap-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.97] cursor-pointer border border-zinc-800/80"
-            >
-              <CheckCircle size={15} weight="fill" className="text-emerald-400" />
-              <span>Dismiss</span>
-            </button>
           </div>
 
           {/* Bottom Centered Drag Handle Pill (Tactile Debossed Groove for Swiping UP to Dismiss) */}
-          <div className="w-full flex items-center justify-center pt-2 pb-0.5 cursor-grab active:cursor-grabbing touch-none shrink-0">
+          <div className="w-full flex items-center justify-center pt-1.5 pb-0.5 cursor-grab active:cursor-grabbing touch-none shrink-0">
             <div className="w-11 h-1.5 rounded-full bg-zinc-300/70 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.2),0_1px_1px_#ffffff]" />
           </div>
         </div>

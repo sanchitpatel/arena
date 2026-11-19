@@ -80,11 +80,8 @@ export const ExistingPatientView = ({
       }
       setPatients(res.data || []);
 
-      // 2. Fetch today's visits to track today's queue & tokens
-      const { data: todayVisits, error: vErr } = await supabase
-        .from('visits')
-        .select('id, token_number, patient_id, visit_date, created_at')
-        .eq('visit_date', todayStr);
+      // 2. Stubbed clinic visits for Arena platform (no legacy visits table)
+      const todayVisits = [];
 
       const checkinsMap = {};
       let maxToken = 0;

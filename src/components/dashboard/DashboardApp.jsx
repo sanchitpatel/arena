@@ -16,6 +16,7 @@ const ProfileView = lazy(() => import('./ProfileView').then(m => ({ default: m.P
 const ScannerView = lazy(() => import('./ScannerView').then(m => ({ default: m.ScannerView })));
 const MapView = lazy(() => import('./MapView').then(m => ({ default: m.MapView })));
 const IdeasPitchWallView = lazy(() => import('./IdeasPitchWallView').then(m => ({ default: m.IdeasPitchWallView })));
+const ChessView = lazy(() => import('./ChessView').then(m => ({ default: m.ChessView })));
 
 // Pre-fetch dashboard views in background after onboarding page has loaded
 const prefetchDashboard = () => {
@@ -32,6 +33,7 @@ const prefetchDashboard = () => {
     import('./ScannerView');
     import('./MapView');
     import('./IdeasPitchWallView');
+    import('./ChessView');
 
     // Warm up critical visual assets into browser memory cache for 0ms paint
     const bgImg = new Image();
@@ -79,6 +81,7 @@ const TAB_TO_PATH = {
   'ideas': '/ideas',
   'prizes': '/ideas',
   'map': '/map',
+  'chess': '/chess',
 };
 
 const PATH_TO_TAB = {
@@ -95,6 +98,7 @@ const PATH_TO_TAB = {
   '/pitch-wall': 'ideas',
   '/prizes': 'ideas',
   '/map': 'map',
+  '/chess': 'chess',
   '/': 'profile',
 };
 
@@ -341,6 +345,12 @@ export default function DashboardApp() {
         <div className={(activeTab === 'ideas' || activeTab === 'prizes') ? 'block' : 'hidden'}>
           <IdeasPitchWallView
             player={player}
+          />
+        </div>
+        <div className={activeTab === 'chess' ? 'block' : 'hidden'}>
+          <ChessView
+            player={player}
+            onBack={() => handleTabChange('profile')}
           />
         </div>
       </DashboardShell>

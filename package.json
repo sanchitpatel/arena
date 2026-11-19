@@ -16,6 +16,7 @@
     "@fontsource/orbitron": "^5.3.0",
     "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.118.0",
+    "chess.js": "^1.4.0",
     "esbuild": "^0.28.2",
     "framer-motion": "^12.42.2",
     "html5-qrcode": "^2.3.8",
@@ -23,6 +24,7 @@
     "lucide-react": "^1.70.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.6",
+    "react-chessboard": "^5.12.1",
     "react-dom": "^19.2.6",
     "react-zoom-pan-pinch": "^4.2.0"
   },
