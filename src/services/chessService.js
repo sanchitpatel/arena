@@ -1,9 +1,10 @@
 import { supabase } from '../utils/supabase';
 
 /**
- * ARENA CHESS SERVICE (HARDENED)
- * Authoritative Server-Side Move Validation via Supabase Edge Function
- * With Realtime Replication, Concurrency Locks & Queue Matchmaking.
+ * ARENA CHESS SERVICE (100% DATABASE-NATIVE MODE)
+ * Direct PostgreSQL RPC Communication over Supabase Cloud.
+ * In-Database Turn, Clock, Device Identity & Concurrency Verification.
+ * Zero Edge Functions & Zero CLI Tokens Required.
  */
 
 // 1. Join or Queue for Open Matchmaking
@@ -113,33 +114,34 @@ export async function getActiveOngoingGame(playerId) {
   }
 }
 
-// 7. Authoritative Move Submission via Supabase Edge Function (Strictly Service-Role Protected)
+// 7. Direct Database Move Submission (Fast 1-Hop DB RPC with Device Identity & Clock Checks)
 export async function submitMove({
   gameId,
   playerId,
   deviceId,
-  from,
-  to,
-  promotion,
+  newFen,
+  newPgn,
+  isGameOver = false,
+  endStatus = null,
+  winnerId = null,
+  endReason = null,
 }) {
   try {
-    const { data, error } = await supabase.functions.invoke('chess-move', {
-      body: {
-        game_id: gameId,
-        player_id: playerId,
-        device_id: deviceId,
-        action: 'move',
-        from,
-        to,
-        promotion,
-      },
+    const { data, error } = await supabase.rpc('submit_chess_move', {
+      p_game_id: gameId,
+      p_player_id: playerId,
+      p_device_id: deviceId,
+      p_new_fen: newFen,
+      p_new_pgn: newPgn,
+      p_is_game_over: isGameOver,
+      p_end_status: endStatus,
+      p_winner_id: winnerId,
+      p_end_reason: endReason,
     });
 
-    if (error) {
-      throw error;
-    }
-    if (data?.error) {
-      throw new Error(data.error);
+    if (error) throw error;
+    if (data && data.success === false) {
+      throw new Error(data.message || 'Move submission rejected by server.');
     }
     return data;
   } catch (err) {
@@ -148,20 +150,19 @@ export async function submitMove({
   }
 }
 
-// 8. Authoritative Resign via Edge Function
+// 8. Direct Database Resign RPC (With Device Identity Check)
 export async function resignChessGame(gameId, playerId, deviceId) {
   try {
-    const { data, error } = await supabase.functions.invoke('chess-move', {
-      body: {
-        game_id: gameId,
-        player_id: playerId,
-        device_id: deviceId,
-        action: 'resign',
-      },
+    const { data, error } = await supabase.rpc('resign_chess_game', {
+      p_game_id: gameId,
+      p_player_id: playerId,
+      p_device_id: deviceId,
     });
 
     if (error) throw error;
-    if (data?.error) throw new Error(data.error);
+    if (data && data.success === false) {
+      throw new Error(data.message || 'Resignation rejected.');
+    }
     return data;
   } catch (err) {
     console.error('[ChessService] resignChessGame failed:', err);

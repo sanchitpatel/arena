@@ -92,13 +92,12 @@ const ChessClock = React.memo(function ChessClock({
 
   return (
     <div
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-bold tracking-wider transition-colors ${
-        isLowTime
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-bold tracking-wider transition-colors ${isLowTime
           ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
           : isRunning
-          ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-          : 'bg-zinc-800/80 text-zinc-400'
-      }`}
+            ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+            : 'bg-zinc-800/80 text-zinc-400'
+        }`}
     >
       <Clock size={15} />
       <span>{formatClock(timeRemaining)}</span>
@@ -597,15 +596,36 @@ export function ChessView({ player, onBack }) {
         return true;
       }
 
-      // PVP Mode: Async Edge Function submission with rollback on failure
+      // PVP Mode: Direct database submission with rollback on failure
       const deviceId = getDeviceId();
+      const newFen = chessRef.current.fen();
+      const newPgn = chessRef.current.pgn();
+      const isGameOver = chessRef.current.isGameOver();
+      let endStatus = null;
+      let winnerId = null;
+      let endReason = null;
+
+      if (isGameOver) {
+        if (chessRef.current.isCheckmate()) {
+          endStatus = 'checkmate';
+          winnerId = player.id;
+          endReason = 'checkmate';
+        } else {
+          endStatus = 'stalemate';
+          endReason = 'draw';
+        }
+      }
+
       submitMove({
         gameId,
         playerId: player.id,
         deviceId,
-        from,
-        to,
-        promotion: promotion || undefined,
+        newFen,
+        newPgn,
+        isGameOver,
+        endStatus,
+        winnerId,
+        endReason,
       }).catch((err) => {
         console.error('Server move submission failed, rolling back board:', err);
         // Rollback on rejection
@@ -870,9 +890,8 @@ export function ChessView({ player, onBack }) {
 
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs">
           <span
-            className={`w-2 h-2 rounded-full ${
-              isMyTurn ? 'bg-sky-400 animate-pulse' : 'bg-amber-400'
-            }`}
+            className={`w-2 h-2 rounded-full ${isMyTurn ? 'bg-sky-400 animate-pulse' : 'bg-amber-400'
+              }`}
           />
           <span className="font-medium text-zinc-300">
             {isMyTurn ? 'Your Turn' : "Opponent's Turn"}
@@ -910,11 +929,10 @@ export function ChessView({ player, onBack }) {
 
       {/* OPPONENT BANNER (TOP) */}
       <div
-        className={`p-2.5 rounded-2xl border transition-all flex items-center justify-between ${
-          !isMyTurn
+        className={`p-2.5 rounded-2xl border transition-all flex items-center justify-between ${!isMyTurn
             ? 'bg-zinc-900/90 border-sky-500/40 shadow-md shadow-sky-950/30'
             : 'bg-zinc-900/50 border-zinc-800/80'
-        }`}
+          }`}
       >
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl overflow-hidden border border-zinc-700 bg-zinc-800 flex items-center justify-center">
@@ -941,8 +959,8 @@ export function ChessView({ player, onBack }) {
                   {playerColor === 'w' && capturedPieces.advantage < 0
                     ? `+${Math.abs(capturedPieces.advantage)}`
                     : playerColor === 'b' && capturedPieces.advantage > 0
-                    ? `+${capturedPieces.advantage}`
-                    : ''}
+                      ? `+${capturedPieces.advantage}`
+                      : ''}
                 </span>
               )}
             </div>
@@ -959,7 +977,7 @@ export function ChessView({ player, onBack }) {
       </div>
 
       {/* CHESSBOARD (Mobile 1:1 Locked Viewport) */}
-      <div className="w-full aspect-square relative rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 touch-none bg-zinc-950">
+      <div className="w-full aspect-square relative rounded-md overflow-hidden shadow-2xl border border-zinc-800 touch-none bg-zinc-950">
         <Chessboard
           options={{
             position: fen,
@@ -968,8 +986,8 @@ export function ChessView({ player, onBack }) {
             onSquareClick: handleSquareClick,
             squareStyles,
             animationDurationInMs: 150,
-            darkSquareStyle: { backgroundColor: '#1E293B' },
-            lightSquareStyle: { backgroundColor: '#94A3B8' },
+            darkSquareStyle: { backgroundColor: '#455871ff' },
+            lightSquareStyle: { backgroundColor: '#CBD5E1' },
             dropSquareStyle: {
               boxShadow: 'inset 0 0 1px 3px rgba(56, 189, 248, 0.8)',
             },
@@ -1007,11 +1025,10 @@ export function ChessView({ player, onBack }) {
 
       {/* ACTIVE PLAYER BANNER (BOTTOM) */}
       <div
-        className={`p-2.5 rounded-2xl border transition-all flex items-center justify-between ${
-          isMyTurn
+        className={`p-2.5 rounded-2xl border transition-all flex items-center justify-between ${isMyTurn
             ? 'bg-zinc-900/90 border-sky-500/40 shadow-md shadow-sky-950/30'
             : 'bg-zinc-900/50 border-zinc-800/80'
-        }`}
+          }`}
       >
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl overflow-hidden border border-zinc-700 bg-zinc-800 flex items-center justify-center">
@@ -1038,8 +1055,8 @@ export function ChessView({ player, onBack }) {
                   {playerColor === 'w' && capturedPieces.advantage > 0
                     ? `+${capturedPieces.advantage}`
                     : playerColor === 'b' && capturedPieces.advantage < 0
-                    ? `+${Math.abs(capturedPieces.advantage)}`
-                    : ''}
+                      ? `+${Math.abs(capturedPieces.advantage)}`
+                      : ''}
                 </span>
               )}
             </div>
@@ -1103,13 +1120,12 @@ export function ChessView({ player, onBack }) {
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 max-w-sm w-full flex flex-col items-center text-center gap-4 shadow-2xl animate-scale-up">
             <div
-              className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
-                endSummary.isWinner
+              className={`w-16 h-16 rounded-2xl flex items-center justify-center ${endSummary.isWinner
                   ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                   : endSummary.isDraw
-                  ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
-                  : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-              }`}
+                    ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+                    : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                }`}
             >
               {endSummary.isWinner ? (
                 <Trophy size={36} weight="fill" />

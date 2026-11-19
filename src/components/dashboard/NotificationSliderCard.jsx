@@ -243,19 +243,22 @@ export const NotificationSliderCard = ({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onWheel={handleWheel}
-          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+4.5rem)] min-h-[330px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-b-[28px] sm:rounded-b-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-4.5 pb-2 select-none touch-none cursor-grab active:cursor-grabbing flex flex-col justify-between"
+          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+4.5rem)] min-h-[330px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-b-[28px] sm:rounded-b-[32px] md:rounded-[28px] shadow-[inset_0_4px_8px_rgba(0,0,0,0.22),inset_0_-4px_8px_#ffffff] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-4.5 pb-2 select-none touch-none cursor-grab active:cursor-grabbing flex flex-col justify-between"
           style={cardStyle}
         >
           {/* Main Content & Auto-Clear Notice */}
           <div className="flex-1 flex flex-col items-center justify-center text-center py-2 px-1 gap-2">
-            <p className="text-[12.5px] sm:text-[13px] text-zinc-600 leading-relaxed font-medium">
+            <p className="text-[12.5px] sm:text-[13px] text-zinc-500/90 leading-relaxed font-medium">
               {displayDescription}
             </p>
 
             {/* Tactile Auto-Clear Info Capsule */}
-            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#F2F7FC] border border-white/10 shadow-[inset_1.5px_1.5px_3px_#c8d0db,inset_-1.5px_-1.5px_3px_#ffffff] w-fit">
-              <Clock size={13} weight="bold" className="text-zinc-600 shrink-0" />
-              <span className="text-[11px] font-semibold text-zinc-500 tracking-tight">
+            <div
+              className="font-arena inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[9px] tracking-wider shadow-sm w-fit"
+              style={{ WebkitTextStroke: '0.4px', fontWeight: 400 }}
+            >
+              <Clock size={14} weight="bold" className="text-zinc-600 shrink-0" />
+              <span>
                 Notifications auto-clear after 12 hrs
               </span>
             </div>
