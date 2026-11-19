@@ -132,6 +132,7 @@ export { Smiley } from '@phosphor-icons/react/dist/icons/Smiley';
 export { Snowflake } from '@phosphor-icons/react/dist/icons/Snowflake';
 export { Sparkle } from '@phosphor-icons/react/dist/icons/Sparkle';
 export { SpeakerHigh } from '@phosphor-icons/react/dist/icons/SpeakerHigh';
+export { SpeakerSlash } from '@phosphor-icons/react/dist/icons/SpeakerSlash';
 export { SquaresFour } from '@phosphor-icons/react/dist/icons/SquaresFour';
 export { Stack } from '@phosphor-icons/react/dist/icons/Stack';
 export { Star } from '@phosphor-icons/react/dist/icons/Star';

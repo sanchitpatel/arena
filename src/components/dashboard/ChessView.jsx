@@ -14,17 +14,26 @@ import {
   Sword,
   Play,
   ArrowClockwise,
+  SpeakerHigh,
+  SpeakerSlash,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
+import { getDeviceId } from '../../utils/playerId';
 import {
   joinOrCreateMatchmaking,
+  cancelChessMatchmaking,
   getChessGame,
+  getActiveOngoingGame,
   submitMove,
   claimChessTimeout,
   resignChessGame,
   subscribeToChessGame,
+  subscribeToMatchmakingQueue,
 } from '../../services/chessService';
 import {
+  initAudioUnlock,
+  setChessAudioMuted,
+  getChessAudioMuted,
   playMoveSound,
   playCaptureSound,
   playCheckSound,
@@ -33,12 +42,9 @@ import {
   triggerHaptic,
 } from '../../utils/chessAudio';
 
-// Piece value table for basic captured pieces & bot evaluation
+// Piece value table for evaluation
 const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
-/**
- * Format milliseconds into MM:SS
- */
 function formatClock(ms) {
   if (ms <= 0) return '00:00';
   const totalSeconds = Math.ceil(ms / 1000);
@@ -47,14 +53,69 @@ function formatClock(ms) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+/**
+ * Isolated Memoized Clock Component
+ * Ticks locally every 250ms based on server timestamp.
+ * Prevents 10-per-second re-renders of the main Chessboard.
+ */
+const ChessClock = React.memo(function ChessClock({
+  isRunning,
+  baseTimeMs,
+  lastMoveAt,
+  onFlagFall,
+}) {
+  const [timeRemaining, setTimeRemaining] = useState(() => {
+    if (!isRunning) return Math.max(0, baseTimeMs);
+    const elapsed = Date.now() - new Date(lastMoveAt).getTime();
+    return Math.max(0, baseTimeMs - elapsed);
+  });
+
+  useEffect(() => {
+    if (!isRunning) {
+      setTimeRemaining(Math.max(0, baseTimeMs));
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - new Date(lastMoveAt).getTime();
+      const nextTime = Math.max(0, baseTimeMs - elapsed);
+      setTimeRemaining(nextTime);
+      if (nextTime === 0 && onFlagFall) {
+        onFlagFall();
+      }
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [isRunning, baseTimeMs, lastMoveAt, onFlagFall]);
+
+  const isLowTime = timeRemaining > 0 && timeRemaining < 30000;
+
+  return (
+    <div
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-bold tracking-wider transition-colors ${
+        isLowTime
+          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+          : isRunning
+          ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+          : 'bg-zinc-800/80 text-zinc-400'
+      }`}
+    >
+      <Clock size={15} />
+      <span>{formatClock(timeRemaining)}</span>
+    </div>
+  );
+});
+
 export function ChessView({ player, onBack }) {
   // Screen views: 'LOBBY' | 'MATCHING' | 'PLAYING' | 'GAME_OVER'
   const [viewState, setViewState] = useState('LOBBY');
   const [matchMode, setMatchMode] = useState(null); // 'pvp' | 'bot'
   const [gameId, setGameId] = useState(null);
+  const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [gameData, setGameData] = useState(null);
   const [playerColor, setPlayerColor] = useState('w'); // 'w' | 'b'
   const [flipBoard, setFlipBoard] = useState(false);
+  const [isMuted, setIsMuted] = useState(getChessAudioMuted);
   const [loadingAction, setLoadingAction] = useState(false);
   const [actionError, setActionError] = useState('');
 
@@ -62,31 +123,110 @@ export function ChessView({ player, onBack }) {
   const chessRef = useRef(new Chess());
   const [fen, setFen] = useState(chessRef.current.fen());
 
-  // Clocks (Interpolated locally without DB tick spam)
-  const [whiteClock, setWhiteClock] = useState(300000);
-  const [blackClock, setBlackClock] = useState(300000);
-  const lastMoveTimeRef = useRef(Date.now());
-  const activeTurnRef = useRef('w');
+  // Clocks (Server baselines)
+  const [whiteBaseMs, setWhiteBaseMs] = useState(300000);
+  const [blackBaseMs, setBlackBaseMs] = useState(300000);
+  const [lastMoveAt, setLastMoveAt] = useState(new Date().toISOString());
 
-  // Tap-to-move square highlights
+  // Tap-to-move highlights & promotion
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [squareStyles, setSquareStyles] = useState({});
-
-  // Pawn Promotion state
   const [pendingPromotion, setPendingPromotion] = useState(null);
 
-  // In-game Modals
+  // Modals & End summary
   const [showResignModal, setShowResignModal] = useState(false);
   const [endSummary, setEndSummary] = useState(null);
 
-  // Active Opponent representation
+  // Guard flags
+  const hasClaimedTimeoutRef = useRef(false);
+  const botTimeoutRef = useRef(null);
+
+  // Unlock audio on first touch
+  useEffect(() => {
+    initAudioUnlock();
+  }, []);
+
+  // --------------------------------------------------------------------------
+  // RECONNECT ON MOUNT: Check if player already has an ongoing live match
+  // --------------------------------------------------------------------------
+  useEffect(() => {
+    if (!player?.id) return;
+    let isSubscribed = true;
+
+    async function checkOngoing() {
+      const activeGame = await getActiveOngoingGame(player.id);
+      if (activeGame && isSubscribed) {
+        setGameId(activeGame.id);
+        setMatchMode('pvp');
+        setPlayerColor(activeGame.white_player_id === player.id ? 'w' : 'b');
+        setGameData(activeGame);
+
+        if (activeGame.pgn && activeGame.pgn.trim().length > 0) {
+          try {
+            chessRef.current.loadPgn(activeGame.pgn);
+          } catch {
+            chessRef.current.load(activeGame.fen);
+          }
+        } else {
+          chessRef.current.load(activeGame.fen);
+        }
+
+        setFen(chessRef.current.fen());
+        setWhiteBaseMs(activeGame.white_time_left_ms);
+        setBlackBaseMs(activeGame.black_time_left_ms);
+        setLastMoveAt(activeGame.last_move_at);
+        setViewState('PLAYING');
+      }
+    }
+
+    checkOngoing();
+    return () => {
+      isSubscribed = false;
+    };
+  }, [player?.id]);
+
+  // --------------------------------------------------------------------------
+  // VISIBILITY CHANGE RESYNC: Refetch game when returning to foreground tab
+  // --------------------------------------------------------------------------
+  useEffect(() => {
+    const handleVisibility = async () => {
+      if (document.visibilityState === 'visible' && gameId && matchMode === 'pvp') {
+        try {
+          const fresh = await getChessGame(gameId);
+          if (fresh) {
+            if (fresh.pgn && fresh.pgn.trim().length > 0) {
+              try {
+                chessRef.current.loadPgn(fresh.pgn);
+              } catch {
+                chessRef.current.load(fresh.fen);
+              }
+            } else {
+              chessRef.current.load(fresh.fen);
+            }
+            setFen(chessRef.current.fen());
+            setWhiteBaseMs(fresh.white_time_left_ms);
+            setBlackBaseMs(fresh.black_time_left_ms);
+            setLastMoveAt(fresh.last_move_at);
+            setGameData(fresh);
+          }
+        } catch (err) {
+          console.warn('[ChessView] Background resync error:', err);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [gameId, matchMode]);
+
+  // Active Opponent
   const opponent = useMemo(() => {
     if (matchMode === 'bot') {
       return {
         name: 'Dr. DeepBlue (AI)',
         guest_id: 'AI-BOT',
         avatar: '5',
-        total_score: 999,
+        total_score: 'Practice',
       };
     }
     if (!gameData) return null;
@@ -102,7 +242,7 @@ export function ChessView({ player, onBack }) {
     return activeTurn === playerColor && gameData?.status === 'in_progress';
   }, [activeTurn, playerColor, matchMode, gameData?.status]);
 
-  // Compute Captured Pieces & Point Differential
+  // Captured pieces calculation
   const capturedPieces = useMemo(() => {
     const counts = { w: { p: 8, n: 2, b: 2, r: 2, q: 1 }, b: { p: 8, n: 2, b: 2, r: 2, q: 1 } };
     const board = chessRef.current.board();
@@ -116,8 +256,6 @@ export function ChessView({ player, onBack }) {
         }
       }
     }
-    // What White captured = Black's missing pieces
-    // What Black captured = White's missing pieces
     const whiteCaptured = [];
     const blackCaptured = [];
     let whiteScore = 0;
@@ -144,41 +282,44 @@ export function ChessView({ player, onBack }) {
   }, [fen]);
 
   // --------------------------------------------------------------------------
-  // CLOCK SYNCHRONIZATION (0-DB-Tick local interpolation)
+  // MATCHMAKING QUEUE SUBSCRIPTION (Wakes up Player 1 on match)
   // --------------------------------------------------------------------------
   useEffect(() => {
-    if (viewState !== 'PLAYING') return;
+    if (viewState !== 'MATCHING' || !activeChallengeId) return;
 
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const elapsed = now - lastMoveTimeRef.current;
+    const unsubscribe = subscribeToMatchmakingQueue(activeChallengeId, async (acceptedChallenge) => {
+      try {
+        const initialGame = await getChessGame(acceptedChallenge.game_id);
+        setGameId(acceptedChallenge.game_id);
+        setPlayerColor(initialGame.white_player_id === player.id ? 'w' : 'b');
+        setGameData(initialGame);
 
-      if (activeTurnRef.current === 'w') {
-        setWhiteClock((prev) => {
-          const next = Math.max(0, prev - 100);
-          if (next === 0 && matchMode === 'pvp' && playerColor === 'b' && gameId) {
-            // Opponent flagged! Claim timeout
-            claimChessTimeout(gameId, player.id);
+        if (initialGame.pgn) {
+          try {
+            chessRef.current.loadPgn(initialGame.pgn);
+          } catch {
+            chessRef.current.load(initialGame.fen);
           }
-          return next;
-        });
-      } else {
-        setBlackClock((prev) => {
-          const next = Math.max(0, prev - 100);
-          if (next === 0 && matchMode === 'pvp' && playerColor === 'w' && gameId) {
-            // Opponent flagged! Claim timeout
-            claimChessTimeout(gameId, player.id);
-          }
-          return next;
-        });
+        } else {
+          chessRef.current.load(initialGame.fen);
+        }
+
+        setFen(chessRef.current.fen());
+        setWhiteBaseMs(initialGame.white_time_left_ms);
+        setBlackBaseMs(initialGame.black_time_left_ms);
+        setLastMoveAt(initialGame.last_move_at);
+        hasClaimedTimeoutRef.current = false;
+        setViewState('PLAYING');
+      } catch (err) {
+        console.error('Failed to load matched game:', err);
       }
-    }, 100);
+    });
 
-    return () => clearInterval(interval);
-  }, [viewState, matchMode, playerColor, gameId, player?.id]);
+    return () => unsubscribe();
+  }, [viewState, activeChallengeId, player?.id]);
 
   // --------------------------------------------------------------------------
-  // REALTIME SUBSCRIPTION FOR PVP
+  // REALTIME GAME UPDATES (PVP)
   // --------------------------------------------------------------------------
   useEffect(() => {
     if (!gameId || matchMode !== 'pvp') return;
@@ -186,30 +327,39 @@ export function ChessView({ player, onBack }) {
     const unsubscribe = subscribeToChessGame(gameId, (updatedGame) => {
       if (!updatedGame) return;
 
-      // Sync FEN & Turn
+      // Sync Board FEN/PGN
       if (updatedGame.fen && updatedGame.fen !== chessRef.current.fen()) {
-        const prevFen = chessRef.current.fen();
-        chessRef.current.load(updatedGame.fen);
-        setFen(updatedGame.fen);
-        activeTurnRef.current = updatedGame.turn;
-        lastMoveTimeRef.current = Date.now();
+        const currentCount = chessRef.current.board().flat().filter(Boolean).length;
+        if (updatedGame.pgn && updatedGame.pgn.trim().length > 0) {
+          try {
+            chessRef.current.loadPgn(updatedGame.pgn);
+          } catch {
+            chessRef.current.load(updatedGame.fen);
+          }
+        } else {
+          chessRef.current.load(updatedGame.fen);
+        }
+        setFen(chessRef.current.fen());
+        const newCount = chessRef.current.board().flat().filter(Boolean).length;
 
-        // Audio feedback on opponent move
         if (chessRef.current.inCheck()) {
           playCheckSound();
-        } else if (updatedGame.fen.length < prevFen.length) {
+        } else if (newCount < currentCount) {
           playCaptureSound();
         } else {
           playMoveSound();
         }
       }
 
-      // Sync Clocks from server baseline
+      // Sync Clocks & Baseline
       if (typeof updatedGame.white_time_left_ms === 'number') {
-        setWhiteClock(updatedGame.white_time_left_ms);
+        setWhiteBaseMs(updatedGame.white_time_left_ms);
       }
       if (typeof updatedGame.black_time_left_ms === 'number') {
-        setBlackClock(updatedGame.black_time_left_ms);
+        setBlackBaseMs(updatedGame.black_time_left_ms);
+      }
+      if (updatedGame.last_move_at) {
+        setLastMoveAt(updatedGame.last_move_at);
       }
 
       // Game Over Check
@@ -219,13 +369,16 @@ export function ChessView({ player, onBack }) {
         if (isWinner) playVictorySound();
         else if (!isDraw) playDefeatSound();
 
+        // Read points directly from server result
+        const pointsAwarded = isWinner ? 100 : isDraw ? 50 : updatedGame.end_reason === 'early_resignation_no_points' ? 0 : 10;
+
         setEndSummary({
           status: updatedGame.status,
           winner_id: updatedGame.winner_id,
           end_reason: updatedGame.end_reason,
           isWinner,
           isDraw,
-          points: isWinner ? 100 : isDraw ? 50 : 10,
+          points: pointsAwarded,
         });
         setViewState('GAME_OVER');
       }
@@ -244,7 +397,6 @@ export function ChessView({ player, onBack }) {
     setLoadingAction(true);
     setActionError('');
     setMatchMode('pvp');
-    setViewState('MATCHING');
 
     try {
       const res = await joinOrCreateMatchmaking(player.id, 300);
@@ -252,18 +404,25 @@ export function ChessView({ player, onBack }) {
         setGameId(res.game_id);
         setPlayerColor(res.color || 'w');
 
-        // Fetch full initial game record
         const initialGame = await getChessGame(res.game_id);
         setGameData(initialGame);
-        chessRef.current.load(initialGame.fen);
-        setFen(initialGame.fen);
-        setWhiteClock(initialGame.white_time_left_ms);
-        setBlackClock(initialGame.black_time_left_ms);
-        activeTurnRef.current = initialGame.turn;
-        lastMoveTimeRef.current = Date.now();
+        if (initialGame.pgn) {
+          try {
+            chessRef.current.loadPgn(initialGame.pgn);
+          } catch {
+            chessRef.current.load(initialGame.fen);
+          }
+        } else {
+          chessRef.current.load(initialGame.fen);
+        }
+        setFen(chessRef.current.fen());
+        setWhiteBaseMs(initialGame.white_time_left_ms);
+        setBlackBaseMs(initialGame.black_time_left_ms);
+        setLastMoveAt(initialGame.last_move_at);
+        hasClaimedTimeoutRef.current = false;
         setViewState('PLAYING');
       } else {
-        // In queue waiting
+        setActiveChallengeId(res.challenge_id);
         setViewState('MATCHING');
       }
     } catch (err) {
@@ -275,99 +434,128 @@ export function ChessView({ player, onBack }) {
     }
   };
 
+  const handleCancelQueue = async () => {
+    if (activeChallengeId && player?.id) {
+      try {
+        await cancelChessMatchmaking(activeChallengeId, player.id);
+      } catch (err) {
+        console.warn('Error cancelling queue:', err);
+      }
+    }
+    setActiveChallengeId(null);
+    setViewState('LOBBY');
+  };
+
   const startBotMatch = () => {
     setMatchMode('bot');
     setGameId(`bot_${Date.now()}`);
-    setPlayerColor('w'); // Player plays White
+    setPlayerColor('w');
     chessRef.current.reset();
     setFen(chessRef.current.fen());
-    setWhiteClock(300000);
-    setBlackClock(300000);
-    activeTurnRef.current = 'w';
-    lastMoveTimeRef.current = Date.now();
+    setWhiteBaseMs(300000);
+    setBlackBaseMs(300000);
+    setLastMoveAt(new Date().toISOString());
+    hasClaimedTimeoutRef.current = false;
     setViewState('PLAYING');
   };
 
   // --------------------------------------------------------------------------
-  // BOT MOVE GENERATOR (Min-Max / Heuristic Evaluation)
+  // IMPROVED 2-PLY BOT ENGINE (Min-Max with hanging piece protection)
   // --------------------------------------------------------------------------
   const executeBotMove = useCallback(() => {
     if (chessRef.current.isGameOver() || viewState !== 'PLAYING') return;
 
-    // Small thinking delay so it feels natural
-    setTimeout(() => {
-      const moves = chessRef.current.moves({ verbose: true });
-      if (moves.length === 0) return;
+    if (botTimeoutRef.current) clearTimeout(botTimeoutRef.current);
+    botTimeoutRef.current = setTimeout(() => {
+      const legalMoves = chessRef.current.moves({ verbose: true });
+      if (legalMoves.length === 0) return;
 
-      // 1. Check for immediate captures or checks
-      let bestMove = moves[Math.floor(Math.random() * moves.length)];
-      let bestScore = -9999;
+      let bestScore = -Infinity;
+      const topMoves = [];
 
-      for (const m of moves) {
+      for (const m of legalMoves) {
         chessRef.current.move(m);
         let score = 0;
+
         if (m.captured) score += (PIECE_VALUES[m.captured] || 1) * 10;
         if (chessRef.current.inCheck()) score += 5;
+        if (chessRef.current.isCheckmate()) score += 1000;
+
+        // 2-ply check: evaluate opponent's best reply to avoid hanging pieces
+        if (!chessRef.current.isGameOver()) {
+          const replies = chessRef.current.moves({ verbose: true });
+          let maxReplyLoss = 0;
+          for (const rep of replies) {
+            if (rep.captured) {
+              const loss = (PIECE_VALUES[rep.captured] || 1) * 10;
+              if (loss > maxReplyLoss) maxReplyLoss = loss;
+            }
+          }
+          score -= maxReplyLoss;
+        }
+
         chessRef.current.undo();
 
         if (score > bestScore) {
           bestScore = score;
-          bestMove = m;
+          topMoves.length = 0;
+          topMoves.push(m);
+        } else if (score === bestScore) {
+          topMoves.push(m);
         }
       }
 
-      const move = chessRef.current.move(bestMove);
-      if (move) {
+      const chosenMove = topMoves[Math.floor(Math.random() * topMoves.length)] || legalMoves[0];
+      const result = chessRef.current.move(chosenMove);
+
+      if (result) {
         setFen(chessRef.current.fen());
-        activeTurnRef.current = 'w';
-        lastMoveTimeRef.current = Date.now();
+        setLastMoveAt(new Date().toISOString());
 
         if (chessRef.current.inCheck()) playCheckSound();
-        else if (move.captured) playCaptureSound();
+        else if (result.captured) playCaptureSound();
         else playMoveSound();
 
-        // Check if game over after bot move
         if (chessRef.current.isGameOver()) {
           handleBotGameOver();
         }
       }
-    }, 500);
+    }, 450);
   }, [viewState]);
 
-  const handleBotGameOver = () => {
-    let isWinner = false;
-    let isDraw = false;
-    let status = 'checkmate';
+  // Clean up bot timers on unmount
+  useEffect(() => {
+    return () => {
+      if (botTimeoutRef.current) clearTimeout(botTimeoutRef.current);
+    };
+  }, []);
 
-    if (chessRef.current.isCheckmate()) {
-      isWinner = chessRef.current.turn() !== playerColor;
-    } else {
-      isDraw = true;
-      status = 'stalemate';
-    }
+  const handleBotGameOver = () => {
+    const isWinner = chessRef.current.isCheckmate() && chessRef.current.turn() !== playerColor;
+    const isDraw = !chessRef.current.isCheckmate();
 
     if (isWinner) playVictorySound();
     else if (!isDraw) playDefeatSound();
 
     setEndSummary({
-      status,
+      status: chessRef.current.isCheckmate() ? 'checkmate' : 'stalemate',
       winner_id: isWinner ? player?.id : 'bot',
-      end_reason: status,
+      end_reason: chessRef.current.isCheckmate() ? 'checkmate' : 'draw',
       isWinner,
       isDraw,
-      points: isWinner ? 50 : isDraw ? 25 : 5, // Practice bot gives half points
+      points: 0, // Clear: 0 Arena points for bot practice
     });
     setViewState('GAME_OVER');
   };
 
   // --------------------------------------------------------------------------
-  // MOVE EXECUTION (Tap-to-move & Drag-and-drop)
+  // SYNCHRONOUS MOVE EXECUTION WITH OPTIMISTIC ROLLBACK
   // --------------------------------------------------------------------------
   const makeMove = useCallback(
-    async (from, to, promotion = 'q') => {
+    (from, to, promotion = null) => {
       if (!isMyTurn) return false;
 
-      // Check if pawn promotion is needed
+      // 1. Pawn Promotion Check (Only trigger modal if promotion is not yet selected)
       const piece = chessRef.current.get(from);
       if (
         piece &&
@@ -379,47 +567,29 @@ export function ChessView({ player, onBack }) {
         return false;
       }
 
-      let move;
+      const previousFen = chessRef.current.fen();
+      let moveResult;
       try {
-        move = chessRef.current.move({ from, to, promotion: promotion || 'q' });
+        moveResult = chessRef.current.move({ from, to, promotion: promotion || undefined });
       } catch {
-        move = null;
+        moveResult = null;
       }
 
-      if (!move) return false;
+      if (!moveResult) return false;
 
-      const newFen = chessRef.current.fen();
-      const newPgn = chessRef.current.pgn();
-      const isGameOver = chessRef.current.isGameOver();
-      let endStatus = null;
-      let winnerId = null;
-      let endReason = null;
-
-      if (isGameOver) {
-        if (chessRef.current.isCheckmate()) {
-          endStatus = 'checkmate';
-          winnerId = player?.id;
-          endReason = 'checkmate';
-        } else {
-          endStatus = 'stalemate';
-          endReason = 'draw';
-        }
-      }
-
-      // Update local state immediately for 0ms lag
-      setFen(newFen);
+      // Apply locally synchronously
+      setFen(chessRef.current.fen());
       setSelectedSquare(null);
       setSquareStyles({});
-      activeTurnRef.current = chessRef.current.turn();
-      lastMoveTimeRef.current = Date.now();
+      setLastMoveAt(new Date().toISOString());
 
       if (chessRef.current.inCheck()) playCheckSound();
-      else if (move.captured) playCaptureSound();
+      else if (moveResult.captured) playCaptureSound();
       else playMoveSound();
 
-      // Bot Mode execution
+      // Bot Mode
       if (matchMode === 'bot') {
-        if (isGameOver) {
+        if (chessRef.current.isGameOver()) {
           handleBotGameOver();
         } else {
           executeBotMove();
@@ -427,72 +597,74 @@ export function ChessView({ player, onBack }) {
         return true;
       }
 
-      // PvP Mode submission to backend
-      try {
-        await submitMove({
-          gameId,
-          playerId: player.id,
-          from,
-          to,
-          promotion: promotion || 'q',
-          newFen,
-          newPgn,
-          isGameOver,
-          endStatus,
-          winnerId,
-          endReason,
-        });
-      } catch (err) {
-        console.error('Failed to submit move:', err);
-      }
+      // PVP Mode: Async Edge Function submission with rollback on failure
+      const deviceId = getDeviceId();
+      submitMove({
+        gameId,
+        playerId: player.id,
+        deviceId,
+        from,
+        to,
+        promotion: promotion || undefined,
+      }).catch((err) => {
+        console.error('Server move submission failed, rolling back board:', err);
+        // Rollback on rejection
+        chessRef.current.load(previousFen);
+        setFen(previousFen);
+        setActionError(err.message || 'Illegal move rejected by server.');
+      });
 
       return true;
     },
-    [isMyTurn, player?.id, matchMode, gameId, executeBotMove]
+    [isMyTurn, matchMode, gameId, player?.id, executeBotMove]
   );
 
   // --------------------------------------------------------------------------
-  // TAP-TO-MOVE HIGHLIGHT ENGINE
+  // SYNCHRONOUS PIECE DROP (react-chessboard expects boolean)
+  // --------------------------------------------------------------------------
+  const handlePieceDrop = useCallback(
+    ({ sourceSquare, targetSquare }) => {
+      if (!targetSquare || !isMyTurn) return false;
+      return makeMove(sourceSquare, targetSquare);
+    },
+    [isMyTurn, makeMove]
+  );
+
+  // --------------------------------------------------------------------------
+  // TAP-TO-MOVE HANDLER
   // --------------------------------------------------------------------------
   const handleSquareClick = useCallback(
     ({ square }) => {
       if (!isMyTurn) return;
 
-      // 1. If no square currently selected:
       if (!selectedSquare) {
         const piece = chessRef.current.get(square);
         if (piece && piece.color === playerColor) {
           setSelectedSquare(square);
-
-          // Calculate legal moves from this square
           const moves = chessRef.current.moves({ square, verbose: true });
           const newStyles = {
-            [square]: { backgroundColor: 'rgba(56, 189, 248, 0.45)' }, // Sky-400 selected glow
+            [square]: { backgroundColor: 'rgba(56, 189, 248, 0.45)' },
           };
-
           moves.forEach((m) => {
             newStyles[m.to] = {
               background: m.captured
-                ? 'radial-gradient(circle, rgba(239, 68, 68, 0.7) 30%, transparent 32%)' // Red dot for captures
-                : 'radial-gradient(circle, rgba(56, 189, 248, 0.6) 25%, transparent 27%)', // Cyan dot for quiet moves
+                ? 'radial-gradient(circle, rgba(239, 68, 68, 0.7) 30%, transparent 32%)'
+                : 'radial-gradient(circle, rgba(56, 189, 248, 0.6) 25%, transparent 27%)',
               borderRadius: '50%',
             };
           });
-
           setSquareStyles(newStyles);
           triggerHaptic(10);
         }
         return;
       }
 
-      // 2. Clicked same square: deselect
       if (selectedSquare === square) {
         setSelectedSquare(null);
         setSquareStyles({});
         return;
       }
 
-      // 3. Clicked another own piece: switch selection
       const targetPiece = chessRef.current.get(square);
       if (targetPiece && targetPiece.color === playerColor) {
         setSelectedSquare(square);
@@ -513,25 +685,13 @@ export function ChessView({ player, onBack }) {
         return;
       }
 
-      // 4. Attempt to execute move from selectedSquare -> square
       makeMove(selectedSquare, square);
     },
     [isMyTurn, selectedSquare, playerColor, makeMove]
   );
 
   // --------------------------------------------------------------------------
-  // DRAG-AND-DROP HANDLER
-  // --------------------------------------------------------------------------
-  const handlePieceDrop = useCallback(
-    ({ sourceSquare, targetSquare }) => {
-      if (!targetSquare || !isMyTurn) return false;
-      return makeMove(sourceSquare, targetSquare);
-    },
-    [isMyTurn, makeMove]
-  );
-
-  // --------------------------------------------------------------------------
-  // RESIGNATION & FORFEIT
+  // RESIGNATION & TIMEOUT HANDLERS
   // --------------------------------------------------------------------------
   const handleResign = async () => {
     setShowResignModal(false);
@@ -543,22 +703,42 @@ export function ChessView({ player, onBack }) {
         end_reason: 'resignation',
         isWinner: false,
         isDraw: false,
-        points: 5,
+        points: 0,
       });
       setViewState('GAME_OVER');
       return;
     }
 
-    if (gameId && opponent?.id) {
+    if (gameId && player?.id) {
       try {
-        await resignChessGame(gameId, player.id, opponent.id);
+        const deviceId = getDeviceId();
+        await resignChessGame(gameId, player.id, deviceId);
       } catch (err) {
         console.error('Failed to resign:', err);
       }
     }
   };
 
-  // Determine board perspective
+  const handleOpponentFlagFall = useCallback(() => {
+    if (hasClaimedTimeoutRef.current) return;
+    if (matchMode === 'bot') {
+      handleBotGameOver();
+      return;
+    }
+    if (gameId && player?.id) {
+      hasClaimedTimeoutRef.current = true;
+      claimChessTimeout(gameId, player.id).catch((err) => {
+        console.warn('Timeout claim note:', err);
+      });
+    }
+  }, [matchMode, gameId, player?.id]);
+
+  const toggleMute = () => {
+    const next = !isMuted;
+    setIsMuted(next);
+    setChessAudioMuted(next);
+  };
+
   const boardOrientation = useMemo(() => {
     if (flipBoard) return playerColor === 'w' ? 'black' : 'white';
     return playerColor === 'w' ? 'white' : 'black';
@@ -570,7 +750,6 @@ export function ChessView({ player, onBack }) {
   if (viewState === 'LOBBY' || viewState === 'MATCHING') {
     return (
       <div className="w-full max-w-lg mx-auto p-4 flex flex-col gap-6 animate-fade-in select-none">
-        {/* Header Bar */}
         <div className="flex items-center justify-between">
           <button
             onClick={onBack}
@@ -579,13 +758,21 @@ export function ChessView({ player, onBack }) {
             <ArrowLeft size={18} />
             <span className="text-sm font-medium">Arena</span>
           </button>
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-sky-950/60 border border-sky-500/30 text-sky-400 text-xs font-semibold tracking-wider">
-            <Swords size={16} />
-            <span>CHESS ARENA</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMute}
+              className="p-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-400 active:scale-95"
+              title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+            >
+              {isMuted ? <SpeakerSlash size={16} /> : <SpeakerHigh size={16} />}
+            </button>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-950/60 border border-sky-500/30 text-sky-400 text-xs font-semibold tracking-wider">
+              <Swords size={16} />
+              <span>CHESS ARENA</span>
+            </div>
           </div>
         </div>
 
-        {/* Hero Card */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900/90 to-zinc-950 border border-zinc-800 p-6 flex flex-col items-center text-center gap-4 shadow-2xl">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
             <Crown size={36} weight="fill" />
@@ -604,7 +791,6 @@ export function ChessView({ player, onBack }) {
             </div>
           )}
 
-          {/* Matchmaking Queue Animation */}
           {viewState === 'MATCHING' ? (
             <div className="w-full py-8 flex flex-col items-center gap-4">
               <div className="relative flex items-center justify-center">
@@ -613,10 +799,10 @@ export function ChessView({ player, onBack }) {
                   <CircleNotch size={28} className="animate-spin" />
                 </div>
               </div>
-              <p className="text-sm font-medium text-sky-300">Finding an opponent in Arena...</p>
+              <p className="text-sm font-medium text-sky-300">Finding an opponent doctor in Arena...</p>
               <button
-                onClick={() => setViewState('LOBBY')}
-                className="text-xs text-zinc-400 underline hover:text-white"
+                onClick={handleCancelQueue}
+                className="text-xs text-zinc-400 underline hover:text-white cursor-pointer active:scale-95 transition-transform"
               >
                 Cancel Queue
               </button>
@@ -626,7 +812,7 @@ export function ChessView({ player, onBack }) {
               <button
                 onClick={startPvpMatch}
                 disabled={loadingAction}
-                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.98] transition-all text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25"
+                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.98] transition-all text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 cursor-pointer"
               >
                 <Lightning size={18} weight="fill" />
                 <span>Find 1v1 Opponent (5 min Blitz)</span>
@@ -634,7 +820,7 @@ export function ChessView({ player, onBack }) {
 
               <button
                 onClick={startBotMatch}
-                className="w-full py-3 px-4 rounded-2xl bg-zinc-800 hover:bg-zinc-750 active:scale-[0.98] transition-all border border-zinc-700/60 text-zinc-200 font-medium text-sm flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 rounded-2xl bg-zinc-800 hover:bg-zinc-750 active:scale-[0.98] transition-all border border-zinc-700/60 text-zinc-200 font-medium text-sm flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Play size={16} weight="fill" className="text-emerald-400" />
                 <span>Practice vs Dr. DeepBlue (AI Bot)</span>
@@ -643,7 +829,6 @@ export function ChessView({ player, onBack }) {
           )}
         </div>
 
-        {/* Rules & Rewards strip */}
         <div className="grid grid-cols-3 gap-2">
           <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center flex flex-col items-center gap-1">
             <Trophy size={18} className="text-amber-400" />
@@ -668,19 +853,21 @@ export function ChessView({ player, onBack }) {
   // ==========================================================================
   // RENDER: ACTIVE GAME BOARD
   // ==========================================================================
+  const isOpponentClockRunning = !isMyTurn && gameData?.status === 'in_progress';
+  const isMyClockRunning = isMyTurn && (matchMode === 'bot' || gameData?.status === 'in_progress');
+
   return (
     <div className="w-full max-w-md mx-auto p-3 flex flex-col gap-2 select-none animate-fade-in pb-16">
       {/* Top Header: Game Controls */}
       <div className="flex items-center justify-between px-1">
         <button
           onClick={() => setShowResignModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-400 active:scale-95 text-xs hover:text-white"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-400 active:scale-95 text-xs hover:text-white cursor-pointer"
         >
           <ArrowLeft size={14} />
           <span>Leave</span>
         </button>
 
-        {/* Turn Indicator Banner */}
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs">
           <span
             className={`w-2 h-2 rounded-full ${
@@ -697,14 +884,29 @@ export function ChessView({ player, onBack }) {
           )}
         </div>
 
-        <button
-          onClick={() => setFlipBoard(!flipBoard)}
-          className="p-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-400 active:scale-95 hover:text-white"
-          title="Flip Board View"
-        >
-          <ArrowClockwise size={15} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleMute}
+            className="p-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-400 active:scale-95 hover:text-white cursor-pointer"
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? <SpeakerSlash size={15} /> : <SpeakerHigh size={15} />}
+          </button>
+          <button
+            onClick={() => setFlipBoard(!flipBoard)}
+            className="p-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-400 active:scale-95 hover:text-white cursor-pointer"
+            title="Flip Board View"
+          >
+            <ArrowClockwise size={15} />
+          </button>
+        </div>
       </div>
+
+      {actionError && (
+        <div className="w-full p-2 rounded-xl bg-rose-950/80 border border-rose-800/60 text-rose-300 text-xs text-center">
+          {actionError}
+        </div>
+      )}
 
       {/* OPPONENT BANNER (TOP) */}
       <div
@@ -727,7 +929,6 @@ export function ChessView({ player, onBack }) {
                 {playerColor === 'w' ? 'Black' : 'White'}
               </span>
             </div>
-            {/* Captured Pieces Display */}
             <div className="flex items-center gap-1 text-[11px] text-zinc-400 mt-0.5">
               <span>
                 {(playerColor === 'w'
@@ -748,20 +949,16 @@ export function ChessView({ player, onBack }) {
           </div>
         </div>
 
-        {/* Opponent Clock */}
-        <div
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-bold tracking-wider ${
-            !isMyTurn
-              ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-              : 'bg-zinc-800/80 text-zinc-400'
-          }`}
-        >
-          <Clock size={15} />
-          <span>{formatClock(playerColor === 'w' ? blackClock : whiteClock)}</span>
-        </div>
+        {/* Isolated Opponent Clock */}
+        <ChessClock
+          isRunning={isOpponentClockRunning}
+          baseTimeMs={playerColor === 'w' ? blackBaseMs : whiteBaseMs}
+          lastMoveAt={lastMoveAt}
+          onFlagFall={handleOpponentFlagFall}
+        />
       </div>
 
-      {/* THE CHESSBOARD (Mobile 1:1 Locked Viewport) */}
+      {/* CHESSBOARD (Mobile 1:1 Locked Viewport) */}
       <div className="w-full aspect-square relative rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 touch-none bg-zinc-950">
         <Chessboard
           options={{
@@ -771,30 +968,35 @@ export function ChessView({ player, onBack }) {
             onSquareClick: handleSquareClick,
             squareStyles,
             animationDurationInMs: 150,
-            darkSquareStyle: { backgroundColor: '#1E293B' }, // Slate-800
-            lightSquareStyle: { backgroundColor: '#94A3B8' }, // Slate-400
+            darkSquareStyle: { backgroundColor: '#1E293B' },
+            lightSquareStyle: { backgroundColor: '#94A3B8' },
             dropSquareStyle: {
               boxShadow: 'inset 0 0 1px 3px rgba(56, 189, 248, 0.8)',
             },
           }}
         />
 
-        {/* Pawn Promotion Modal */}
+        {/* Promotion Modal */}
         {pendingPromotion && (
           <div className="absolute inset-0 z-30 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 flex flex-col items-center gap-3 shadow-2xl">
-              <span className="text-xs font-semibold text-zinc-300">Promote Pawn</span>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 flex flex-col items-center gap-3 shadow-2xl animate-scale-up">
+              <span className="text-xs font-semibold text-zinc-300">Choose Promotion</span>
               <div className="flex gap-2">
-                {['q', 'r', 'b', 'n'].map((p) => (
+                {[
+                  { id: 'q', label: '♛ Queen' },
+                  { id: 'r', label: '♜ Rook' },
+                  { id: 'b', label: '♝ Bishop' },
+                  { id: 'n', label: '♞ Knight' },
+                ].map(({ id, label }) => (
                   <button
-                    key={p}
+                    key={id}
                     onClick={() => {
-                      makeMove(pendingPromotion.from, pendingPromotion.to, p);
+                      makeMove(pendingPromotion.from, pendingPromotion.to, id);
                       setPendingPromotion(null);
                     }}
-                    className="w-12 h-12 rounded-xl bg-zinc-800 hover:bg-sky-600 active:scale-95 text-xl font-bold flex items-center justify-center text-white border border-zinc-700 uppercase"
+                    className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-sky-600 active:scale-95 text-xs font-bold text-white border border-zinc-700 cursor-pointer"
                   >
-                    {p}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -824,7 +1026,6 @@ export function ChessView({ player, onBack }) {
                 {playerColor === 'w' ? 'White' : 'Black'}
               </span>
             </div>
-            {/* Captured Pieces Display */}
             <div className="flex items-center gap-1 text-[11px] text-zinc-400 mt-0.5">
               <span>
                 {(playerColor === 'w'
@@ -845,24 +1046,22 @@ export function ChessView({ player, onBack }) {
           </div>
         </div>
 
-        {/* Active Player Clock */}
-        <div
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-bold tracking-wider ${
-            isMyTurn
-              ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-              : 'bg-zinc-800/80 text-zinc-400'
-          }`}
-        >
-          <Clock size={15} />
-          <span>{formatClock(playerColor === 'w' ? whiteClock : blackClock)}</span>
-        </div>
+        {/* Isolated Active Player Clock */}
+        <ChessClock
+          isRunning={isMyClockRunning}
+          baseTimeMs={playerColor === 'w' ? whiteBaseMs : blackBaseMs}
+          lastMoveAt={lastMoveAt}
+          onFlagFall={() => {
+            if (matchMode === 'bot') handleBotGameOver();
+          }}
+        />
       </div>
 
-      {/* Action Bar (Resign Button) */}
+      {/* Action Bar */}
       <div className="flex items-center justify-between px-1">
         <button
           onClick={() => setShowResignModal(true)}
-          className="px-3 py-1.5 rounded-xl bg-zinc-900/60 border border-zinc-800 text-zinc-400 text-xs hover:text-red-400 active:scale-95"
+          className="px-3 py-1.5 rounded-xl bg-zinc-900/60 border border-zinc-800 text-zinc-400 text-xs hover:text-red-400 active:scale-95 cursor-pointer"
         >
           Resign Match
         </button>
@@ -878,19 +1077,19 @@ export function ChessView({ player, onBack }) {
             <div>
               <h3 className="text-lg font-bold text-white">Forfeit Game?</h3>
               <p className="text-xs text-zinc-400 mt-1">
-                Resigning awards victory to your opponent. You will still receive +10 participation pts.
+                Resigning awards victory to your opponent.
               </p>
             </div>
             <div className="w-full flex gap-2">
               <button
                 onClick={() => setShowResignModal(false)}
-                className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-semibold"
+                className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-semibold cursor-pointer"
               >
                 Keep Playing
               </button>
               <button
                 onClick={handleResign}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold"
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold cursor-pointer"
               >
                 Yes, Resign
               </button>
@@ -930,10 +1129,14 @@ export function ChessView({ player, onBack }) {
               </p>
             </div>
 
-            {/* Points Award Badge */}
+            {/* Points Badge */}
             <div className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-sky-500/10 border border-sky-500/30 text-sky-300 flex items-center gap-2">
               <Lightning size={18} weight="fill" className="text-amber-400" />
-              <span className="text-sm font-bold">+{endSummary.points} Arena Points</span>
+              <span className="text-sm font-bold">
+                {matchMode === 'bot'
+                  ? 'Practice Mode (0 Arena Points)'
+                  : `+${endSummary.points} Arena Points`}
+              </span>
             </div>
 
             <div className="w-full flex flex-col gap-2 mt-2">
@@ -941,14 +1144,15 @@ export function ChessView({ player, onBack }) {
                 onClick={() => {
                   setViewState('LOBBY');
                   setEndSummary(null);
+                  setActionError('');
                 }}
-                className="w-full py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-semibold text-xs active:scale-95 transition-all"
+                className="w-full py-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-semibold text-xs active:scale-95 transition-all cursor-pointer"
               >
                 Play Another Game
               </button>
               <button
                 onClick={onBack}
-                className="w-full py-2.5 rounded-2xl bg-zinc-800 text-zinc-300 text-xs font-semibold active:scale-95 transition-all"
+                className="w-full py-2.5 rounded-2xl bg-zinc-800 text-zinc-300 text-xs font-semibold active:scale-95 transition-all cursor-pointer"
               >
                 Back to Arena Dashboard
               </button>

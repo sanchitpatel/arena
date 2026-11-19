@@ -1,11 +1,10 @@
 // ==========================================================================
 // SUPABASE EDGE FUNCTION: chess-move
 // Authoritative Chess Move & Clock Validation Engine
-// Runtime: Deno / TypeScript (Supabase Free Tier Native)
+// Runtime: Deno / TypeScript (Deno.serve Native, Service Role Access)
 // ==========================================================================
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { Chess } from "npm:chess.js@1.0.0-beta.6";
 
 const corsHeaders = {
@@ -16,13 +15,15 @@ const corsHeaders = {
 interface MovePayload {
   game_id: string;
   player_id: string;
-  from: string;
-  to: string;
+  device_id: string;
+  action?: "move" | "resign";
+  from?: string;
+  to?: string;
   promotion?: string;
 }
 
-serve(async (req) => {
-  // Handle CORS preflight
+Deno.serve(async (req: Request) => {
+  // 1. Handle CORS Preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -35,18 +36,34 @@ serve(async (req) => {
       throw new Error("Missing Supabase environment variables on Edge Function");
     }
 
+    // Connect with SERVICE_ROLE key so this function can invoke protected RPCs
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body: MovePayload = await req.json();
-    const { game_id, player_id, from, to, promotion } = body;
+    const { game_id, player_id, device_id, action = "move", from, to, promotion } = body;
 
-    if (!game_id || !player_id || !from || !to) {
+    if (!game_id || !player_id || !device_id) {
       return new Response(
-        JSON.stringify({ error: "Missing required parameters: game_id, player_id, from, to" }),
+        JSON.stringify({ error: "Missing required parameters: game_id, player_id, device_id" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 1. Fetch current game state
+    // 2. Identity Verification: Verify player_id strictly matches device_id in database
+    const { data: playerDoc, error: playerErr } = await supabase
+      .from("players")
+      .select("id")
+      .eq("id", player_id)
+      .eq("device_id", device_id)
+      .single();
+
+    if (playerErr || !playerDoc) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Player credential mismatch" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 3. Fetch active game
     const { data: game, error: gameError } = await supabase
       .from("chess_games")
       .select("*")
@@ -67,7 +84,7 @@ serve(async (req) => {
       );
     }
 
-    // 2. Turn Validation
+    // Participant verification
     const isWhite = game.white_player_id === player_id;
     const isBlack = game.black_player_id === player_id;
 
@@ -78,6 +95,24 @@ serve(async (req) => {
       );
     }
 
+    // 4. Handle Authoritative Resignation
+    if (action === "resign") {
+      const winnerId = isWhite ? game.black_player_id : game.white_player_id;
+      const { data: settleResult, error: settleErr } = await supabase.rpc("settle_chess_game", {
+        p_game_id: game_id,
+        p_status: "resigned",
+        p_winner_id: winnerId,
+        p_end_reason: "resignation",
+      });
+
+      if (settleErr) throw settleErr;
+      return new Response(
+        JSON.stringify({ success: true, result: settleResult }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 5. Turn Validation
     if ((game.turn === "w" && !isWhite) || (game.turn === "b" && !isBlack)) {
       return new Response(
         JSON.stringify({ error: "Not your turn" }),
@@ -85,7 +120,14 @@ serve(async (req) => {
       );
     }
 
-    // 3. Authoritative Clock Deduction & Flag-Fall Check
+    if (!from || !to) {
+      return new Response(
+        JSON.stringify({ error: "Missing move squares: from, to" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 6. Authoritative Clock Deduction & Flag-Fall Check
     const now = new Date();
     const lastMoveAt = new Date(game.last_move_at);
     const elapsedMs = Math.max(0, now.getTime() - lastMoveAt.getTime());
@@ -96,7 +138,6 @@ serve(async (req) => {
     if (game.turn === "w") {
       whiteTimeLeftMs -= elapsedMs;
       if (whiteTimeLeftMs <= 0) {
-        // White flagged! Settle timeout win for Black
         const { data: settleResult } = await supabase.rpc("settle_chess_game", {
           p_game_id: game_id,
           p_status: "timeout",
@@ -111,7 +152,6 @@ serve(async (req) => {
     } else {
       blackTimeLeftMs -= elapsedMs;
       if (blackTimeLeftMs <= 0) {
-        // Black flagged! Settle timeout win for White
         const { data: settleResult } = await supabase.rpc("settle_chess_game", {
           p_game_id: game_id,
           p_status: "timeout",
@@ -125,14 +165,25 @@ serve(async (req) => {
       }
     }
 
-    // 4. Validate Move with chess.js
-    const chess = new Chess(game.fen);
+    // 7. Load Complete PGN History (Guarantees threefold repetition, 50-move, and full game preservation)
+    const chess = new Chess();
+    if (game.pgn && game.pgn.trim().length > 0) {
+      try {
+        chess.loadPgn(game.pgn);
+      } catch {
+        chess.load(game.fen);
+      }
+    } else {
+      chess.load(game.fen);
+    }
+
+    // 8. Validate Move with chess.js
     let moveResult;
     try {
       moveResult = chess.move({
         from,
         to,
-        promotion: promotion || "q",
+        promotion: promotion || undefined,
       });
     } catch {
       moveResult = null;
@@ -145,8 +196,8 @@ serve(async (req) => {
       );
     }
 
-    // 5. Evaluate End State
-    let isGameOver = chess.isGameOver();
+    // 9. Evaluate End State
+    const isGameOver = chess.isGameOver();
     let endStatus: string | null = null;
     let winnerId: string | null = null;
     let endReason: string | null = null;
@@ -166,14 +217,15 @@ serve(async (req) => {
       }
     }
 
-    // 6. Atomic DB Update via RPC or Direct Update
     const newFen = chess.fen();
     const newPgn = chess.pgn();
     const nextTurn = game.turn === "w" ? "b" : "w";
 
+    // 10. Commit to DB with concurrency expected_fen check
     const { data: rpcData, error: rpcError } = await supabase.rpc("submit_chess_move", {
       p_game_id: game_id,
       p_player_id: player_id,
+      p_expected_fen: game.fen,
       p_new_fen: newFen,
       p_new_pgn: newPgn,
       p_is_game_over: isGameOver,
@@ -191,12 +243,14 @@ serve(async (req) => {
         success: true,
         move: moveResult,
         fen: newFen,
+        pgn: newPgn,
         turn: nextTurn,
         white_time_left_ms: whiteTimeLeftMs,
         black_time_left_ms: blackTimeLeftMs,
         is_game_over: isGameOver,
         end_status: endStatus,
         winner_id: winnerId,
+        end_reason: endReason,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

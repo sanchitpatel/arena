@@ -1,10 +1,9 @@
 -- ==========================================================================
--- ARENA LIVE EVENT: MULTIPLAYER CHESS SCHEMA
--- Optimized for Mobile-First 1v1 Matches with Supabase Cloud Realtime
--- PostgreSQL 17 + Supavisor Pooler + Row-Level Concurrency Control
+-- ARENA LIVE EVENT: HARDENED MULTIPLAYER CHESS SCHEMA
+-- Production Hardening: Security Lock-Down, Advisory Locks, Sweeper & Points Fix
+-- PostgreSQL 17 + Supavisor Pooler + Supabase Edge Function (Service Role Only)
 -- ==========================================================================
 
--- Enable UUID extension if not already present
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
@@ -46,7 +45,7 @@ CREATE INDEX IF NOT EXISTS idx_chess_games_active ON public.chess_games (status,
 CREATE TABLE IF NOT EXISTS public.chess_challenges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     challenger_id UUID NOT NULL REFERENCES public.players(id) ON DELETE CASCADE,
-    challenged_id UUID REFERENCES public.players(id) ON DELETE CASCADE, -- NULL indicates open public matchmaking queue
+    challenged_id UUID REFERENCES public.players(id) ON DELETE CASCADE, -- NULL = open matchmaking queue
     status TEXT NOT NULL DEFAULT 'pending' CHECK (
         status IN ('pending', 'accepted', 'declined', 'expired')
     ),
@@ -61,7 +60,7 @@ CREATE INDEX IF NOT EXISTS idx_chess_challenges_challenged ON public.chess_chall
 CREATE INDEX IF NOT EXISTS idx_chess_challenges_open ON public.chess_challenges (status, challenged_id, expires_at)
     WHERE status = 'pending' AND challenged_id IS NULL;
 
--- Enable Realtime Replication & Full Row Identity
+-- Enable Realtime Replication
 ALTER TABLE public.chess_games REPLICA IDENTITY FULL;
 ALTER TABLE public.chess_challenges REPLICA IDENTITY FULL;
 
@@ -70,13 +69,11 @@ BEGIN
     BEGIN
         ALTER PUBLICATION supabase_realtime ADD TABLE public.chess_games;
     EXCEPTION WHEN duplicate_object THEN
-        -- Table already in publication
     END;
     
     BEGIN
         ALTER PUBLICATION supabase_realtime ADD TABLE public.chess_challenges;
     EXCEPTION WHEN duplicate_object THEN
-        -- Table already in publication
     END;
 END $$;
 
@@ -84,7 +81,7 @@ END $$;
 ALTER TABLE public.chess_games ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chess_challenges ENABLE ROW LEVEL SECURITY;
 
--- Transparent Public Read for Realtime Sync across guest devices
+-- Transparent Public Read for Realtime Sync
 DROP POLICY IF EXISTS "Allow public read chess_games" ON public.chess_games;
 CREATE POLICY "Allow public read chess_games" 
     ON public.chess_games FOR SELECT 
@@ -97,21 +94,13 @@ CREATE POLICY "Allow public read chess_challenges"
     TO anon, authenticated 
     USING (true);
 
--- Allow public insert/update for challenges (RPCs handle games securely)
+-- SECURE: Drop dangerous public INSERT/UPDATE on challenges.
+-- All writes must pass through SECURITY DEFINER RPCs!
 DROP POLICY IF EXISTS "Allow public insert chess_challenges" ON public.chess_challenges;
-CREATE POLICY "Allow public insert chess_challenges" 
-    ON public.chess_challenges FOR INSERT 
-    TO anon, authenticated 
-    WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Allow public update chess_challenges" ON public.chess_challenges;
-CREATE POLICY "Allow public update chess_challenges" 
-    ON public.chess_challenges FOR UPDATE 
-    TO anon, authenticated 
-    USING (true);
 
 -- ==========================================================================
--- 3. ATOMIC RPC: JOIN OR CREATE MATCHMAKING (Zero-Latency Queue Pairing)
+-- 3. ATOMIC RPC: JOIN OR CREATE MATCHMAKING (With Advisory Lock)
 -- ==========================================================================
 CREATE OR REPLACE FUNCTION public.join_or_create_chess_matchmaking(
     p_player_id UUID,
@@ -130,6 +119,9 @@ DECLARE
     v_white_id UUID;
     v_black_id UUID;
 BEGIN
+    -- CRITICAL FIX 1: Serialization lock prevents 2 concurrent players from creating duplicate waiting rows
+    PERFORM pg_advisory_xact_lock(hashtext('chess_matchmaking_pool'));
+
     -- 1. Check if player already has an ongoing active game
     SELECT * INTO v_existing_game
     FROM public.chess_games
@@ -147,7 +139,7 @@ BEGIN
         );
     END IF;
 
-    -- 2. Lock and find an available open challenge from another player (Skip Locked avoids queue head-of-line blocking)
+    -- 2. Lock and find an available open challenge from another player
     SELECT * INTO v_open_challenge
     FROM public.chess_challenges
     WHERE status = 'pending'
@@ -159,7 +151,7 @@ BEGIN
     FOR UPDATE SKIP LOCKED;
 
     IF FOUND THEN
-        -- Randomize White vs Black for fairness
+        -- Randomize White vs Black
         v_is_white := (random() > 0.5);
         IF v_is_white THEN
             v_white_id := p_player_id;
@@ -169,7 +161,7 @@ BEGIN
             v_black_id := p_player_id;
         END IF;
 
-        -- Create the new game row
+        -- Create game row
         INSERT INTO public.chess_games (
             white_player_id,
             black_player_id,
@@ -190,7 +182,7 @@ BEGIN
             NOW()
         ) RETURNING id INTO v_new_game_id;
 
-        -- Update challenge to accepted with game reference
+        -- Update challenge to accepted so the waiting player's realtime listener wakes up
         UPDATE public.chess_challenges
         SET status = 'accepted',
             game_id = v_new_game_id
@@ -205,7 +197,7 @@ BEGIN
         );
     END IF;
 
-    -- 3. No match found: Cancel any stale open challenges from this player
+    -- 3. Cancel any prior stale open challenges from this player
     UPDATE public.chess_challenges
     SET status = 'expired'
     WHERE challenger_id = p_player_id
@@ -235,7 +227,30 @@ END;
 $$;
 
 -- ==========================================================================
--- 4. ATOMIC RPC: DIRECT CHALLENGE (e.g. via Venue QR Scanner)
+-- 4. ATOMIC RPC: CANCEL QUEUE MATCHMAKING (Prevents Ghost Matchmaking)
+-- ==========================================================================
+CREATE OR REPLACE FUNCTION public.cancel_chess_matchmaking(
+    p_challenge_id UUID,
+    p_player_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    UPDATE public.chess_challenges
+    SET status = 'expired'
+    WHERE id = p_challenge_id
+      AND challenger_id = p_player_id
+      AND status = 'pending';
+
+    RETURN jsonb_build_object('success', TRUE);
+END;
+$$;
+
+-- ==========================================================================
+-- 5. ATOMIC RPC: DIRECT CHALLENGE (e.g. Scanned via QR)
 -- ==========================================================================
 CREATE OR REPLACE FUNCTION public.create_direct_chess_challenge(
     p_challenger_id UUID,
@@ -254,7 +269,6 @@ BEGIN
         RETURN jsonb_build_object('success', FALSE, 'message', 'Cannot challenge yourself');
     END IF;
 
-    -- Cancel older pending direct challenges between these two
     UPDATE public.chess_challenges
     SET status = 'expired'
     WHERE challenger_id = p_challenger_id
@@ -275,10 +289,7 @@ BEGIN
         NOW() + INTERVAL '3 minutes'
     ) RETURNING id INTO v_challenge_id;
 
-    RETURN jsonb_build_object(
-        'success', TRUE,
-        'challenge_id', v_challenge_id
-    );
+    RETURN jsonb_build_object('success', TRUE, 'challenge_id', v_challenge_id);
 END;
 $$;
 
@@ -316,7 +327,6 @@ BEGIN
         RETURN jsonb_build_object('success', TRUE, 'action', 'declined');
     END IF;
 
-    -- Accepted: Randomize colors
     v_is_white := (random() > 0.5);
     IF v_is_white THEN
         v_white_id := v_challenge.challenger_id;
@@ -361,11 +371,12 @@ END;
 $$;
 
 -- ==========================================================================
--- 5. ATOMIC RPC: SUBMIT CHESS MOVE & SYNC CLOCK
+-- 6. ATOMIC RPC: SUBMIT MOVE (SERVICE ROLE ONLY - HARDENED)
 -- ==========================================================================
 CREATE OR REPLACE FUNCTION public.submit_chess_move(
     p_game_id UUID,
     p_player_id UUID,
+    p_expected_fen TEXT,
     p_new_fen TEXT,
     p_new_pgn TEXT,
     p_is_game_over BOOLEAN DEFAULT FALSE,
@@ -384,10 +395,7 @@ DECLARE
     v_new_white_ms INTEGER;
     v_new_black_ms INTEGER;
     v_next_turn CHAR(1);
-    v_final_status TEXT;
-    v_final_winner UUID;
 BEGIN
-    -- Advisory lock for concurrency protection per game
     PERFORM pg_advisory_xact_lock(hashtext(p_game_id::TEXT));
 
     SELECT * INTO v_game
@@ -403,13 +411,18 @@ BEGIN
         RETURN jsonb_build_object('success', FALSE, 'message', 'Game is already finished', 'status', v_game.status);
     END IF;
 
+    -- Concurrency Guard: reject if game board has already moved past expected FEN
+    IF v_game.fen <> p_expected_fen THEN
+        RETURN jsonb_build_object('success', FALSE, 'message', 'Board state conflict. Move already processed.');
+    END IF;
+
     -- Turn validation
     IF (v_game.turn = 'w' AND v_game.white_player_id <> p_player_id) OR
        (v_game.turn = 'b' AND v_game.black_player_id <> p_player_id) THEN
         RETURN jsonb_build_object('success', FALSE, 'message', 'Not your turn');
     END IF;
 
-    -- Compute elapsed clock time since last move
+    -- Clock deduction
     v_elapsed_ms := GREATEST(0, (EXTRACT(EPOCH FROM (NOW() - v_game.last_move_at)) * 1000)::INTEGER);
     v_new_white_ms := v_game.white_time_left_ms;
     v_new_black_ms := v_game.black_time_left_ms;
@@ -417,50 +430,19 @@ BEGIN
     IF v_game.turn = 'w' THEN
         v_new_white_ms := v_new_white_ms - v_elapsed_ms;
         IF v_new_white_ms <= 0 THEN
-            -- White ran out of time!
             RETURN public.settle_chess_game(p_game_id, 'timeout', v_game.black_player_id, 'flag_fall');
         END IF;
         v_next_turn := 'b';
     ELSE
         v_new_black_ms := v_new_black_ms - v_elapsed_ms;
         IF v_new_black_ms <= 0 THEN
-            -- Black ran out of time!
             RETURN public.settle_chess_game(p_game_id, 'timeout', v_game.white_player_id, 'flag_fall');
         END IF;
         v_next_turn := 'w';
     END IF;
 
-    -- Handle Game Over transitions
-    IF p_is_game_over THEN
-        v_final_status := COALESCE(p_end_status, 'checkmate');
-        v_final_winner := p_winner_id;
-
-        UPDATE public.chess_games
-        SET fen = p_new_fen,
-            pgn = p_new_pgn,
-            turn = v_next_turn,
-            white_time_left_ms = v_new_white_ms,
-            black_time_left_ms = v_new_black_ms,
-            status = v_final_status,
-            winner_id = v_final_winner,
-            end_reason = p_end_reason,
-            last_move_at = NOW(),
-            updated_at = NOW()
-        WHERE id = p_game_id;
-
-        -- Settle points atomically
-        PERFORM public.settle_chess_game(p_game_id, v_final_status, v_final_winner, p_end_reason);
-
-        RETURN jsonb_build_object(
-            'success', TRUE,
-            'status', v_final_status,
-            'winner_id', v_final_winner,
-            'white_time_left_ms', v_new_white_ms,
-            'black_time_left_ms', v_new_black_ms
-        );
-    END IF;
-
-    -- Normal Move Update
+    -- CRITICAL FIX 2: Do NOT write final status or end_reason here!
+    -- Update clocks, fen, and pgn first, then delegate termination exclusively to settle_chess_game.
     UPDATE public.chess_games
     SET fen = p_new_fen,
         pgn = p_new_pgn,
@@ -470,6 +452,11 @@ BEGIN
         last_move_at = NOW(),
         updated_at = NOW()
     WHERE id = p_game_id;
+
+    IF p_is_game_over THEN
+        -- Settle points and status exclusively in settle_chess_game
+        RETURN public.settle_chess_game(p_game_id, p_end_status, p_winner_id, p_end_reason);
+    END IF;
 
     RETURN jsonb_build_object(
         'success', TRUE,
@@ -481,7 +468,7 @@ END;
 $$;
 
 -- ==========================================================================
--- 6. ATOMIC RPC: SETTLE CHESS GAME & AWARD ARENA LEADERBOARD POINTS
+-- 7. ATOMIC RPC: SETTLE CHESS GAME & POINTS (SERVICE ROLE ONLY)
 -- ==========================================================================
 CREATE OR REPLACE FUNCTION public.settle_chess_game(
     p_game_id UUID,
@@ -500,6 +487,7 @@ DECLARE
     v_points_draw INTEGER := 50;
     v_points_loss INTEGER := 10;
     v_loser_id UUID;
+    v_ply_count INTEGER := 0;
 BEGIN
     SELECT * INTO v_game
     FROM public.chess_games
@@ -510,13 +498,37 @@ BEGIN
         RETURN jsonb_build_object('success', FALSE, 'message', 'Game not found');
     END IF;
 
-    -- If already ended and settled, return existing state
-    IF v_game.status NOT IN ('in_progress', 'waiting') AND v_game.end_reason IS NOT NULL THEN
+    -- Idempotency: If already settled, do not re-credit points
+    IF v_game.status <> 'in_progress' AND v_game.end_reason IS NOT NULL THEN
         RETURN jsonb_build_object(
             'success', TRUE,
             'status', v_game.status,
             'winner_id', v_game.winner_id,
             'message', 'Already settled'
+        );
+    END IF;
+
+    -- CRITICAL FIX 5 (Anti-Point-Farming Guard):
+    -- Count approximate plies from PGN. If resigned or ended before 10 plies (5 moves per side),
+    -- mark as 'abandoned' and award 0 points to prevent collusion.
+    IF v_game.pgn <> '' THEN
+        v_ply_count := array_length(regexp_split_to_array(TRIM(v_game.pgn), '\s+'), 1);
+    END IF;
+
+    IF p_status = 'resigned' AND v_ply_count < 10 THEN
+        UPDATE public.chess_games
+        SET status = 'abandoned',
+            winner_id = p_winner_id,
+            end_reason = 'early_resignation_no_points',
+            updated_at = NOW()
+        WHERE id = p_game_id;
+
+        RETURN jsonb_build_object(
+            'success', TRUE,
+            'status', 'abandoned',
+            'winner_id', p_winner_id,
+            'end_reason', 'early_resignation_no_points',
+            'points_awarded', 0
         );
     END IF;
 
@@ -528,23 +540,22 @@ BEGIN
         updated_at = NOW()
     WHERE id = p_game_id;
 
-    -- Determine points awards
-    IF p_status IN ('checkmate', 'timeout', 'resigned', 'abandoned') AND p_winner_id IS NOT NULL THEN
-        -- Identify loser
+    -- Award points
+    IF p_status IN ('checkmate', 'timeout', 'resigned') AND p_winner_id IS NOT NULL THEN
         IF p_winner_id = v_game.white_player_id THEN
             v_loser_id := v_game.black_player_id;
         ELSE
             v_loser_id := v_game.white_player_id;
         END IF;
 
-        -- Award Winner +100 pts
+        -- Winner gets +100
         UPDATE public.players
         SET total_score = total_score + v_points_win,
             rounds_played = rounds_played + 1,
             updated_at = NOW()
         WHERE id = p_winner_id;
 
-        -- Award Loser +10 participation pts
+        -- Loser gets +10 participation
         IF v_loser_id IS NOT NULL THEN
             UPDATE public.players
             SET total_score = total_score + v_points_loss,
@@ -554,7 +565,7 @@ BEGIN
         END IF;
 
     ELSIF p_status IN ('stalemate', 'draw_agreed') THEN
-        -- Draw: Both players get +50 pts
+        -- Draw gets +50 each
         UPDATE public.players
         SET total_score = total_score + v_points_draw,
             rounds_played = rounds_played + 1,
@@ -572,7 +583,7 @@ END;
 $$;
 
 -- ==========================================================================
--- 7. ATOMIC RPC: CLAIM TIMEOUT (Flag-Fall Protection)
+-- 8. ATOMIC RPC: CLAIM TIMEOUT (Flag-Fall Protection)
 -- ==========================================================================
 CREATE OR REPLACE FUNCTION public.claim_chess_timeout(
     p_game_id UUID,
@@ -602,7 +613,6 @@ BEGIN
         RETURN jsonb_build_object('success', FALSE, 'message', 'Game is not active', 'status', v_game.status);
     END IF;
 
-    -- Calculate elapsed time
     v_elapsed_ms := GREATEST(0, (EXTRACT(EPOCH FROM (NOW() - v_game.last_move_at)) * 1000)::INTEGER);
 
     IF v_game.turn = 'w' THEN
@@ -625,10 +635,59 @@ BEGIN
 END;
 $$;
 
--- Grant EXECUTE permissions on RPCs to anon and authenticated
+-- ==========================================================================
+-- 9. AUTOMATED SWEEPER: SETTLE EXPIRED INACTIVE GAMES
+-- ==========================================================================
+CREATE OR REPLACE FUNCTION public.sweep_expired_chess_games()
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_game RECORD;
+    v_count INTEGER := 0;
+    v_elapsed_ms INTEGER;
+    v_winner_id UUID;
+BEGIN
+    FOR v_game IN
+        SELECT *
+        FROM public.chess_games
+        WHERE status = 'in_progress'
+        FOR UPDATE SKIP LOCKED
+    LOOP
+        v_elapsed_ms := GREATEST(0, (EXTRACT(EPOCH FROM (NOW() - v_game.last_move_at)) * 1000)::INTEGER);
+        
+        IF (v_game.turn = 'w' AND (v_game.white_time_left_ms - v_elapsed_ms) <= 0) THEN
+            v_winner_id := v_game.black_player_id;
+            PERFORM public.settle_chess_game(v_game.id, 'timeout', v_winner_id, 'flag_fall_swept');
+            v_count := v_count + 1;
+        ELSIF (v_game.turn = 'b' AND (v_game.black_time_left_ms - v_elapsed_ms) <= 0) THEN
+            v_winner_id := v_game.white_player_id;
+            PERFORM public.settle_chess_game(v_game.id, 'timeout', v_winner_id, 'flag_fall_swept');
+            v_count := v_count + 1;
+        END IF;
+    END LOOP;
+
+    RETURN v_count;
+END;
+$$;
+
+-- ==========================================================================
+-- 10. STRICT ACCESS CONTROL (SECURITY LOCK-DOWN)
+-- ==========================================================================
+-- 1. REVOKE direct access from public/anon/authenticated on authoritative RPCs
+REVOKE ALL ON FUNCTION public.submit_chess_move FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.settle_chess_game FROM PUBLIC, anon, authenticated;
+
+-- 2. GRANT execution strictly to service_role (Edge Function)
+GRANT EXECUTE ON FUNCTION public.submit_chess_move TO service_role;
+GRANT EXECUTE ON FUNCTION public.settle_chess_game TO service_role;
+
+-- 3. Public matchmaking, challenges, timeouts, and sweeper can be executed by clients
 GRANT EXECUTE ON FUNCTION public.join_or_create_chess_matchmaking(UUID, INTEGER) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.cancel_chess_matchmaking(UUID, UUID) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_direct_chess_challenge(UUID, UUID, INTEGER) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.respond_direct_chess_challenge(UUID, UUID, BOOLEAN) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.submit_chess_move(UUID, UUID, TEXT, TEXT, BOOLEAN, TEXT, UUID, TEXT) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.settle_chess_game(UUID, TEXT, UUID, TEXT) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_chess_timeout(UUID, UUID) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.sweep_expired_chess_games() TO anon, authenticated;

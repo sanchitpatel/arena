@@ -1,9 +1,9 @@
 import { supabase } from '../utils/supabase';
 
 /**
- * ARENA CHESS SERVICE
- * Handles Matchmaking, Realtime Game Synchronization,
- * Clock Deductions, and Move Verification.
+ * ARENA CHESS SERVICE (HARDENED)
+ * Authoritative Server-Side Move Validation via Supabase Edge Function
+ * With Realtime Replication, Concurrency Locks & Queue Matchmaking.
  */
 
 // 1. Join or Queue for Open Matchmaking
@@ -21,7 +21,22 @@ export async function joinOrCreateMatchmaking(playerId, timeControlSec = 300) {
   }
 }
 
-// 2. Direct Challenge (e.g. Scanned via QR)
+// 2. Cancel Pending Queue Matchmaking
+export async function cancelChessMatchmaking(challengeId, playerId) {
+  try {
+    const { data, error } = await supabase.rpc('cancel_chess_matchmaking', {
+      p_challenge_id: challengeId,
+      p_player_id: playerId,
+    });
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('[ChessService] cancelChessMatchmaking failed:', err);
+    throw err;
+  }
+}
+
+// 3. Direct Challenge (e.g. Scanned via QR)
 export async function createDirectChallenge(challengerId, challengedId, timeControlSec = 300) {
   try {
     const { data, error } = await supabase.rpc('create_direct_chess_challenge', {
@@ -37,7 +52,7 @@ export async function createDirectChallenge(challengerId, challengedId, timeCont
   }
 }
 
-// 3. Respond to Direct Challenge
+// 4. Respond to Direct Challenge
 export async function respondDirectChallenge(challengeId, playerId, accept) {
   try {
     const { data, error } = await supabase.rpc('respond_direct_chess_challenge', {
@@ -53,7 +68,7 @@ export async function respondDirectChallenge(challengeId, playerId, accept) {
   }
 }
 
-// 4. Fetch Game State
+// 5. Fetch Active Game State
 export async function getChessGame(gameId) {
   try {
     const { data, error } = await supabase
@@ -74,58 +89,87 @@ export async function getChessGame(gameId) {
   }
 }
 
-// 5. Submit Move (Edge Function with Direct RPC Fallback)
+// 6. Check Active Ongoing Game on App Mount / Reconnect
+export async function getActiveOngoingGame(playerId) {
+  try {
+    const { data, error } = await supabase
+      .from('chess_games')
+      .select(`
+        *,
+        white_player:players!white_player_id(id, name, orb_number, guest_id, avatar, total_score),
+        black_player:players!black_player_id(id, name, orb_number, guest_id, avatar, total_score)
+      `)
+      .or(`white_player_id.eq.${playerId},black_player_id.eq.${playerId}`)
+      .eq('status', 'in_progress')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('[ChessService] getActiveOngoingGame failed:', err);
+    return null;
+  }
+}
+
+// 7. Authoritative Move Submission via Supabase Edge Function (Strictly Service-Role Protected)
 export async function submitMove({
   gameId,
   playerId,
+  deviceId,
   from,
   to,
-  promotion = 'q',
-  newFen,
-  newPgn,
-  isGameOver = false,
-  endStatus = null,
-  winnerId = null,
-  endReason = null,
+  promotion,
 }) {
   try {
-    // Attempt 1: Call Supabase Edge Function for authoritative server-side check
-    const { data: edgeData, error: edgeError } = await supabase.functions.invoke('chess-move', {
+    const { data, error } = await supabase.functions.invoke('chess-move', {
       body: {
         game_id: gameId,
         player_id: playerId,
+        device_id: deviceId,
+        action: 'move',
         from,
         to,
         promotion,
       },
     });
 
-    if (!edgeError && edgeData?.success) {
-      return edgeData;
+    if (error) {
+      throw error;
     }
-
-    // If Edge function is not deployed yet or errored, fallback cleanly to atomic Postgres RPC
-    console.warn('[ChessService] Edge function unavailable or errored, falling back to direct RPC:', edgeError);
-    const { data: rpcData, error: rpcError } = await supabase.rpc('submit_chess_move', {
-      p_game_id: gameId,
-      p_player_id: playerId,
-      p_new_fen: newFen,
-      p_new_pgn: newPgn,
-      p_is_game_over: isGameOver,
-      p_end_status: endStatus,
-      p_winner_id: winnerId,
-      p_end_reason: endReason,
-    });
-
-    if (rpcError) throw rpcError;
-    return rpcData;
+    if (data?.error) {
+      throw new Error(data.error);
+    }
+    return data;
   } catch (err) {
     console.error('[ChessService] submitMove failed:', err);
     throw err;
   }
 }
 
-// 6. Claim Timeout / Flag-Fall
+// 8. Authoritative Resign via Edge Function
+export async function resignChessGame(gameId, playerId, deviceId) {
+  try {
+    const { data, error } = await supabase.functions.invoke('chess-move', {
+      body: {
+        game_id: gameId,
+        player_id: playerId,
+        device_id: deviceId,
+        action: 'resign',
+      },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data;
+  } catch (err) {
+    console.error('[ChessService] resignChessGame failed:', err);
+    throw err;
+  }
+}
+
+// 9. Claim Timeout / Flag-Fall
 export async function claimChessTimeout(gameId, claimingPlayerId) {
   try {
     const { data, error } = await supabase.rpc('claim_chess_timeout', {
@@ -140,24 +184,19 @@ export async function claimChessTimeout(gameId, claimingPlayerId) {
   }
 }
 
-// 7. Resign Game
-export async function resignChessGame(gameId, resigningPlayerId, opponentId) {
+// 10. Automated Inactive Game Sweeper
+export async function sweepExpiredGames() {
   try {
-    const { data, error } = await supabase.rpc('settle_chess_game', {
-      p_game_id: gameId,
-      p_status: 'resigned',
-      p_winner_id: opponentId,
-      p_end_reason: 'resignation',
-    });
+    const { data, error } = await supabase.rpc('sweep_expired_chess_games');
     if (error) throw error;
     return data;
   } catch (err) {
-    console.error('[ChessService] resignChessGame failed:', err);
-    throw err;
+    console.error('[ChessService] sweepExpiredGames failed:', err);
+    return 0;
   }
 }
 
-// 8. Subscribe to Live Game Realtime Updates
+// 11. Subscribe to Live Game Realtime Updates
 export function subscribeToChessGame(gameId, onUpdate) {
   const channel = supabase
     .channel(`chess_game_${gameId}`)
@@ -182,21 +221,21 @@ export function subscribeToChessGame(gameId, onUpdate) {
   };
 }
 
-// 9. Subscribe to Matchmaking Challenge Notifications for a Player
-export function subscribeToChallenges(playerId, onChallengeUpdate) {
+// 12. Subscribe to Waiting Queue Matchmaking Challenge Row
+export function subscribeToMatchmakingQueue(challengeId, onMatched) {
   const channel = supabase
-    .channel(`chess_challenges_${playerId}`)
+    .channel(`chess_queue_${challengeId}`)
     .on(
       'postgres_changes',
       {
-        event: '*',
+        event: 'UPDATE',
         schema: 'public',
         table: 'chess_challenges',
-        filter: `challenged_id=eq.${playerId}`,
+        filter: `id=eq.${challengeId}`,
       },
       (payload) => {
-        if (payload?.new) {
-          onChallengeUpdate(payload.new);
+        if (payload?.new && payload.new.status === 'accepted' && payload.new.game_id) {
+          onMatched(payload.new);
         }
       }
     )

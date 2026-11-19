@@ -203,7 +203,7 @@ export const NotificationSliderCard = ({
 
   const displayDescription = hasItems && activeItem
     ? (activeItem.message || activeItem.details || 'New activity reported on arena network.')
-    : "You're all caught up. No new notifications or activity alerts at this time.";
+    : "No new notifications or activity alerts at this time.";
 
   // Dynamic transform styles: gradual, physical drawer curves
   const cardStyle = isDragging
@@ -235,7 +235,7 @@ export const NotificationSliderCard = ({
       />
 
       {/* Sheet Container: Positioned at top-0 z-[38] to emerge downwards from behind the top nav bar (z-40) */}
-      <div className="fixed top-0 left-0 right-0 z-[38] pointer-events-none flex justify-center px-2 sm:px-4">
+      <div className="fixed top-0 left-0 right-0 z-[38] pointer-events-none flex justify-center px-1.5 sm:px-4">
         <div
           ref={sheetRef}
           onPointerDown={handlePointerDown}
@@ -243,7 +243,7 @@ export const NotificationSliderCard = ({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onWheel={handleWheel}
-          className="pointer-events-auto w-full max-w-full sm:max-w-[440px] md:max-w-[460px] h-auto min-h-[145px] max-h-[180px] md:min-h-[110px] md:max-h-[135px] bg-[#ebedf2] border border-white/90 rounded-b-[24px] sm:rounded-b-[28px] md:rounded-[24px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-5 pb-2 select-none touch-none cursor-grab active:cursor-grabbing flex flex-col justify-between"
+          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+4.5rem)] min-h-[330px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-b-[28px] sm:rounded-b-[32px] md:rounded-[28px] shadow-[inset_3px_3px_6px_#ffffff,inset_-3px_-3px_6px_#c5ccd6] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-4.5 pb-2 select-none touch-none cursor-grab active:cursor-grabbing flex flex-col justify-between"
           style={cardStyle}
         >
           {/* Main Content & Auto-Clear Notice */}
@@ -253,10 +253,10 @@ export const NotificationSliderCard = ({
             </p>
 
             {/* Tactile Auto-Clear Info Capsule */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F2F7FC] border border-white/80 shadow-[inset_1.5px_1.5px_3px_#c8d0db,inset_-1.5px_-1.5px_3px_#ffffff] w-fit">
-              <Clock size={13} weight="bold" className="text-zinc-500 shrink-0" />
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#F2F7FC] border border-white/10 shadow-[inset_1.5px_1.5px_3px_#c8d0db,inset_-1.5px_-1.5px_3px_#ffffff] w-fit">
+              <Clock size={13} weight="bold" className="text-zinc-600 shrink-0" />
               <span className="text-[11px] font-semibold text-zinc-500 tracking-tight">
-                Notifications auto-clear after 24 hrs
+                Notifications auto-clear after 12 hrs
               </span>
             </div>
           </div>
