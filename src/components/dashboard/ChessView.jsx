@@ -988,6 +988,30 @@ export function ChessView({ player, onBack }) {
             animationDurationInMs: 150,
             darkSquareStyle: { backgroundColor: '#455871ff' },
             lightSquareStyle: { backgroundColor: '#CBD5E1' },
+            darkSquareNotationStyle: {
+              color: '#b4becbff',
+              fontWeight: '700',
+            },
+            lightSquareNotationStyle: {
+              color: '#6d7c91ff',
+              fontWeight: '700',
+            },
+            alphaNotationStyle: {
+              fontSize: '9.5px',
+              position: 'absolute',
+              bottom: 2,
+              right: 3,
+              lineHeight: 1,
+              userSelect: 'none',
+            },
+            numericNotationStyle: {
+              fontSize: '9.5px',
+              position: 'absolute',
+              top: 2,
+              left: 3,
+              lineHeight: 1,
+              userSelect: 'none',
+            },
             dropSquareStyle: {
               boxShadow: 'inset 0 0 1px 3px rgba(56, 189, 248, 0.8)',
             },
