@@ -1,53 +1,71 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#09090B" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Arena — Live Game & Scoreboard | Incubation Lab</title>
 
-    <!-- Preload Critical Brand & UI Fonts to eliminate FOUT (font flicker) -->
-    <link rel="preload" href="/fonts/aquire.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#09090B" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Arena — Live Game & Scoreboard | Incubation Lab</title>
 
-    <!-- Preload Critical Game Board Assets for Instant 0ms Paint -->
-    <link rel="preload" href="/images/arena-bg.webp" as="image" type="image/webp" fetchpriority="high" />
-    <link rel="preload" href="/images/prize_road_template.webp" as="image" type="image/webp" />
+  <!-- Preload Critical Brand & UI Fonts to eliminate FOUT (font flicker) -->
+  <link rel="preload" href="/fonts/aquire.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
 
-    <!-- SEO & App Meta Tags -->
-    <meta name="description" content="Arena — High-octane, mobile-first live event game platform for Incubation Lab inauguration. Real-time multiplayer participation and instant leaderboard sync." />
+  <!-- Preload Critical Game Board Assets for Instant 0ms Paint -->
+  <link rel="preload" href="/images/arena-bg.webp" as="image" type="image/webp" fetchpriority="high" />
+  <link rel="preload" href="/images/prize_road_template.webp" as="image" type="image/webp" />
 
-    <!-- Open Graph Meta Tags -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Arena — Live Game & Real-time Scoreboard" />
-    <meta property="og:description" content="Join the live Arena game from your smartphone. Real-time gameplay, instant score sync, and live event leaderboard." />
-  </head>
-  <body class="bg-[#e4f0fa] text-zinc-900 antialiased selection:bg-white/20 selection:text-white">
-    <div id="root">
-      <!-- Instant Frame-0 Pre-Hydration Loading Screen (Dedicated GPU Compositor Layer) -->
-      <div style="position:fixed;inset:0;background:#e4f0fa;display:flex;align-items:center;justify-content:center;user-select:none;overflow:hidden;z-index:9999;">
-        <img src="/images/arena-bg.webp" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none;" />
-        <div style="position:absolute;inset:0;background:radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);pointer-events:none;"></div>
-        <div style="position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-          <!-- Phosphor CircleNotch SVG pinned to GPU Compositor thread (Zero CPU drop/stutter) -->
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" style="width:38px;height:38px;fill:#0ea5e9;will-change:transform;transform:translate3d(0,0,0);animation:arena-spin 0.9s linear infinite;contain:strict;backface-visibility:hidden;">
-            <path d="M232,128a104,104,0,0,1-208,0c0-41,23.81-78.36,60.66-95.27a8,8,0,0,1,6.68,14.54C60.15,61.59,40,93.27,40,128a88,88,0,0,0,176,0c0-34.73-20.15-66.41-51.34-80.73a8,8,0,0,1,6.68-14.54C208.19,49.64,232,87,232,128Z" />
-          </svg>
-        </div>
+  <!-- SEO & App Meta Tags -->
+  <meta name="description"
+    content="Arena — High-octane, mobile-first live event game platform for Incubation Lab inauguration. Real-time multiplayer participation and instant leaderboard sync." />
+
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Arena — Live Game & Real-time Scoreboard" />
+  <meta property="og:description"
+    content="Join the live Arena game from your smartphone. Real-time gameplay, instant score sync, and live event leaderboard." />
+</head>
+
+<body class="bg-[#e4f0fa] text-zinc-900 antialiased selection:bg-white/20 selection:text-white">
+  <div id="root">
+    <!-- Instant Frame-0 Pre-Hydration Loading Screen (Dedicated GPU Compositor Layer) -->
+    <div
+      style="position:fixed;inset:0;background:#e4f0fa;display:flex;align-items:center;justify-content:center;user-select:none;overflow:hidden;z-index:9999;">
+      <img src="/images/arena-bg.webp" alt=""
+        style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none;" />
+      <div
+        style="position:absolute;inset:0;background:radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);pointer-events:none;">
       </div>
-      <style>
-        @keyframes arena-spin {
-          0% { transform: translate3d(0, 0, 0) rotate(0deg); }
-          100% { transform: translate3d(0, 0, 0) rotate(360deg); }
-        }
-      </style>
+      <div
+        style="position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <!-- Phosphor CircleNotch SVG pinned to GPU Compositor thread (Zero CPU drop/stutter) -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"
+          style="width:38px;height:38px;fill:#0ea5e9;will-change:transform;transform:translate3d(0,0,0);animation:arena-spin 0.9s linear infinite;contain:strict;backface-visibility:hidden;">
+          <path
+            d="M232,128a104,104,0,0,1-208,0c0-41,23.81-78.36,60.66-95.27a8,8,0,0,1,6.68,14.54C60.15,61.59,40,93.27,40,128a88,88,0,0,0,176,0c0-34.73-20.15-66.41-51.34-80.73a8,8,0,0,1,6.68-14.54C208.19,49.64,232,87,232,128Z" />
+        </svg>
+      </div>
     </div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+    <style>
+      @keyframes arena-spin {
+        0% {
+          transform: translate3d(0, 0, 0) rotate(0deg);
+        }
+
+        100% {
+          transform: translate3d(0, 0, 0) rotate(360deg);
+        }
+      }
+    </style>
+  </div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>
