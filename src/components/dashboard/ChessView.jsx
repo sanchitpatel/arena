@@ -145,17 +145,52 @@ const ChessClock = React.memo(function ChessClock({
   );
 });
 
-export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
+const STORAGE_BOT_KEY = 'arena_chess_active_bot_session';
+const STORAGE_PVP_KEY = 'arena_chess_active_pvp_session';
+
+function getStoredOngoingSession() {
+  if (typeof window === 'undefined') return null;
+  try {
+    // 1. Check for active bot game session
+    const botRaw = window.localStorage.getItem(STORAGE_BOT_KEY);
+    if (botRaw) {
+      const data = JSON.parse(botRaw);
+      if (data && data.status === 'in_progress' && data.fen) {
+        if (Date.now() - (data.updatedAt || 0) < 86400000) {
+          return data;
+        }
+      }
+    }
+    // 2. Check for active PVP game session
+    const pvpRaw = window.localStorage.getItem(STORAGE_PVP_KEY);
+    if (pvpRaw) {
+      const data = JSON.parse(pvpRaw);
+      if (data && data.status === 'in_progress' && data.gameId) {
+        if (Date.now() - (data.updatedAt || 0) < 86400000) {
+          return data;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[ChessView] Failed to retrieve stored session:', err);
+  }
+  return null;
+}
+
+export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive = true }) {
+  // Check for restored ongoing session (Synchronous for 0ms flash on page reload/navigation)
+  const initialSession = useMemo(() => getStoredOngoingSession(), []);
+
   // Screen views: 'LOBBY' | 'MATCHING' | 'PLAYING' | 'GAME_OVER'
-  const [viewState, setViewState] = useState('LOBBY');
-  const [matchMode, setMatchMode] = useState(null); // 'pvp' | 'bot'
-  const [gameId, setGameId] = useState(null);
+  const [viewState, setViewState] = useState(() => (initialSession ? 'PLAYING' : 'LOBBY'));
+  const [matchMode, setMatchMode] = useState(() => initialSession?.matchMode || null); // 'pvp' | 'bot'
+  const [gameId, setGameId] = useState(() => initialSession?.gameId || null);
   const [activeChallengeId, setActiveChallengeId] = useState(null);
-  const [gameData, setGameData] = useState(null);
-  const [playerColor, setPlayerColor] = useState('w'); // 'w' | 'b'
-  const [playerSide, setPlayerSide] = useState('random'); // 'white' | 'random' | 'black'
-  const [selectedFormat, setSelectedFormat] = useState('5 min'); // '3 min' | '5 min' | '10 min'
-  const [flipBoard, setFlipBoard] = useState(false);
+  const [gameData, setGameData] = useState(() => (initialSession?.matchMode === 'pvp' ? initialSession : null));
+  const [playerColor, setPlayerColor] = useState(() => initialSession?.playerColor || 'w'); // 'w' | 'b'
+  const [playerSide, setPlayerSide] = useState(() => initialSession?.playerSide || 'random'); // 'white' | 'random' | 'black'
+  const [selectedFormat, setSelectedFormat] = useState(() => initialSession?.selectedFormat || '5 min'); // '3 min' | '5 min' | '10 min'
+  const [flipBoard, setFlipBoard] = useState(() => initialSession?.flipBoard || false);
   const [isMuted, setIsMuted] = useState(getChessAudioMuted);
   const [loadingAction, setLoadingAction] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -168,15 +203,98 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
 
-  // Chess Engine instance (chess.js)
-  const chessRef = useRef(new Chess());
-  const [fen, setFen] = useState(chessRef.current.fen());
+  // Chess Engine instance (chess.js) initialized with stored FEN if available
+  const chessRef = useRef(null);
+  if (!chessRef.current) {
+    const c = new Chess();
+    if (initialSession?.pgn && initialSession.pgn.trim().length > 0) {
+      try {
+        c.loadPgn(initialSession.pgn);
+      } catch {
+        if (initialSession.fen) c.load(initialSession.fen);
+      }
+    } else if (initialSession?.fen) {
+      try {
+        c.load(initialSession.fen);
+      } catch { }
+    }
+    chessRef.current = c;
+  }
+  const [fen, setFen] = useState(() => chessRef.current.fen());
 
   // Clocks (Server baselines & phone skew compensation)
-  const [whiteBaseMs, setWhiteBaseMs] = useState(300000);
-  const [blackBaseMs, setBlackBaseMs] = useState(300000);
-  const [lastMoveAt, setLastMoveAt] = useState(new Date().toISOString());
+  const [whiteBaseMs, setWhiteBaseMs] = useState(() => initialSession?.whiteBaseMs ?? 300000);
+  const [blackBaseMs, setBlackBaseMs] = useState(() => initialSession?.blackBaseMs ?? 300000);
+  const [lastMoveAt, setLastMoveAt] = useState(() => initialSession?.lastMoveAt || new Date().toISOString());
   const [serverOffsetMs, setServerOffsetMs] = useState(0);
+
+  // Session persistence helpers
+  const saveBotSession = useCallback((overrides = {}) => {
+    try {
+      if (typeof window === 'undefined') return;
+      const session = {
+        matchMode: 'bot',
+        gameId: gameId || `bot_${Date.now()}`,
+        fen: chessRef.current.fen(),
+        pgn: chessRef.current.pgn(),
+        playerColor,
+        playerSide,
+        selectedFormat,
+        flipBoard,
+        whiteBaseMs,
+        blackBaseMs,
+        lastMoveAt,
+        status: 'in_progress',
+        updatedAt: Date.now(),
+        ...overrides,
+      };
+      window.localStorage.setItem(STORAGE_BOT_KEY, JSON.stringify(session));
+    } catch (e) {
+      console.warn('[ChessView] Failed to save bot session:', e);
+    }
+  }, [gameId, playerColor, playerSide, selectedFormat, flipBoard, whiteBaseMs, blackBaseMs, lastMoveAt]);
+
+  const clearBotSession = useCallback(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(STORAGE_BOT_KEY);
+      }
+    } catch { }
+  }, []);
+
+  const savePvpSession = useCallback((overrides = {}) => {
+    try {
+      if (typeof window === 'undefined') return;
+      const activeGid = overrides.gameId || gameId;
+      if (!activeGid) return;
+      const session = {
+        matchMode: 'pvp',
+        gameId: activeGid,
+        playerColor: overrides.playerColor || playerColor,
+        selectedFormat,
+        flipBoard,
+        fen: overrides.fen || chessRef.current.fen(),
+        pgn: overrides.pgn || chessRef.current.pgn(),
+        whiteBaseMs: typeof overrides.whiteBaseMs === 'number' ? overrides.whiteBaseMs : whiteBaseMs,
+        blackBaseMs: typeof overrides.blackBaseMs === 'number' ? overrides.blackBaseMs : blackBaseMs,
+        lastMoveAt: overrides.lastMoveAt || lastMoveAt,
+        status: 'in_progress',
+        updatedAt: Date.now(),
+        ...overrides,
+      };
+      window.localStorage.setItem(STORAGE_PVP_KEY, JSON.stringify(session));
+    } catch (e) {
+      console.warn('[ChessView] Failed to save pvp session:', e);
+    }
+  }, [gameId, playerColor, selectedFormat, flipBoard, whiteBaseMs, blackBaseMs, lastMoveAt]);
+
+  const clearPvpSession = useCallback(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(STORAGE_PVP_KEY);
+      }
+    } catch { }
+  }, []);
 
   // Tap-to-move highlights & promotion
   const [selectedSquare, setSelectedSquare] = useState(null);
@@ -356,9 +474,22 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
 
       setGameData((prev) => ({ ...(prev || {}), ...g }));
 
+      if (g.status === 'in_progress') {
+        savePvpSession({
+          gameId: g.id,
+          fen: g.fen,
+          pgn: g.pgn,
+          playerColor: g.white_player_id === playerIdRef.current ? 'w' : 'b',
+          whiteBaseMs: typeof g.white_time_left_ms === 'number' ? g.white_time_left_ms : whiteBaseMs,
+          blackBaseMs: typeof g.black_time_left_ms === 'number' ? g.black_time_left_ms : blackBaseMs,
+          lastMoveAt: g.last_move_at || lastMoveAt,
+        });
+      }
+
       // Authoritative Game Over Transition (Guarded with finishedRef)
       if (g.status && g.status !== 'in_progress' && !finishedRef.current) {
         finishedRef.current = true;
+        clearPvpSession();
         if (botTimeoutRef.current) clearTimeout(botTimeoutRef.current);
         setPendingPromotion(null);
 
@@ -389,7 +520,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
         setViewState('GAME_OVER');
       }
     },
-    [player?.id]
+    [player?.id, savePvpSession, clearPvpSession, whiteBaseMs, blackBaseMs, lastMoveAt]
   );
 
   // --------------------------------------------------------------------------
@@ -399,6 +530,12 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
     let isSubscribed = true;
 
     async function checkOngoing() {
+      // If we are currently in an active local bot match, do not override
+      const currentStored = getStoredOngoingSession();
+      if (currentStored?.matchMode === 'bot' && currentStored.status === 'in_progress') {
+        return;
+      }
+
       let currentId = player?.id || playerIdRef.current || getPlayerUuid();
       if (!currentId) {
         const res = await claimOrRegisterGuest().catch(() => null);
@@ -407,18 +544,44 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
           playerIdRef.current = currentId;
         }
       }
-      if (!currentId || !isSubscribed) return;
+      if (!isSubscribed) return;
 
-      const activeGame = await getActiveOngoingGame(currentId);
-      if (activeGame && isSubscribed) {
-        setGameId(activeGame.id);
-        setMatchMode('pvp');
-        setPlayerColor(activeGame.white_player_id === currentId ? 'w' : 'b');
-        finishedRef.current = activeGame.status !== 'in_progress';
-        hasClaimedTimeoutRef.current = false;
-        applyServerGame(activeGame);
-        if (activeGame.status === 'in_progress') {
-          setViewState('PLAYING');
+      // 1. Direct fetch if we have a cached PVP gameId
+      if (currentStored?.matchMode === 'pvp' && currentStored.gameId) {
+        try {
+          const directGame = await getChessGame(currentStored.gameId);
+          if (directGame && isSubscribed) {
+            setGameId(directGame.id);
+            setMatchMode('pvp');
+            setPlayerColor(directGame.white_player_id === currentId ? 'w' : 'b');
+            finishedRef.current = directGame.status !== 'in_progress';
+            hasClaimedTimeoutRef.current = false;
+            applyServerGame(directGame);
+            if (directGame.status === 'in_progress') {
+              setViewState('PLAYING');
+              return;
+            } else {
+              clearPvpSession();
+            }
+          }
+        } catch (e) {
+          console.warn('[ChessView] Direct PVP game fetch note:', e);
+        }
+      }
+
+      // 2. Query Supabase for any active ongoing match
+      if (currentId) {
+        const activeGame = await getActiveOngoingGame(currentId);
+        if (activeGame && isSubscribed) {
+          setGameId(activeGame.id);
+          setMatchMode('pvp');
+          setPlayerColor(activeGame.white_player_id === currentId ? 'w' : 'b');
+          finishedRef.current = activeGame.status !== 'in_progress';
+          hasClaimedTimeoutRef.current = false;
+          applyServerGame(activeGame);
+          if (activeGame.status === 'in_progress') {
+            setViewState('PLAYING');
+          }
         }
       }
     }
@@ -427,26 +590,56 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
     return () => {
       isSubscribed = false;
     };
-  }, [player?.id, applyServerGame]);
+  }, [player?.id, applyServerGame, clearPvpSession]);
 
   // --------------------------------------------------------------------------
-  // VISIBILITY CHANGE RESYNC: Refetch game when returning to foreground tab
+  // VISIBILITY CHANGE RESYNC: Refetch game when returning to foreground tab/page
   // --------------------------------------------------------------------------
   useEffect(() => {
     const handleVisibility = async () => {
-      if (document.visibilityState === 'visible' && gameId && matchMode === 'pvp') {
-        try {
-          const fresh = await getChessGame(gameId);
-          if (fresh) applyServerGame(fresh);
-        } catch (err) {
-          console.warn('[ChessView] Background resync error:', err);
+      if (document.visibilityState === 'visible') {
+        window.dispatchEvent(new Event('resize'));
+        if (viewState === 'PLAYING' && gameId && matchMode === 'pvp') {
+          try {
+            const fresh = await getChessGame(gameId);
+            if (fresh) applyServerGame(fresh);
+          } catch (err) {
+            console.warn('[ChessView] Background resync error:', err);
+          }
         }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [gameId, matchMode, applyServerGame]);
+  }, [viewState, gameId, matchMode, applyServerGame]);
+
+  // Synchronize when Chess tab becomes active in DashboardShell
+  useEffect(() => {
+    if (isActive) {
+      window.dispatchEvent(new Event('resize'));
+      if (viewState === 'PLAYING' && gameId && matchMode === 'pvp') {
+        getChessGame(gameId).then((fresh) => {
+          if (fresh) applyServerGame(fresh);
+        }).catch(() => {});
+      }
+    }
+  }, [isActive, viewState, gameId, matchMode, applyServerGame]);
+
+  // Persist session before page unload / refresh
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (viewState === 'PLAYING') {
+        if (matchMode === 'bot') {
+          saveBotSession();
+        } else if (matchMode === 'pvp') {
+          savePvpSession();
+        }
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [viewState, matchMode, saveBotSession, savePvpSession]);
 
   // --------------------------------------------------------------------------
   // HEARTBEAT POLLING FALLBACK (5s): Self-heals dropped Realtime WebSocket packets
@@ -619,6 +812,8 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
   const resetToLobby = useCallback(() => {
     if (botTimeoutRef.current) clearTimeout(botTimeoutRef.current);
     if (actionErrorTimeoutRef.current) clearTimeout(actionErrorTimeoutRef.current);
+    clearBotSession();
+    clearPvpSession();
     pendingMoveRef.current = null;
     chessRef.current.reset();
     setFen(chessRef.current.fen());
@@ -644,7 +839,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
     setPhotoUploadError('');
     setIsUploadingPhoto(false);
     setViewState('LOBBY');
-  }, []);
+  }, [clearBotSession, clearPvpSession]);
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -710,6 +905,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
 
   const startPvpMatch = async () => {
     setActionError('');
+    clearBotSession();
 
     let currentAvatar = player?.avatar;
     if (!currentAvatar && typeof window !== 'undefined') {
@@ -814,18 +1010,21 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
   const startBotMatch = () => {
     if (botTimeoutRef.current) clearTimeout(botTimeoutRef.current);
     if (actionErrorTimeoutRef.current) clearTimeout(actionErrorTimeoutRef.current);
+    clearPvpSession();
     pendingMoveRef.current = null;
+    const newGid = `bot_${Date.now()}`;
     setMatchMode('bot');
-    setGameId(`bot_${Date.now()}`);
+    setGameId(newGid);
     const chosenColor = playerSide === 'white' ? 'w' : playerSide === 'black' ? 'b' : (Math.random() < 0.5 ? 'w' : 'b');
     setPlayerColor(chosenColor);
     setFlipBoard(chosenColor === 'b');
     chessRef.current.reset();
     setFen(chessRef.current.fen());
     const baseMs = selectedFormat === '3 min' ? 180000 : selectedFormat === '10 min' ? 600000 : 300000;
+    const nowIso = new Date().toISOString();
     setWhiteBaseMs(baseMs);
     setBlackBaseMs(baseMs);
-    setLastMoveAt(new Date().toISOString());
+    setLastMoveAt(nowIso);
     setServerOffsetMs(0);
     finishedRef.current = false;
     hasClaimedTimeoutRef.current = false;
@@ -836,6 +1035,19 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
     setEndSummary(null);
     setActionError('');
     setViewState('PLAYING');
+
+    saveBotSession({
+      gameId: newGid,
+      fen: chessRef.current.fen(),
+      pgn: '',
+      playerColor: chosenColor,
+      playerSide,
+      selectedFormat,
+      flipBoard: chosenColor === 'b',
+      whiteBaseMs: baseMs,
+      blackBaseMs: baseMs,
+      lastMoveAt: nowIso,
+    });
   };
 
   // --------------------------------------------------------------------------
@@ -846,6 +1058,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
       if (botTimeoutRef.current) clearTimeout(botTimeoutRef.current);
       if (finishedRef.current) return;
       finishedRef.current = true;
+      clearBotSession();
 
       const isCheckmate = chessRef.current.isCheckmate();
       let isWinner = false;
@@ -888,7 +1101,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
       });
       setViewState('GAME_OVER');
     },
-    [playerColor, player?.id]
+    [playerColor, player?.id, clearBotSession]
   );
 
   const executeBotMove = useCallback(() => {
@@ -940,6 +1153,8 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
       const chosenMove = topMoves[Math.floor(Math.random() * topMoves.length)] || legalMoves[0];
       const botMoveNow = Date.now();
       const elapsedTurn = Math.max(0, botMoveNow - new Date(lastMoveAt).getTime());
+      const nextWhiteMs = playerColor === 'b' ? Math.max(0, whiteBaseMs - elapsedTurn) : whiteBaseMs;
+      const nextBlackMs = playerColor === 'w' ? Math.max(0, blackBaseMs - elapsedTurn) : blackBaseMs;
       if (playerColor === 'w') {
         setBlackBaseMs((prev) => Math.max(0, prev - elapsedTurn));
       } else {
@@ -949,8 +1164,19 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
       const result = chessRef.current.move(chosenMove);
 
       if (result) {
-        setFen(chessRef.current.fen());
-        setLastMoveAt(new Date(botMoveNow).toISOString());
+        const nextFen = chessRef.current.fen();
+        const nextPgn = chessRef.current.pgn();
+        const nowIso = new Date(botMoveNow).toISOString();
+        setFen(nextFen);
+        setLastMoveAt(nowIso);
+
+        saveBotSession({
+          fen: nextFen,
+          pgn: nextPgn,
+          whiteBaseMs: nextWhiteMs,
+          blackBaseMs: nextBlackMs,
+          lastMoveAt: nowIso,
+        });
 
         if (chessRef.current.inCheck()) playCheckSound();
         else if (result.captured) playCaptureSound();
@@ -961,7 +1187,18 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
         }
       }
     }, 450);
-  }, [viewState, playerColor, lastMoveAt, handleBotGameOver]);
+  }, [viewState, playerColor, lastMoveAt, whiteBaseMs, blackBaseMs, handleBotGameOver, saveBotSession]);
+
+  // Ensure bot responds when it is the bot's turn in Bot mode
+  useEffect(() => {
+    if (viewState !== 'PLAYING' || matchMode !== 'bot' || finishedRef.current) return;
+    if (chessRef.current.isGameOver()) return;
+
+    const isBotTurn = chessRef.current.turn() !== playerColor;
+    if (isBotTurn) {
+      executeBotMove();
+    }
+  }, [viewState, matchMode, playerColor, fen, executeBotMove]);
 
   // Clean up bot timers on unmount
   useEffect(() => {
@@ -1024,6 +1261,20 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
 
       // Bot Mode
       if (matchMode === 'bot') {
+        const currentFen = chessRef.current.fen();
+        const currentPgn = chessRef.current.pgn();
+        const nextWhiteMs = playerColor === 'w' ? Math.max(0, whiteBaseMs - elapsedTurnMs) : whiteBaseMs;
+        const nextBlackMs = playerColor === 'b' ? Math.max(0, blackBaseMs - elapsedTurnMs) : blackBaseMs;
+        const nowIso = new Date(effectiveNow).toISOString();
+
+        saveBotSession({
+          fen: currentFen,
+          pgn: currentPgn,
+          whiteBaseMs: nextWhiteMs,
+          blackBaseMs: nextBlackMs,
+          lastMoveAt: nowIso,
+        });
+
         if (chessRef.current.isGameOver()) {
           handleBotGameOver();
         } else {
@@ -1051,6 +1302,18 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
           endReason = 'draw';
         }
       }
+
+      const nowIso = new Date(effectiveNow).toISOString();
+      const nextWhitePvp = playerColor === 'w' ? Math.max(0, whiteBaseMs - elapsedTurnMs) : whiteBaseMs;
+      const nextBlackPvp = playerColor === 'b' ? Math.max(0, blackBaseMs - elapsedTurnMs) : blackBaseMs;
+
+      savePvpSession({
+        fen: newFen,
+        pgn: newPgn,
+        whiteBaseMs: nextWhitePvp,
+        blackBaseMs: nextBlackPvp,
+        lastMoveAt: nowIso,
+      });
 
       // Register pending move for optimistic ply guard protection
       pendingMoveRef.current = { ply: plyOf(newFen), at: Date.now() };
@@ -1084,6 +1347,13 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
         setLastMoveAt(prevLastMoveAt);
         setSelectedSquare(null);
         setSquareStyles({});
+        savePvpSession({
+          fen: previousFen,
+          pgn: previousPgn,
+          whiteBaseMs: prevWhiteBase,
+          blackBaseMs: prevBlackBase,
+          lastMoveAt: prevLastMoveAt,
+        });
         showActionError(err.message || 'Illegal move rejected by server.');
       });
 
@@ -1101,6 +1371,8 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
       blackBaseMs,
       executeBotMove,
       handleBotGameOver,
+      saveBotSession,
+      savePvpSession,
     ]
   );
 
@@ -1222,6 +1494,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
     if (botTimeoutRef.current) clearTimeout(botTimeoutRef.current);
 
     if (matchMode === 'bot') {
+      clearBotSession();
       playDefeatSound();
       setEndSummary({
         status: 'resigned',

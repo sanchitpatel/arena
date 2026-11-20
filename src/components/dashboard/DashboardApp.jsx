@@ -371,6 +371,7 @@ export default function DashboardApp() {
             onBack={() => handleTabChange('profile')}
             onNavigate={handleTabChange}
             onUpdatePlayer={(updated) => setPlayer((prev) => ({ ...prev, ...updated }))}
+            isActive={activeTab === 'chess'}
           />
         </div>
       </DashboardShell>
