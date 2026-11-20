@@ -509,9 +509,8 @@ export const DashboardShell = ({
       {/* ========================================================
           3. MAIN CONTENT WORKSPACE
           ======================================================== */}
-      <main className={`flex-1 flex flex-col min-w-0 h-full mobile-no-scrollbar md:[scrollbar-gutter:stable] pb-20 md:pb-0 relative ${
-        isNotificationOpen || prizeRoadOpen ? 'overflow-hidden' : 'overflow-y-auto md:overflow-y-scroll'
-      }`}>
+      <main className={`flex-1 flex flex-col min-w-0 h-full mobile-no-scrollbar md:[scrollbar-gutter:stable] pb-20 md:pb-0 relative ${isNotificationOpen || prizeRoadOpen ? 'overflow-hidden' : 'overflow-y-auto md:overflow-y-scroll'
+        }`}>
         {/* Authentic Frost Mountain & Crystal Theme Backdrop (Clamped to prevent occlusion by nav bars) */}
         <FrostMountainBackground hasSidebar={true} clampToBars={true} />
 
