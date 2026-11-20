@@ -19,7 +19,6 @@ import {
   ChessKing,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { ChessNewGamePanel } from './ChessNewGamePanel';
 import { getDeviceId, getPlayerUuid } from '../../utils/playerId';
 import { claimOrRegisterGuest } from '../../services/arenaService';
 import {
@@ -1175,38 +1174,6 @@ export function ChessView({ player, onBack }) {
   if (viewState === 'LOBBY' || viewState === 'MATCHING') {
     return (
       <div className="w-full max-w-lg mx-auto p-4 flex flex-col gap-6 animate-fade-in select-none">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-300 active:scale-95 transition-transform"
-          >
-            <ArrowLeft size={18} />
-            <span className="text-sm font-medium">Arena</span>
-          </button>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleMute}
-              className="p-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-400 active:scale-95"
-              title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
-            >
-              {isMuted ? <SpeakerSlash size={16} /> : <SpeakerHigh size={16} />}
-            </button>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-950/60 border border-sky-500/30 text-sky-400 text-xs font-semibold tracking-wider">
-              <Swords size={16} />
-              <span>CHESS ARENA</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ========================================================
-            IMAGE 2 COMPONENT: CHESS.COM "NEW GAME" SELECTION PANEL
-            Built on top of existing components without removing anything
-            ======================================================== */}
-        <ChessNewGamePanel
-          onStartGame={() => startPvpMatch()}
-          loading={loadingAction || viewState === 'MATCHING'}
-        />
-
         <div className="relative overflow-hidden bg-[#F5F6F7]/85 border border-slate-300/60 rounded-[2.5rem] p-6 sm:p-8 flex flex-col items-center text-center gap-4 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6,0_12px_32px_rgba(0,0,0,0.08)]">
           <div className="w-16 h-16 rounded-full bg-gradient-to-b from-zinc-800 via-zinc-900 to-black border border-zinc-700/80 flex items-center justify-center text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-4px_8px_rgba(0,0,0,0.7),0_10px_22px_rgba(0,0,0,0.35),3px_3px_8px_#c2c9d4,-3px_-3px_8px_#ffffff]">
             <Crown size={34} weight="fill" className="text-white drop-shadow-[0_2px_6px_rgba(255,255,255,0.25)]" />
