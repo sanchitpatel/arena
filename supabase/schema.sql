@@ -25,9 +25,8 @@ CREATE TABLE IF NOT EXISTS public.players (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     orb_number INTEGER UNIQUE NOT NULL,              -- Exact integer for player's glowing Orb (1, 2, 43, 58)
     guest_id TEXT UNIQUE NOT NULL,                   -- e.g. Guest001, Guest002 (matches orb_number with padding)
-    device_id TEXT UNIQUE NOT NULL,                  -- Client device UUID for seamless re-connection
     name TEXT NOT NULL,                              -- Player handle (defaults to guest_id)
-    avatar TEXT NOT NULL DEFAULT '⚡',               -- Player emoji / icon
+    avatar TEXT NOT NULL DEFAULT '1',                -- Player avatar (URL or curated 1..30)
     team TEXT NOT NULL DEFAULT 'unassigned',         -- Optional team designation
     total_score INTEGER NOT NULL DEFAULT 0,          -- Live running score
     accuracy NUMERIC(5, 2) NOT NULL DEFAULT 0.00,    -- % correct answers
@@ -39,10 +38,20 @@ CREATE TABLE IF NOT EXISTS public.players (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Private player_devices table (Isolates device_id from public read)
+CREATE TABLE IF NOT EXISTS public.player_devices (
+    player_id UUID PRIMARY KEY REFERENCES public.players(id) ON DELETE CASCADE,
+    device_id TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.player_devices ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.player_devices FROM PUBLIC, anon, authenticated;
+
 -- Fast lookup indexes
 CREATE INDEX IF NOT EXISTS idx_players_orb_number ON public.players (orb_number);
 CREATE INDEX IF NOT EXISTS idx_players_guest_id ON public.players (guest_id);
-CREATE INDEX IF NOT EXISTS idx_players_device_id ON public.players (device_id);
+CREATE INDEX IF NOT EXISTS idx_player_devices_device_id ON public.player_devices (device_id);
 CREATE INDEX IF NOT EXISTS idx_players_leaderboard ON public.players (total_score DESC, last_response_time_ms ASC);
 CREATE INDEX IF NOT EXISTS idx_players_last_seen ON public.players (last_seen_at DESC);
 
@@ -105,6 +114,7 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
+    v_player_id UUID;
     v_player public.players%ROWTYPE;
     v_seq_val BIGINT;
     v_guest_id TEXT;
@@ -134,58 +144,60 @@ BEGIN
         v_clean_avatar := NULL;
     END IF;
 
-    -- 1. Check if device already claimed a guest ID (reconnect after reload or profile update)
-    SELECT * INTO v_player 
-    FROM public.players 
+    -- 1. Check if device already claimed a guest ID via private player_devices table
+    SELECT player_id INTO v_player_id 
+    FROM public.player_devices 
     WHERE device_id = p_device_id 
     LIMIT 1;
 
-    IF FOUND THEN
-        -- If player submitted a non-empty name, update it; otherwise preserve existing name
-        IF v_clean_name <> '' THEN
-            v_display_name := v_clean_name;
-        ELSE
-            v_display_name := v_player.name;
+    IF v_player_id IS NOT NULL THEN
+            SELECT * INTO v_player FROM public.players WHERE id = v_player_id;
+
+            -- If player submitted a non-empty name, update it; otherwise preserve existing name
+            IF v_clean_name <> '' THEN
+                v_display_name := v_clean_name;
+            ELSE
+                v_display_name := v_player.name;
+            END IF;
+
+            -- CRITICAL: Preserve existing avatar if not explicitly provided (prevents wiping out custom photo!)
+            IF v_clean_avatar IS NOT NULL THEN
+                v_display_avatar := v_clean_avatar;
+            ELSE
+                v_display_avatar := v_player.avatar;
+            END IF;
+
+            UPDATE public.players 
+            SET last_seen_at = NOW(),
+                is_active = TRUE,
+                name = v_display_name,
+                avatar = v_display_avatar,
+                team = COALESCE(NULLIF(TRIM(p_team), ''), v_player.team)
+            WHERE id = v_player.id
+            RETURNING * INTO v_player;
+
+            RETURN jsonb_build_object(
+                'player_id', v_player.id,
+                'orb_number', v_player.orb_number,
+                'guest_id', v_player.guest_id,
+                'name', v_player.name,
+                'avatar', v_player.avatar,
+                'team', v_player.team,
+                'total_score', v_player.total_score,
+                'is_new', FALSE
+            );
         END IF;
-
-        -- CRITICAL: Preserve existing avatar if not explicitly provided (prevents wiping out custom photo!)
-        IF v_clean_avatar IS NOT NULL THEN
-            v_display_avatar := v_clean_avatar;
-        ELSE
-            v_display_avatar := v_player.avatar;
-        END IF;
-
-        UPDATE public.players 
-        SET last_seen_at = NOW(),
-            is_active = TRUE,
-            name = v_display_name,
-            avatar = v_display_avatar,
-            team = COALESCE(NULLIF(TRIM(p_team), ''), v_player.team)
-        WHERE id = v_player.id
-        RETURNING * INTO v_player;
-
-        RETURN jsonb_build_object(
-            'player_id', v_player.id,
-            'orb_number', v_player.orb_number,
-            'guest_id', v_player.guest_id,
-            'name', v_player.name,
-            'avatar', v_player.avatar,
-            'team', v_player.team,
-            'total_score', v_player.total_score,
-            'is_new', FALSE
-        );
-    END IF;
 
     -- 2. New device: Atomically increment sequence for guaranteed collision-free Guest ID & Orb number
     v_seq_val := nextval('public.guest_id_seq');
     v_guest_id := 'Guest' || LPAD(v_seq_val::TEXT, 3, '0');
     v_display_name := CASE WHEN v_clean_name <> '' THEN v_clean_name ELSE v_guest_id END;
+    v_display_avatar := CASE WHEN v_clean_avatar IS NOT NULL THEN v_clean_avatar ELSE '1' END;
 
-    -- 3. Insert new player row with ON CONFLICT safety
+    -- 3. Insert new player row
     INSERT INTO public.players (
         orb_number,
         guest_id,
-        device_id,
         name,
         avatar,
         team,
@@ -195,16 +207,18 @@ BEGIN
     VALUES (
         v_seq_val,
         v_guest_id,
-        p_device_id,
         v_display_name,
-        v_clean_avatar,
+        v_display_avatar,
         COALESCE(NULLIF(TRIM(p_team), ''), 'unassigned'),
         0,
         NOW()
     )
-    ON CONFLICT (device_id) DO UPDATE
-        SET last_seen_at = NOW()
     RETURNING * INTO v_player;
+
+    -- Map player to device in private player_devices table
+    INSERT INTO public.player_devices (player_id, device_id)
+    VALUES (v_player.id, p_device_id)
+    ON CONFLICT (player_id) DO UPDATE SET device_id = EXCLUDED.device_id;
 
     RETURN jsonb_build_object(
         'player_id', v_player.id,
@@ -290,18 +304,21 @@ ALTER TABLE public.game_state ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.player_answers ENABLE ROW LEVEL SECURITY;
 
 -- Players table policies: Everyone on local Wi-Fi can view leaderboard, RPC manages mutations
+DROP POLICY IF EXISTS "Allow public read players for leaderboard" ON public.players;
 CREATE POLICY "Allow public read players for leaderboard"
     ON public.players FOR SELECT
     TO anon, authenticated
     USING (true);
 
 -- Game state policies: Everyone can read active game phase
+DROP POLICY IF EXISTS "Allow public read game state" ON public.game_state;
 CREATE POLICY "Allow public read game state"
     ON public.game_state FOR SELECT
     TO anon, authenticated
     USING (true);
 
 -- Answers: Players can inspect their own submissions
+DROP POLICY IF EXISTS "Allow public read own answers" ON public.player_answers;
 CREATE POLICY "Allow public read own answers"
     ON public.player_answers FOR SELECT
     TO anon, authenticated
@@ -311,8 +328,7 @@ CREATE POLICY "Allow public read own answers"
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT USAGE, SELECT ON SEQUENCE public.guest_id_seq TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.claim_guest_player TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.submit_player_answer TO anon, authenticated;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;
 
 -- ==========================================================================
 -- 8. REALTIME REPLICATION (Instant Live Scoreboard Sync & Presence)

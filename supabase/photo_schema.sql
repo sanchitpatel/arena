@@ -1,6 +1,7 @@
 -- ==========================================================================
 -- PHOTO & AVATAR SYNC PATCH — ARENA LIVE EVENT
--- Fixes avatar wiping on reconnect by preserving existing avatar if p_avatar is NULL
+-- Compatible with Private player_devices Architecture
+-- Fixes avatar wiping on reconnect and works without players.device_id column
 -- ==========================================================================
 
 -- 1. Create public storage policies for 'avatars' bucket (idempotent)
@@ -35,8 +36,8 @@ BEGIN
     END IF;
 END $$;
 
--- 2. Update claim_guest_player to allow both Curated IDs (1..30) AND Storage URLs,
--- AND crucially PRESERVES existing avatar/name when reconnecting with NULL arguments!
+-- 2. Update claim_guest_player to use private player_devices table
+-- AND preserve avatar on background reconnects without wiping custom photos
 CREATE OR REPLACE FUNCTION public.claim_guest_player(
     p_device_id TEXT,
     p_name TEXT DEFAULT NULL,
@@ -49,6 +50,7 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
+    v_player_id UUID;
     v_player public.players%ROWTYPE;
     v_seq_val BIGINT;
     v_guest_id TEXT;
@@ -76,13 +78,15 @@ BEGIN
         v_clean_avatar := NULL;
     END IF;
 
-    -- Check if device already claimed a guest ID
-    SELECT * INTO v_player 
-    FROM public.players 
+    -- Check if device is already registered in private player_devices table
+    SELECT player_id INTO v_player_id 
+    FROM public.player_devices 
     WHERE device_id = p_device_id 
     LIMIT 1;
 
-    IF FOUND THEN
+    IF v_player_id IS NOT NULL THEN
+        SELECT * INTO v_player FROM public.players WHERE id = v_player_id;
+        
         -- Preserve name if not explicitly provided
         IF v_clean_name <> '' THEN
             v_display_name := v_clean_name;
@@ -98,9 +102,9 @@ BEGIN
         END IF;
 
         UPDATE public.players 
-        SET last_seen_at = NOW(),
-            is_active = TRUE,
-            name = v_display_name,
+        SET last_seen_at = NOW(), 
+            is_active = TRUE, 
+            name = v_display_name, 
             avatar = v_display_avatar,
             team = COALESCE(NULLIF(TRIM(p_team), ''), v_player.team)
         WHERE id = v_player.id
@@ -118,7 +122,7 @@ BEGIN
         );
     END IF;
 
-    -- New device registration
+    -- New player creation: Atomically increment sequence for guaranteed collision-free guest_id
     v_seq_val := nextval('public.guest_id_seq');
     v_guest_id := 'Guest' || LPAD(v_seq_val::TEXT, 3, '0');
     v_display_name := CASE WHEN v_clean_name <> '' THEN v_clean_name ELSE v_guest_id END;
@@ -127,7 +131,6 @@ BEGIN
     INSERT INTO public.players (
         orb_number,
         guest_id,
-        device_id,
         name,
         avatar,
         team,
@@ -137,16 +140,18 @@ BEGIN
     VALUES (
         v_seq_val,
         v_guest_id,
-        p_device_id,
         v_display_name,
         v_display_avatar,
         COALESCE(NULLIF(TRIM(p_team), ''), 'unassigned'),
         0,
         NOW()
     )
-    ON CONFLICT (device_id) DO UPDATE
-        SET last_seen_at = NOW()
     RETURNING * INTO v_player;
+
+    -- Map player to device in private table
+    INSERT INTO public.player_devices (player_id, device_id)
+    VALUES (v_player.id, p_device_id)
+    ON CONFLICT (player_id) DO UPDATE SET device_id = EXCLUDED.device_id;
 
     RETURN jsonb_build_object(
         'player_id', v_player.id,

@@ -43,8 +43,8 @@ END $$;
 CREATE OR REPLACE FUNCTION public.claim_guest_player(
     p_device_id TEXT,
     p_name TEXT DEFAULT NULL,
-    p_avatar TEXT DEFAULT '1',
-    p_team TEXT DEFAULT 'unassigned'
+    p_avatar TEXT DEFAULT NULL,
+    p_team TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -59,11 +59,25 @@ DECLARE
     v_clean_name TEXT;
     v_clean_avatar TEXT;
     v_display_name TEXT;
+    v_display_avatar TEXT;
 BEGIN
     PERFORM pg_advisory_xact_lock(hashtext(p_device_id));
 
     v_clean_name := SUBSTRING(REGEXP_REPLACE(TRIM(COALESCE(p_name, '')), '[^a-zA-Z0-9 _-]', '', 'g'), 1, 16);
-    v_clean_avatar := COALESCE(NULLIF(TRIM(p_avatar), ''), '1');
+    
+    -- Avatar handling: allow full URLs or curated numeric 1..30; leave NULL if omitted
+    IF p_avatar IS NOT NULL AND TRIM(p_avatar) <> '' THEN
+        IF p_avatar ~* '^https?://' OR p_avatar ~* '^/storage/' OR p_avatar ~* '^data:' OR p_avatar ~* '^blob:' THEN
+            v_clean_avatar := TRIM(p_avatar);
+        ELSE
+            v_clean_avatar := SUBSTRING(REGEXP_REPLACE(TRIM(p_avatar), '[^0-9]', '', 'g'), 1, 2);
+            IF v_clean_avatar = '' OR v_clean_avatar::INT < 1 OR v_clean_avatar::INT > 30 THEN
+                v_clean_avatar := '1';
+            END IF;
+        END IF;
+    ELSE
+        v_clean_avatar := NULL;
+    END IF;
 
     -- Check if device is already registered
     SELECT player_id INTO v_player_id 
@@ -75,11 +89,18 @@ BEGIN
         SELECT * INTO v_player FROM public.players WHERE id = v_player_id;
         v_display_name := CASE WHEN v_clean_name <> '' THEN v_clean_name ELSE v_player.name END;
         
+        -- Preserve existing avatar if not explicitly provided
+        IF v_clean_avatar IS NOT NULL THEN
+            v_display_avatar := v_clean_avatar;
+        ELSE
+            v_display_avatar := v_player.avatar;
+        END IF;
+        
         UPDATE public.players 
         SET last_seen_at = NOW(), 
             is_active = TRUE, 
             name = v_display_name, 
-            avatar = v_clean_avatar,
+            avatar = v_display_avatar,
             team = COALESCE(NULLIF(TRIM(p_team), ''), v_player.team)
         WHERE id = v_player.id
         RETURNING * INTO v_player;
@@ -100,6 +121,7 @@ BEGIN
     v_seq_val := nextval('public.guest_id_seq');
     v_guest_id := 'Guest' || LPAD(v_seq_val::TEXT, 3, '0');
     v_display_name := CASE WHEN v_clean_name <> '' THEN v_clean_name ELSE v_guest_id END;
+    v_display_avatar := CASE WHEN v_clean_avatar IS NOT NULL THEN v_clean_avatar ELSE '1' END;
 
     INSERT INTO public.players (
         orb_number,
@@ -114,7 +136,7 @@ BEGIN
         v_seq_val,
         v_guest_id,
         v_display_name,
-        v_clean_avatar,
+        v_display_avatar,
         COALESCE(NULLIF(TRIM(p_team), ''), 'unassigned'),
         0,
         NOW()
