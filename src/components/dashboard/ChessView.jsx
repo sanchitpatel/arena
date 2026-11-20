@@ -17,10 +17,14 @@ import {
   SpeakerHigh,
   SpeakerSlash,
   ChessKing,
+  Camera,
+  Images,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import { getDeviceId, getPlayerUuid } from '../../utils/playerId';
 import { claimOrRegisterGuest } from '../../services/arenaService';
+import { compressImage } from '../../utils/imageCompressor';
+import { uploadPlayerAvatar } from '../../services/storageService';
 import {
   joinOrCreateMatchmaking,
   cancelChessMatchmaking,
@@ -65,6 +69,18 @@ const MOVE_DOT_NORMAL =
 const MOVE_DOT_CAPTURE =
   'radial-gradient(circle, rgba(244, 63, 94, 0.85) 30%, rgba(225, 29, 72, 0.6) 33%, transparent 35%)';
 const SELECTED_SQUARE_BG = 'rgba(255, 255, 255, 0.22)';
+
+export const hasUploadedPhoto = (avatar) => {
+  if (!avatar || typeof avatar !== 'string') return false;
+  const s = avatar.trim();
+  return (
+    s.startsWith('http://') ||
+    s.startsWith('https://') ||
+    s.startsWith('data:') ||
+    s.startsWith('blob:') ||
+    s.startsWith('/storage/')
+  );
+};
 
 function formatClock(ms) {
   if (ms <= 0) return '00:00';
@@ -129,7 +145,7 @@ const ChessClock = React.memo(function ChessClock({
   );
 });
 
-export function ChessView({ player, onBack }) {
+export function ChessView({ player, onBack, onNavigate, onUpdatePlayer }) {
   // Screen views: 'LOBBY' | 'MATCHING' | 'PLAYING' | 'GAME_OVER'
   const [viewState, setViewState] = useState('LOBBY');
   const [matchMode, setMatchMode] = useState(null); // 'pvp' | 'bot'
@@ -143,6 +159,14 @@ export function ChessView({ player, onBack }) {
   const [isMuted, setIsMuted] = useState(getChessAudioMuted);
   const [loadingAction, setLoadingAction] = useState(false);
   const [actionError, setActionError] = useState('');
+
+  // Profile Photo Check & In-game Upload modal
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoUploadStatus, setPhotoUploadStatus] = useState('');
+  const [photoUploadError, setPhotoUploadError] = useState('');
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   // Chess Engine instance (chess.js)
   const chessRef = useRef(new Chess());
@@ -616,12 +640,91 @@ export function ChessView({ player, onBack }) {
     finishedRef.current = false;
     hasClaimedTimeoutRef.current = false;
     botFlaggedRef.current = false;
+    setShowPhotoModal(false);
+    setPhotoUploadError('');
+    setIsUploadingPhoto(false);
     setViewState('LOBBY');
   }, []);
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    setIsUploadingPhoto(true);
+    setPhotoUploadError('');
+    setPhotoUploadStatus('Optimizing photo...');
+
+    try {
+      // 1. Client-side square-crop & high-efficiency compression (400x400 ~35-50KB)
+      const compressed = await compressImage(file, { targetSize: 400, quality: 0.82 });
+
+      setPhotoUploadStatus('Syncing to venue cloud...');
+
+      // 2. Upload to Supabase Storage 'avatars' bucket
+      const guestId = player?.guest_id || 'guest';
+      const currentId = player?.id || playerIdRef.current || getPlayerUuid();
+      const uploadRes = await uploadPlayerAvatar(compressed.blob, {
+        guestId,
+        playerId: currentId,
+      });
+
+      if (!uploadRes.success || !uploadRes.publicUrl) {
+        throw new Error(uploadRes.error || 'Failed to upload photo to server.');
+      }
+
+      setPhotoUploadStatus('Saving profile...');
+      const publicUrl = uploadRes.publicUrl;
+
+      // 3. Atomically persist to PostgreSQL database
+      const saveRes = await claimOrRegisterGuest({
+        name: player?.name || guestId,
+        avatar: publicUrl,
+        team: player?.team || null,
+      });
+
+      if (saveRes?.success && saveRes.data) {
+        if (typeof onUpdatePlayer === 'function') {
+          onUpdatePlayer(saveRes.data);
+        }
+      }
+
+      try {
+        window.localStorage.setItem('arena_draft_avatar', publicUrl);
+      } catch {}
+
+      setPhotoUploadStatus('Photo verified!');
+      setTimeout(() => {
+        setIsUploadingPhoto(false);
+        setShowPhotoModal(false);
+        // Automatically proceed to matchmaking now that photo is verified
+        startPvpMatch();
+      }, 600);
+    } catch (err) {
+      console.error('[ChessView] In-game photo upload failed:', err);
+      setPhotoUploadError(err.message || 'Photo upload failed. Please try again.');
+      setIsUploadingPhoto(false);
+      setPhotoUploadStatus('');
+    }
+  };
+
   const startPvpMatch = async () => {
-    setLoadingAction(true);
     setActionError('');
+
+    let currentAvatar = player?.avatar;
+    if (!currentAvatar && typeof window !== 'undefined') {
+      try {
+        currentAvatar = window.localStorage.getItem('arena_draft_avatar');
+      } catch {}
+    }
+
+    // 1. Pre-flight Check: Ensure player has uploaded their profile photo
+    if (!hasUploadedPhoto(currentAvatar)) {
+      setShowPhotoModal(true);
+      return;
+    }
+
+    setLoadingAction(true);
 
     let currentId = player?.id || playerIdRef.current || getPlayerUuid();
     if (!currentId) {
@@ -645,8 +748,21 @@ export function ChessView({ player, onBack }) {
     playerIdRef.current = currentId;
     setMatchMode('pvp');
 
+    const formatSecMap = { '3 min': 180, '5 min': 300, '10 min': 600 };
+    const durationSec = formatSecMap[selectedFormat] || 300;
+
     try {
-      const res = await joinOrCreateMatchmaking(currentId, 300);
+      const res = await joinOrCreateMatchmaking(currentId, durationSec);
+      if (res?.action === 'photo_required' || (!res?.success && res?.action === 'photo_required')) {
+        setLoadingAction(false);
+        setShowPhotoModal(true);
+        return;
+      }
+
+      if (!res?.success) {
+        throw new Error(res?.message || 'Matchmaking failed. Try again.');
+      }
+
       if (res.action === 'matched' || res.action === 'reconnected') {
         const initialGame = await getChessGame(res.game_id).catch(() => null);
         if (initialGame) {
@@ -1181,6 +1297,26 @@ export function ChessView({ player, onBack }) {
 
           <div>
             <h2 className="text-2xl font-arena font-black text-zinc-800 tracking-tight">1V1 Chess</h2>
+            {/* Profile Photo Status Pill */}
+            <div className="mt-1 flex items-center justify-center">
+              {hasUploadedPhoto(player?.avatar || (typeof window !== 'undefined' ? window.localStorage.getItem('arena_draft_avatar') : null)) ? (
+                <div className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-800 text-[11px] font-bold shadow-xs">
+                  <div className="w-4 h-4 rounded-full overflow-hidden border border-emerald-500/50 flex items-center justify-center bg-white shrink-0">
+                    <ArenaAvatar avatarId={player?.avatar || (typeof window !== 'undefined' ? window.localStorage.getItem('arena_draft_avatar') : '1')} size={16} />
+                  </div>
+                  <span>Photo Verified for 1v1</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoModal(true)}
+                  className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full bg-amber-50 hover:bg-amber-100 active:scale-95 border border-amber-200/90 text-amber-900 text-[11px] font-bold cursor-pointer transition-all shadow-xs"
+                >
+                  <Camera size={13} weight="bold" className="text-amber-600" />
+                  <span>Upload Photo to Play 1v1</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Reward Badges matching neumorphic clay card theme (Monochrome & Larger Icons) */}
@@ -1358,6 +1494,127 @@ export function ChessView({ player, onBack }) {
             </div>
           )}
         </div>
+
+        {/* ================================================================== */}
+        {/* PHOTO REQUIREMENT & IN-GAME UPLOAD MODAL                           */}
+        {/* ================================================================== */}
+        {showPhotoModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in select-none">
+            <div className="relative w-full max-w-sm rounded-[2.5rem] bg-[#F5F6F8] p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.3),inset_6px_6px_16px_#ffffff,inset_-6px_-6px_16px_#c5ccd6] border border-white flex flex-col items-center text-center gap-4">
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isUploadingPhoto) {
+                    setShowPhotoModal(false);
+                    setPhotoUploadError('');
+                  }
+                }}
+                disabled={isUploadingPhoto}
+                className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-200/80 hover:bg-slate-300 text-zinc-600 flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <X size={16} weight="bold" />
+              </button>
+
+              {/* Avatar Preview with Camera Badge */}
+              <div className="relative mt-2">
+                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white shadow-[3px_3px_8px_#c2c9d4,-3px_-3px_8px_#ffffff] bg-slate-200 flex items-center justify-center">
+                  <ArenaAvatar
+                    avatarId={player?.avatar || (typeof window !== 'undefined' ? window.localStorage.getItem('arena_draft_avatar') : '1')}
+                    size={76}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-sky-500 border-2 border-white flex items-center justify-center text-white shadow-md">
+                  <Camera size={14} weight="bold" />
+                </div>
+              </div>
+
+              {/* Title & Instructions */}
+              <div>
+                <h3 className="text-xl font-arena font-black text-zinc-900 tracking-tight">
+                  Photo Required for 1v1
+                </h3>
+                <p className="text-xs sm:text-[13px] text-zinc-600 font-medium mt-1.5 leading-relaxed">
+                  To help opponent spot and find each other at the venue, please upload your photo before starting 1v1 match.
+                </p>
+              </div>
+
+              {/* Hidden file inputs */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="user"
+                className="hidden"
+                onChange={handlePhotoUpload}
+                disabled={isUploadingPhoto}
+              />
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
+                disabled={isUploadingPhoto}
+              />
+
+              {/* Uploading Status Banner */}
+              {isUploadingPhoto && (
+                <div className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-sky-100/80 border border-sky-300/60 text-sky-800 text-xs font-bold animate-pulse">
+                  <CircleNotch size={16} className="animate-spin text-sky-600" />
+                  <span>{photoUploadStatus || 'Optimizing & uploading photo...'}</span>
+                </div>
+              )}
+
+              {/* Photo Error Banner */}
+              {photoUploadError && (
+                <div className="w-full p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold text-center leading-snug">
+                  {photoUploadError}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="w-full flex flex-col gap-2.5 mt-1">
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-500 via-sky-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.98] transition-all text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_4px_14px_rgba(14,165,233,0.35)] cursor-pointer disabled:opacity-50"
+                >
+                  <Camera size={18} weight="bold" />
+                  <span>Take Selfie</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                  className="w-full py-2.5 px-3 rounded-2xl bg-white hover:bg-slate-50 active:scale-[0.98] transition-all text-zinc-800 font-bold text-xs flex items-center justify-center gap-2 border border-slate-300/80 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] cursor-pointer disabled:opacity-50"
+                >
+                  <Images size={16} weight="bold" className="text-indigo-600" />
+                  <span>Choose from Photos</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPhotoModal(false);
+                    if (typeof onNavigate === 'function') {
+                      onNavigate('profile');
+                    } else if (typeof onBack === 'function') {
+                      onBack();
+                    }
+                  }}
+                  disabled={isUploadingPhoto}
+                  className="text-xs text-zinc-500 hover:text-zinc-800 font-semibold underline pt-1 cursor-pointer transition-colors"
+                >
+                  Go to full Profile settings
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

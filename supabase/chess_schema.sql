@@ -99,8 +99,11 @@ DROP POLICY IF EXISTS "Allow public insert chess_challenges" ON public.chess_cha
 DROP POLICY IF EXISTS "Allow public update chess_challenges" ON public.chess_challenges;
 
 -- ==========================================================================
--- 3. ATOMIC RPC: JOIN OR CREATE MATCHMAKING (With Advisory Lock)
+-- 3. ATOMIC RPC: JOIN OR CREATE MATCHMAKING (With Advisory Lock & Photo Check)
 -- ==========================================================================
+CREATE INDEX IF NOT EXISTS idx_players_avatar_photo ON public.players (id) 
+WHERE avatar ~* '^(https?://|/storage/|data:|blob:)';
+
 CREATE OR REPLACE FUNCTION public.join_or_create_chess_matchmaking(
     p_player_id UUID,
     p_time_control_sec INTEGER DEFAULT 300
@@ -111,6 +114,7 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
+    v_player public.players%ROWTYPE;
     v_existing_game public.chess_games%ROWTYPE;
     v_open_challenge public.chess_challenges%ROWTYPE;
     v_new_game_id UUID;
@@ -120,6 +124,20 @@ DECLARE
 BEGIN
     -- Serialization lock prevents concurrent queue race collisions
     PERFORM pg_advisory_xact_lock(hashtext('chess_matchmaking_pool'));
+
+    -- 0. Check whether requesting player exists and has uploaded their profile photo
+    SELECT * INTO v_player FROM public.players WHERE id = p_player_id;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', FALSE, 'message', 'Player not found');
+    END IF;
+
+    IF v_player.avatar IS NULL OR v_player.avatar !~* '^(https?://|/storage/|data:|blob:)' THEN
+        RETURN jsonb_build_object(
+            'success', FALSE,
+            'action', 'photo_required',
+            'message', 'Please upload a profile photo before entering 1v1 matchmaking.'
+        );
+    END IF;
 
     -- 1. Check if player already has an ongoing active game
     SELECT * INTO v_existing_game
@@ -138,16 +156,18 @@ BEGIN
         );
     END IF;
 
-    -- 2. Lock and find an available open challenge from another player
-    SELECT * INTO v_open_challenge
-    FROM public.chess_challenges
-    WHERE status = 'pending'
-      AND challenged_id IS NULL
-      AND challenger_id <> p_player_id
-      AND expires_at > NOW()
-    ORDER BY created_at ASC
+    -- 2. Lock and find an available open challenge from another player WHO ALSO HAS AN UPLOADED PHOTO
+    SELECT c.* INTO v_open_challenge
+    FROM public.chess_challenges c
+    JOIN public.players p ON p.id = c.challenger_id
+    WHERE c.status = 'pending'
+      AND c.challenged_id IS NULL
+      AND c.challenger_id <> p_player_id
+      AND c.expires_at > NOW()
+      AND p.avatar ~* '^(https?://|/storage/|data:|blob:)'
+    ORDER BY c.created_at ASC
     LIMIT 1
-    FOR UPDATE SKIP LOCKED;
+    FOR UPDATE OF c SKIP LOCKED;
 
     IF FOUND THEN
         v_is_white := (random() > 0.5);

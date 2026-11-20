@@ -192,8 +192,150 @@ $$;
 GRANT EXECUTE ON FUNCTION public.server_now() TO anon, authenticated;
 
 -- --------------------------------------------------------------------------
--- STEP 3: ATOMIC MATCHMAKING CANCELLATION
+-- STEP 3: ATOMIC MATCHMAKING (PHOTO VERIFICATION & CANCELLATION)
 -- --------------------------------------------------------------------------
+CREATE INDEX IF NOT EXISTS idx_players_avatar_photo ON public.players (id) 
+WHERE avatar ~* '^(https?://|/storage/|data:|blob:)';
+
+CREATE OR REPLACE FUNCTION public.join_or_create_chess_matchmaking(
+    p_player_id UUID,
+    p_time_control_sec INTEGER DEFAULT 300
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_player public.players%ROWTYPE;
+    v_existing_game public.chess_games%ROWTYPE;
+    v_open_challenge public.chess_challenges%ROWTYPE;
+    v_new_game_id UUID;
+    v_is_white BOOLEAN;
+    v_white_id UUID;
+    v_black_id UUID;
+BEGIN
+    -- Serialization lock prevents concurrent queue race collisions
+    PERFORM pg_advisory_xact_lock(hashtext('chess_matchmaking_pool'));
+
+    -- 0. Check whether requesting player exists and has uploaded their profile photo
+    SELECT * INTO v_player FROM public.players WHERE id = p_player_id;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', FALSE, 'message', 'Player not found');
+    END IF;
+
+    IF v_player.avatar IS NULL OR v_player.avatar !~* '^(https?://|/storage/|data:|blob:)' THEN
+        RETURN jsonb_build_object(
+            'success', FALSE,
+            'action', 'photo_required',
+            'message', 'Please upload a profile photo before entering 1v1 matchmaking.'
+        );
+    END IF;
+
+    -- 1. Check if player already has an ongoing active game
+    SELECT * INTO v_existing_game
+    FROM public.chess_games
+    WHERE (white_player_id = p_player_id OR black_player_id = p_player_id)
+      AND status = 'in_progress'
+    ORDER BY created_at DESC
+    LIMIT 1;
+
+    IF FOUND THEN
+        RETURN jsonb_build_object(
+            'success', TRUE,
+            'action', 'reconnected',
+            'game_id', v_existing_game.id,
+            'color', CASE WHEN v_existing_game.white_player_id = p_player_id THEN 'w' ELSE 'b' END
+        );
+    END IF;
+
+    -- 2. Lock and find an available open challenge from another player WHO ALSO HAS AN UPLOADED PHOTO
+    SELECT c.* INTO v_open_challenge
+    FROM public.chess_challenges c
+    JOIN public.players p ON p.id = c.challenger_id
+    WHERE c.status = 'pending'
+      AND c.challenged_id IS NULL
+      AND c.challenger_id <> p_player_id
+      AND c.expires_at > NOW()
+      AND p.avatar ~* '^(https?://|/storage/|data:|blob:)'
+    ORDER BY c.created_at ASC
+    LIMIT 1
+    FOR UPDATE OF c SKIP LOCKED;
+
+    IF FOUND THEN
+        v_is_white := (random() > 0.5);
+        IF v_is_white THEN
+            v_white_id := p_player_id;
+            v_black_id := v_open_challenge.challenger_id;
+        ELSE
+            v_white_id := v_open_challenge.challenger_id;
+            v_black_id := p_player_id;
+        END IF;
+
+        INSERT INTO public.chess_games (
+            white_player_id,
+            black_player_id,
+            time_control_sec,
+            white_time_left_ms,
+            black_time_left_ms,
+            status,
+            turn,
+            last_move_at
+        ) VALUES (
+            v_white_id,
+            v_black_id,
+            p_time_control_sec,
+            p_time_control_sec * 1000,
+            p_time_control_sec * 1000,
+            'in_progress',
+            'w',
+            NOW()
+        ) RETURNING id INTO v_new_game_id;
+
+        UPDATE public.chess_challenges
+        SET status = 'accepted',
+            game_id = v_new_game_id
+        WHERE id = v_open_challenge.id;
+
+        RETURN jsonb_build_object(
+            'success', TRUE,
+            'action', 'matched',
+            'game_id', v_new_game_id,
+            'color', CASE WHEN v_white_id = p_player_id THEN 'w' ELSE 'b' END,
+            'opponent_id', v_open_challenge.challenger_id
+        );
+    END IF;
+
+    -- 3. Cancel any prior stale open challenges from this player
+    UPDATE public.chess_challenges
+    SET status = 'expired'
+    WHERE challenger_id = p_player_id
+      AND status = 'pending';
+
+    -- 4. Register new pending challenge
+    INSERT INTO public.chess_challenges (
+        challenger_id,
+        challenged_id,
+        time_control_sec,
+        status,
+        expires_at
+    ) VALUES (
+        p_player_id,
+        NULL,
+        p_time_control_sec,
+        'pending',
+        NOW() + INTERVAL '2 minutes'
+    ) RETURNING * INTO v_open_challenge;
+
+    RETURN jsonb_build_object(
+        'success', TRUE,
+        'action', 'waiting',
+        'challenge_id', v_open_challenge.id
+    );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.join_or_create_chess_matchmaking(UUID, INTEGER) TO anon, authenticated;
+
 CREATE OR REPLACE FUNCTION public.cancel_chess_matchmaking(
     p_challenge_id UUID,
     p_player_id UUID

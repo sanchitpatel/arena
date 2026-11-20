@@ -369,6 +369,8 @@ export default function DashboardApp() {
           <ChessView
             player={player}
             onBack={() => handleTabChange('profile')}
+            onNavigate={handleTabChange}
+            onUpdatePlayer={(updated) => setPlayer((prev) => ({ ...prev, ...updated }))}
           />
         </div>
       </DashboardShell>
