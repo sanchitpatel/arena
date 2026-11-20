@@ -151,14 +151,22 @@ export default function DashboardApp() {
     let isMounted = true;
     claimOrRegisterGuest().then((res) => {
       if (isMounted && res?.success && res.data) {
-        setPlayer((prev) => ({
-          ...prev,
-          guest_id: res.data.guest_id || prev.guest_id,
-          orb_number: res.data.orb_number || prev.orb_number,
-          name: res.data.name || prev.name,
-          avatar: res.data.avatar || prev.avatar,
-          team: res.data.team || prev.team,
-        }));
+        setPlayer((prev) => {
+          const freshAvatar = res.data.avatar || prev.avatar;
+          try {
+            if (freshAvatar) {
+              window.localStorage.setItem('arena_draft_avatar', String(freshAvatar));
+            }
+          } catch { }
+          return {
+            ...prev,
+            guest_id: res.data.guest_id || prev.guest_id,
+            orb_number: res.data.orb_number || prev.orb_number,
+            name: res.data.name || prev.name,
+            avatar: freshAvatar,
+            team: res.data.team || prev.team,
+          };
+        });
       }
     }).catch((err) => {
       console.warn('[DashboardApp] Player reconnection sync error:', err);
@@ -252,6 +260,14 @@ export default function DashboardApp() {
 
     if (playerData) {
       setPlayer(playerData);
+      try {
+        if (playerData.avatar) {
+          window.localStorage.setItem('arena_draft_avatar', String(playerData.avatar));
+        }
+        if (playerData.name) {
+          window.localStorage.setItem('arena_draft_username', playerData.name);
+        }
+      } catch { }
     }
 
     if (typeof window !== 'undefined') {

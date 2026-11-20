@@ -24,6 +24,7 @@ import {
   cancelChessMatchmaking,
   getChessChallenge,
   getChessGame,
+  getChessGameSnapshot,
   getActiveOngoingGame,
   submitMove,
   claimChessTimeout,
@@ -324,14 +325,14 @@ export function ChessView({ player, onBack }) {
         if (isWinner) playVictorySound();
         else if (!isDraw) playDefeatSound();
 
-        const pointsAwarded = typeof g.points_awarded === 'number'
-          ? g.points_awarded
-          : isWinner
-            ? 100
-            : isDraw
-              ? 50
-              : g.end_reason === 'early_resignation_no_points'
-                ? 0
+        const pointsAwarded = g.end_reason === 'early_resignation_no_points'
+          ? 0
+          : typeof g.points_awarded === 'number'
+            ? g.points_awarded
+            : isWinner
+              ? 100
+              : isDraw
+                ? 50
                 : 10;
 
         setEndSummary({
@@ -402,7 +403,7 @@ export function ChessView({ player, onBack }) {
     if (viewState !== 'PLAYING' || matchMode !== 'pvp' || !gameId) return;
     const interval = setInterval(async () => {
       try {
-        const fresh = await getChessGame(gameId);
+        const fresh = await getChessGameSnapshot(gameId);
         if (fresh) applyServerGame(fresh);
       } catch (err) {
         console.warn('[ChessView] Heartbeat polling note:', err);
@@ -503,13 +504,20 @@ export function ChessView({ player, onBack }) {
       })
       .catch(() => {});
 
-    // 4s polling fallback in case Realtime message drops
-    const pollInterval = setInterval(() => {
-      getChessChallenge(activeChallengeId)
-        .then((ch) => {
-          if (ch) handleChallengeUpdate(ch);
-        })
-        .catch(() => {});
+    // 4s polling fallback in case Realtime message drops or expires after 2 minutes
+    const pollInterval = setInterval(async () => {
+      const ch = await getChessChallenge(activeChallengeId).catch(() => null);
+      if (!ch) return;
+      if (ch.status === 'expired') {
+        const res = await joinOrCreateMatchmaking(player?.id, 300).catch(() => null);
+        if (res?.action === 'waiting' && res.challenge_id) {
+          setActiveChallengeId(res.challenge_id);
+        } else if (res?.game_id) {
+          handleChallengeUpdate({ status: 'accepted', game_id: res.game_id });
+        }
+        return;
+      }
+      handleChallengeUpdate(ch);
     }, 4000);
 
     const unsubscribe = subscribeToMatchmakingQueue(activeChallengeId, (matchedChallenge) => {
@@ -599,25 +607,25 @@ export function ChessView({ player, onBack }) {
   const handleCancelQueue = async () => {
     if (activeChallengeId && player?.id) {
       try {
-        const ch = await getChessChallenge(activeChallengeId).catch(() => null);
-        if (ch && ch.status === 'accepted' && ch.game_id) {
-          const initialGame = await getChessGame(ch.game_id).catch(() => null);
+        const res = await cancelChessMatchmaking(activeChallengeId, player.id);
+        if (res?.action === 'matched' && res.game_id) {
+          const initialGame = await getChessGame(res.game_id).catch(() => null);
           if (initialGame) {
-            setGameId(ch.game_id);
+            setGameId(res.game_id);
             setPlayerColor(initialGame.white_player_id === player?.id ? 'w' : 'b');
             finishedRef.current = false;
             hasClaimedTimeoutRef.current = false;
             applyServerGame(initialGame);
             setViewState('PLAYING');
-            return;
+            return true;
           }
         }
-        await cancelChessMatchmaking(activeChallengeId, player.id);
       } catch (err) {
         console.warn('Error cancelling queue:', err);
       }
     }
     resetToLobby();
+    return false;
   };
 
   const startBotMatch = () => {
@@ -1154,9 +1162,9 @@ export function ChessView({ player, onBack }) {
                     Queue taking longer than usual?
                   </p>
                   <button
-                    onClick={() => {
-                      handleCancelQueue();
-                      startBotMatch();
+                    onClick={async () => {
+                      const matched = await handleCancelQueue();
+                      if (!matched) startBotMatch();
                     }}
                     className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold active:scale-95 transition-all cursor-pointer"
                   >

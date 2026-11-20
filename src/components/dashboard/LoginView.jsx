@@ -143,12 +143,15 @@ export const LoginView = ({ onEnterArena }) => {
   };
 
   const handleAvatarSelect = (avatarId) => {
-    setSelectedAvatar(avatarId);
+    const strId = String(avatarId);
+    setSelectedAvatar(strId);
     try {
-      window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, String(avatarId));
+      window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, strId);
     } catch (err) {
       console.warn('[Onboarding] Error caching draft avatar:', err);
     }
+    // Eagerly sync selection with PostgreSQL
+    claimOrRegisterGuest({ avatar: strId }).catch(() => {});
   };
 
   const handlePhotoFileChange = async (e) => {
@@ -178,6 +181,11 @@ export const LoginView = ({ onEnterArena }) => {
       try {
         window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, publicUrl);
       } catch { }
+
+      // Eagerly persist photo avatar into PostgreSQL database
+      claimOrRegisterGuest({ avatar: publicUrl }).catch((err) => {
+        console.warn('[LoginView] Failed to eagerly save uploaded avatar:', err);
+      });
 
     } catch (err) {
       console.error('[LoginView] Photo upload failed:', err);
@@ -221,7 +229,10 @@ export const LoginView = ({ onEnterArena }) => {
         team: selectedTeam,
       });
 
-      const finalPlayer = res.success && res.data ? res.data : {
+      const finalPlayer = (res.success && res.data) ? {
+        ...res.data,
+        avatar: res.data.avatar || selectedAvatar,
+      } : {
         guest_id: activeGuestId,
         orb_number: orbNumber || '?',
         name: displayName,

@@ -96,8 +96,8 @@ CREATE INDEX IF NOT EXISTS idx_answers_round ON public.player_answers (round_num
 CREATE OR REPLACE FUNCTION public.claim_guest_player(
     p_device_id TEXT,
     p_name TEXT DEFAULT NULL,
-    p_avatar TEXT DEFAULT '1',
-    p_team TEXT DEFAULT 'unassigned'
+    p_avatar TEXT DEFAULT NULL,
+    p_team TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -111,6 +111,7 @@ DECLARE
     v_clean_name TEXT;
     v_clean_avatar TEXT;
     v_display_name TEXT;
+    v_display_avatar TEXT;
 BEGIN
     -- 0. Critical Advisory Lock: Serializes concurrent requests for the same device UUID.
     -- Prevents double-execution in React dev/StrictMode, double-clicks, and sequence gaps.
@@ -120,13 +121,17 @@ BEGIN
     v_clean_name := SUBSTRING(REGEXP_REPLACE(TRIM(COALESCE(p_name, '')), '[^a-zA-Z0-9 _-]', '', 'g'), 1, 16);
     
     -- Avatar handling: allow full URLs (e.g. Supabase Storage CDN) or fallback to numeric 1..30
-    IF p_avatar ~* '^https?://' OR p_avatar ~* '^/storage/' THEN
-        v_clean_avatar := TRIM(p_avatar);
-    ELSE
-        v_clean_avatar := SUBSTRING(REGEXP_REPLACE(TRIM(COALESCE(p_avatar, '1')), '[^0-9]', '', 'g'), 1, 2);
-        IF v_clean_avatar = '' OR v_clean_avatar::INT < 1 OR v_clean_avatar::INT > 30 THEN
-            v_clean_avatar := '1';
+    IF p_avatar IS NOT NULL AND TRIM(p_avatar) <> '' THEN
+        IF p_avatar ~* '^https?://' OR p_avatar ~* '^/storage/' OR p_avatar ~* '^data:' OR p_avatar ~* '^blob:' THEN
+            v_clean_avatar := TRIM(p_avatar);
+        ELSE
+            v_clean_avatar := SUBSTRING(REGEXP_REPLACE(TRIM(p_avatar), '[^0-9]', '', 'g'), 1, 2);
+            IF v_clean_avatar = '' OR v_clean_avatar::INT < 1 OR v_clean_avatar::INT > 30 THEN
+                v_clean_avatar := '1';
+            END IF;
         END IF;
+    ELSE
+        v_clean_avatar := NULL;
     END IF;
 
     -- 1. Check if device already claimed a guest ID (reconnect after reload or profile update)
@@ -143,11 +148,18 @@ BEGIN
             v_display_name := v_player.name;
         END IF;
 
+        -- CRITICAL: Preserve existing avatar if not explicitly provided (prevents wiping out custom photo!)
+        IF v_clean_avatar IS NOT NULL THEN
+            v_display_avatar := v_clean_avatar;
+        ELSE
+            v_display_avatar := v_player.avatar;
+        END IF;
+
         UPDATE public.players 
         SET last_seen_at = NOW(),
             is_active = TRUE,
             name = v_display_name,
-            avatar = v_clean_avatar,
+            avatar = v_display_avatar,
             team = COALESCE(NULLIF(TRIM(p_team), ''), v_player.team)
         WHERE id = v_player.id
         RETURNING * INTO v_player;

@@ -293,9 +293,9 @@ function withTimeout(promise, ms, errorMsg = 'Server response timed out. Please 
  * Atomically claims or reconnects a guest player using PostgreSQL sequence + device token.
  * Prevents any ID collision and recovers existing session across mobile refreshes.
  */
-export async function claimOrRegisterGuest({ name = null, avatar = '1', team = 'unassigned' } = {}) {
-  // If an initial claim is already pending for this device without a name update, reuse in-flight promise
-  if (!name && activeClaimPromise) {
+export async function claimOrRegisterGuest({ name = null, avatar = null, team = null } = {}) {
+  // If an initial claim is already pending for this device without a name or avatar update, reuse in-flight promise
+  if (!name && !avatar && activeClaimPromise) {
     return activeClaimPromise;
   }
 
@@ -324,13 +324,13 @@ export async function claimOrRegisterGuest({ name = null, avatar = '1', team = '
       console.error('[Arena Service] claimOrRegisterGuest error:', err);
       return { success: false, data: null, error: err.message };
     } finally {
-      if (!name) {
+      if (!name && !avatar) {
         activeClaimPromise = null;
       }
     }
   })();
 
-  if (!name) {
+  if (!name && !avatar) {
     activeClaimPromise = claimOperation;
   }
 
