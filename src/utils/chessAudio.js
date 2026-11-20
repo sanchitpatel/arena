@@ -1,8 +1,12 @@
 /**
- * ARENA CHESS AUDIO — Pure Acoustic Wood-Board Sound Engine
- * Uses authentic recorded wooden piece samples (move.mp3 & capture.mp3)
- * for piece movements, captures, checks, and game resolutions.
- * Zero arcade beeps, zero harsh synthesizers.
+ * ARENA CHESS AUDIO — Custom User Audio Suite (.m4a)
+ * 1. Move: move.m4a
+ * 2. Capture: takes.m4a
+ * 3. Check: check.m4a
+ * 4. Game Over (Victory / Defeat): checkmate.m4a
+ * 
+ * Pre-decoded via Web Audio API for 0ms instantaneous attack.
+ * Master chain with 7kHz lowpass + compressor for zero clipping.
  */
 
 let audioCtx = null;
@@ -12,8 +16,10 @@ let isMuted = false;
 const samples = {};
 
 const SAMPLE_FILES = {
-  move: 'move.mp3',
-  capture: 'capture.mp3',
+  move: 'move.m4a',
+  capture: 'takes.m4a',
+  check: 'check.m4a',
+  checkmate: 'checkmate.m4a',
 };
 
 function getAudioContext() {
@@ -79,7 +85,7 @@ export async function loadChessSounds(base = '/sounds/chess') {
 export function setChessAudioMuted(muted) { isMuted = Boolean(muted); }
 export function getChessAudioMuted() { return isMuted; }
 
-// ---------- Internal Helpers ----------
+// ---------- Internal Fallback Synthesizer ----------
 function getNoise(ctx) {
   if (!noiseBuf) {
     const len = Math.floor(ctx.sampleRate * 0.1);
@@ -90,10 +96,8 @@ function getNoise(ctx) {
   return noiseBuf;
 }
 
-// Tactile wood hit fallback (triangle body + bandpass noise click)
 function hit(ctx, t, { body = 170, click = 2200, vol = 0.45, decay = 0.07 } = {}) {
   const j = 1 + (Math.random() * 0.08 - 0.04);
-
   const o = ctx.createOscillator();
   const og = ctx.createGain();
   o.type = 'triangle';
@@ -122,7 +126,6 @@ function hit(ctx, t, { body = 170, click = 2200, vol = 0.45, decay = 0.07 } = {}
   n.stop(t + 0.04);
 }
 
-// Soft acoustic sine chime with gentle attack
 function softChime(ctx, t, freq, { dur = 0.65, vol = 0.08 } = {}) {
   const o = ctx.createOscillator();
   const g = ctx.createGain();
@@ -144,7 +147,8 @@ function playSample(name, vol = 1, rate = 1) {
   if (!ctx) return false;
   const s = ctx.createBufferSource();
   s.buffer = buf;
-  s.playbackRate.value = rate * (1 + (Math.random() * 0.04 - 0.02)); // subtle humanized pitch
+  const variance = name === 'move' ? (Math.random() * 0.04 - 0.02) : 0;
+  s.playbackRate.value = rate * (1 + variance);
   const g = ctx.createGain();
   g.gain.value = vol;
   s.connect(g);
@@ -155,7 +159,7 @@ function playSample(name, vol = 1, rate = 1) {
 
 // ---------- Public Audio API ----------
 
-/** 1. Normal Piece Move: Authentic wood piece placement */
+/** 1. Normal Piece Move: move.m4a */
 export function playMoveSound() {
   if (isMuted) return;
   try {
@@ -167,7 +171,7 @@ export function playMoveSound() {
   triggerHaptic(10);
 }
 
-/** 2. Piece Capture: Authentic wood impact */
+/** 2. Piece Capture: takes.m4a */
 export function playCaptureSound() {
   if (isMuted) return;
   try {
@@ -183,43 +187,46 @@ export function playCaptureSound() {
   triggerHaptic(25);
 }
 
-/** 3. Check: Authoritative firm wood strike (deeper pitch) + tactile check pulse (No arcade siren) */
+/** 3. Check: check.m4a */
 export function playCheckSound() {
   if (isMuted) return;
   try {
-    // Reuses the authentic move.mp3 wood sound with deeper, firmer resonance
-    if (!playSample('move', 1.15, 0.91)) {
-      const ctx = getAudioContext();
-      if (ctx) hit(ctx, ctx.currentTime, { body: 200, click: 2500, vol: 0.6, decay: 0.09 });
+    if (!playSample('check')) {
+      if (!playSample('move', 1.15, 0.91)) {
+        const ctx = getAudioContext();
+        if (ctx) hit(ctx, ctx.currentTime, { body: 200, click: 2500, vol: 0.6, decay: 0.09 });
+      }
     }
   } catch {}
   triggerHaptic([30, 40, 30]);
 }
 
-/** 4. Victory: Warm, prestigious luxury bell chord (F-Major 9th: F, A, C, E) — gentle & relaxing */
+/** 4. Victory: checkmate.m4a */
 export function playVictorySound() {
   if (isMuted) return;
   try {
-    const ctx = getAudioContext();
-    if (ctx) {
-      const t = ctx.currentTime;
-      // Soft ambient Rhodes / Zen chime chord
-      [349.23, 440.00, 523.25, 659.25].forEach((freq, idx) => {
-        softChime(ctx, t + idx * 0.07, freq, { dur: 0.7, vol: 0.08 });
-      });
+    if (!playSample('checkmate')) {
+      const ctx = getAudioContext();
+      if (ctx) {
+        const t = ctx.currentTime;
+        [349.23, 440.00, 523.25, 659.25].forEach((freq, idx) => {
+          softChime(ctx, t + idx * 0.07, freq, { dur: 0.7, vol: 0.08 });
+        });
+      }
     }
   } catch {}
   triggerHaptic([40, 60, 40, 60, 80]);
 }
 
-/** 5. Defeat: Muted, quiet wooden piece tap (like setting down a king / clock stopped) — zero annoying buzzer */
+/** 5. Defeat: checkmate.m4a */
 export function playDefeatSound() {
   if (isMuted) return;
   try {
-    // Soft, quiet wood tap
-    if (!playSample('move', 0.45, 0.85)) {
-      const ctx = getAudioContext();
-      if (ctx) hit(ctx, ctx.currentTime, { body: 140, click: 1300, vol: 0.3, decay: 0.06 });
+    if (!playSample('checkmate')) {
+      if (!playSample('move', 0.45, 0.85)) {
+        const ctx = getAudioContext();
+        if (ctx) hit(ctx, ctx.currentTime, { body: 140, click: 1300, vol: 0.3, decay: 0.06 });
+      }
     }
   } catch {}
   triggerHaptic(20);
