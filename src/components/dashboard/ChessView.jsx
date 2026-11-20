@@ -1244,10 +1244,10 @@ export function ChessView({ player, onBack }) {
                 type="button"
                 onClick={() => setPlayerSide('white')}
                 title="Play as White"
-                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white flex items-center justify-center cursor-pointer active:scale-95 border-2 transition-[border-color,box-shadow,transform] duration-150 ease-out ${
                   playerSide === 'white'
-                    ? 'border-2 border-sky-500 shadow-[0_0_0_1px_#0ea5e9,0_3px_8px_rgba(14,165,233,0.3)]'
-                    : 'border border-slate-300/80 shadow-sm hover:border-slate-400'
+                    ? 'border-sky-500 shadow-[0_0_0_1px_#0ea5e9,0_3px_8px_rgba(14,165,233,0.3)]'
+                    : 'border-slate-200/90 shadow-sm hover:border-slate-300'
                 }`}
               >
                 <ChessKing size={27} strokeWidth={2} className="text-zinc-900" />
@@ -1258,10 +1258,10 @@ export function ChessView({ player, onBack }) {
                 type="button"
                 onClick={() => setPlayerSide('random')}
                 title="Play as Random Side"
-                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl relative overflow-hidden flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl relative overflow-hidden flex items-center justify-center cursor-pointer active:scale-95 border-2 transition-[border-color,box-shadow,transform] duration-150 ease-out ${
                   playerSide === 'random'
-                    ? 'border-2 border-sky-500 shadow-[0_0_0_1px_#0ea5e9,0_3px_8px_rgba(14,165,233,0.3)]'
-                    : 'border border-slate-300/80 shadow-sm hover:border-slate-400'
+                    ? 'border-sky-500 shadow-[0_0_0_1px_#0ea5e9,0_3px_8px_rgba(14,165,233,0.3)]'
+                    : 'border-slate-200/90 shadow-sm hover:border-slate-300'
                 }`}
               >
                 <div className="absolute inset-y-0 left-0 w-1/2 bg-white" />
@@ -1276,10 +1276,10 @@ export function ChessView({ player, onBack }) {
                 type="button"
                 onClick={() => setPlayerSide('black')}
                 title="Play as Black"
-                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#262522] flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#262522] flex items-center justify-center cursor-pointer active:scale-95 border-2 transition-[border-color,box-shadow,transform] duration-150 ease-out ${
                   playerSide === 'black'
-                    ? 'border-2 border-sky-500 shadow-[0_0_0_1px_#0ea5e9,0_3px_8px_rgba(14,165,233,0.3)]'
-                    : 'border border-zinc-700 shadow-sm hover:border-zinc-600'
+                    ? 'border-sky-500 shadow-[0_0_0_1px_#0ea5e9,0_3px_8px_rgba(14,165,233,0.3)]'
+                    : 'border-zinc-700/80 shadow-sm hover:border-zinc-600'
                 }`}
               >
                 <ChessKing size={27} strokeWidth={2} className="text-white" />
@@ -1304,16 +1304,16 @@ export function ChessView({ player, onBack }) {
                     key={time}
                     type="button"
                     onClick={() => setSelectedFormat(time)}
-                    className={`py-2.5 px-2 rounded-2xl text-center cursor-pointer transition-all active:scale-[0.97] ${
+                    className={`h-[62px] py-2 px-2 rounded-2xl text-center cursor-pointer border-2 transition-[background-color,border-color,box-shadow,color] duration-150 ease-out active:scale-[0.98] select-none flex flex-col items-center justify-center ${
                       isSelected
-                        ? 'bg-[#e2e8f0] text-zinc-950 border-2 border-sky-500 shadow-[inset_3px_3px_6px_#c2c9d4,inset_-3px_-3px_6px_#ffffff]'
-                        : 'bg-[#F2F7FC] hover:bg-white text-zinc-700 border border-white/90 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff]'
+                        ? 'bg-[#e2e8f0] text-zinc-950 border-sky-500 shadow-[inset_3px_3px_6px_#c2c9d4,inset_-3px_-3px_6px_#ffffff]'
+                        : 'bg-[#F2F7FC] hover:bg-white text-zinc-700 border-white/90 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff]'
                     }`}
                   >
-                    <div className={`text-sm sm:text-base tracking-tight ${isSelected ? 'font-black text-zinc-950' : 'font-extrabold text-zinc-800'}`}>
+                    <div className={`text-sm sm:text-base font-black tracking-tight leading-tight ${isSelected ? 'text-zinc-950' : 'text-zinc-800'}`}>
                       {time}
                     </div>
-                    <div className={`text-xs mt-0.5 ${isSelected ? 'font-bold text-sky-600' : 'font-semibold text-zinc-400'}`}>
+                    <div className={`text-xs font-bold mt-0.5 leading-none ${isSelected ? 'text-sky-600' : 'text-zinc-400'}`}>
                       {type}
                     </div>
                   </button>
@@ -1337,8 +1337,8 @@ export function ChessView({ player, onBack }) {
                 </div>
               </div>
               <div className="flex flex-col items-center">
-                <p className="text-sm font-bold text-zinc-800">Finding an opponent doctor in Arena...</p>
-                <p className="text-[11px] text-zinc-500 font-mono mt-0.5">Searching for {queueSeconds}s</p>
+                <p className="text-base font-bold text-zinc-900">Finding an opponent in Arena...</p>
+                <p className="text-[14px] text-zinc-600 font-mono mt-0.5">Searching for {queueSeconds}s</p>
               </div>
 
               {queueSeconds >= 60 && (
@@ -1360,28 +1360,32 @@ export function ChessView({ player, onBack }) {
 
               <button
                 onClick={handleCancelQueue}
-                className="text-xs text-zinc-600 underline hover:text-zinc-900 cursor-pointer active:scale-95 transition-transform font-medium"
+                className="text-sm text-zinc-700 font-arena hover:text-zinc-900 cursor-pointer active:scale-95 transition-transform font-medium"
               >
-                Cancel Queue
+                Cancel
               </button>
             </div>
           ) : (
-            <div className="w-full flex flex-col gap-3 mt-2">
+            <div className="w-full grid grid-cols-2 gap-2.5 sm:gap-3 mt-2">
+              {/* Left: Play Bot Button (Gradient Blue with Inward Shadows) */}
               <button
-                onClick={startPvpMatch}
-                disabled={loadingAction}
-                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.98] transition-all text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 cursor-pointer"
+                type="button"
+                onClick={startBotMatch}
+                className="py-3.5 px-2.5 rounded-2xl bg-gradient-to-b from-sky-400 via-sky-500 to-blue-600 hover:from-sky-300 hover:to-blue-500 active:scale-[0.98] transition-all text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.45),inset_0_-3px_5px_rgba(0,0,0,0.35),0_4px_12px_rgba(14,165,233,0.3)] border border-sky-300/60 cursor-pointer select-none"
               >
-                <Lightning size={18} weight="fill" />
-                <span>Find 1v1 Opponent ({selectedFormat})</span>
+                <Play size={18} weight="fill" className="text-white shrink-0" />
+                <span>Play Bot</span>
               </button>
 
+              {/* Right: Find Opponent Button (Shiny Black with Inward Shadows) */}
               <button
-                onClick={startBotMatch}
-                className="w-full py-3 px-4 rounded-2xl bg-[#F2F7FC] hover:bg-white active:scale-[0.98] transition-all border border-white text-zinc-800 font-bold text-sm flex items-center justify-center gap-2 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] cursor-pointer"
+                type="button"
+                onClick={startPvpMatch}
+                disabled={loadingAction}
+                className="py-3.5 px-2.5 rounded-2xl bg-gradient-to-b from-zinc-800 via-zinc-900 to-black hover:from-zinc-750 hover:to-zinc-950 active:scale-[0.98] transition-all text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-3px_5px_rgba(0,0,0,0.7),0_4px_12px_rgba(0,0,0,0.35)] border border-zinc-700/80 cursor-pointer select-none disabled:opacity-50"
               >
-                <Play size={16} weight="fill" className="text-emerald-500" />
-                <span>Practice vs Dr. DeepBlue (AI Bot)</span>
+                <Lightning size={20} weight="fill" className="text-white shrink-0" />
+                <span>Find Opponent</span>
               </button>
             </div>
           )}
