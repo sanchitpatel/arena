@@ -1332,7 +1332,7 @@ export function ChessView({ player, onBack }) {
             <div className="w-full py-8 flex flex-col items-center gap-4">
               <div className="relative flex items-center justify-center">
                 <div className="w-20 h-20 rounded-full border-2 border-sky-500/30 animate-ping absolute" />
-                <div className="w-14 h-14 rounded-full bg-sky-500/10 border border-sky-400 flex items-center justify-center text-sky-400">
+                <div className="w-14 h-14 rounded-full bg-sky-500/10 border border-sky-400 flex items-center justify-center text-blue-400">
                   <CircleNotch size={28} className="animate-spin" />
                 </div>
               </div>
@@ -1343,15 +1343,15 @@ export function ChessView({ player, onBack }) {
 
               {queueSeconds >= 60 && (
                 <div className="p-3 rounded-2xl bg-white/80 border border-slate-200 max-w-xs flex flex-col items-center gap-2 animate-fade-in shadow-sm">
-                  <p className="text-xs text-zinc-700 text-center font-medium">
-                    Queue taking longer than usual?
+                  <p className="text-sm text-zinc-500 text-center font-medium">
+                    Taking longer than usual?
                   </p>
                   <button
                     onClick={async () => {
                       const matched = await handleCancelQueue();
                       if (!matched) startBotMatch();
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold active:scale-95 transition-all cursor-pointer"
+                    className="px-2 py-2 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold active:scale-95 transition-all cursor-pointer"
                   >
                     Play Practice Bot Instead
                   </button>
