@@ -117,10 +117,10 @@ const ChessClock = React.memo(function ChessClock({
   return (
     <div
       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-sm font-bold tracking-wider transition-colors ${isLowTime
-        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+        ? 'bg-rose-100 text-rose-600 border border-rose-300 animate-pulse shadow-sm'
         : isRunning
-          ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-          : 'bg-zinc-800/80 text-zinc-400'
+          ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20'
+          : 'bg-white/80 text-slate-700 border border-slate-300/70 shadow-sm'
         }`}
     >
       <Clock size={15} />
@@ -1426,26 +1426,21 @@ export function ChessView({ player, onBack }) {
       )}
 
       {/* OPPONENT BANNER (TOP) */}
-      <div
-        className={`p-2.5 rounded-2xl border transition-all flex items-center justify-between ${!isMyTurn
-          ? 'bg-zinc-900/90 border-sky-500/40 shadow-md shadow-sky-950/30'
-          : 'bg-zinc-900/50 border-zinc-800/80'
-          }`}
-      >
+      <div className="px-1 py-1 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl overflow-hidden border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-300/80 bg-white/80 shadow-sm flex items-center justify-center">
             <ArenaAvatar avatarId={opponent?.avatar || '1'} size={32} />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-white truncate max-w-[120px]">
+              <span className="text-xs sm:text-sm font-bold text-zinc-900 truncate max-w-[130px]">
                 {opponent?.name || opponent?.guest_id || 'Opponent'}
               </span>
-              <span className="text-[10px] px-1 rounded bg-zinc-800 text-zinc-400">
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600">
                 {playerColor === 'w' ? 'Black' : 'White'}
               </span>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-zinc-400 mt-0.5">
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
               <span>
                 {(playerColor === 'w'
                   ? capturedPieces.blackCaptured
@@ -1453,7 +1448,7 @@ export function ChessView({ player, onBack }) {
                 ).join(' ')}
               </span>
               {capturedPieces.advantage !== 0 && (
-                <span className="text-[10px] text-emerald-400 font-semibold">
+                <span className="text-[10px] text-emerald-600 font-bold">
                   {playerColor === 'w' && capturedPieces.advantage < 0
                     ? `+${Math.abs(capturedPieces.advantage)}`
                     : playerColor === 'b' && capturedPieces.advantage > 0
@@ -1467,7 +1462,7 @@ export function ChessView({ player, onBack }) {
 
         {/* Opponent Clock: PVP Blitz Clock, or clean badge for practice */}
         {matchMode === 'bot' ? (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/80 text-zinc-400 font-mono text-xs font-semibold tracking-wider">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border border-slate-300/70 text-slate-700 font-mono text-xs font-semibold tracking-wider shadow-sm">
             <span>Practice</span>
           </div>
         ) : (
@@ -1582,26 +1577,21 @@ export function ChessView({ player, onBack }) {
       </div>
 
       {/* ACTIVE PLAYER BANNER (BOTTOM) */}
-      <div
-        className={`p-2.5 rounded-2xl border transition-all flex items-center justify-between ${isMyTurn
-          ? 'bg-zinc-900/90 border-sky-500/40 shadow-md shadow-sky-950/30'
-          : 'bg-zinc-900/50 border-zinc-800/80'
-          }`}
-      >
+      <div className="px-1 py-1 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl overflow-hidden border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-300/80 bg-white/80 shadow-sm flex items-center justify-center">
             <ArenaAvatar avatarId={player?.avatar || '1'} size={32} />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-white truncate max-w-[120px]">
+              <span className="text-xs sm:text-sm font-bold text-zinc-900 truncate max-w-[130px]">
                 {player?.name || player?.guest_id || 'You'}
               </span>
-              <span className="text-[10px] px-1 rounded bg-zinc-800 text-zinc-400">
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600">
                 {playerColor === 'w' ? 'White' : 'Black'}
               </span>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-zinc-400 mt-0.5">
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
               <span>
                 {(playerColor === 'w'
                   ? capturedPieces.whiteCaptured
@@ -1609,7 +1599,7 @@ export function ChessView({ player, onBack }) {
                 ).join(' ')}
               </span>
               {capturedPieces.advantage !== 0 && (
-                <span className="text-[10px] text-emerald-400 font-semibold">
+                <span className="text-[10px] text-emerald-600 font-bold">
                   {playerColor === 'w' && capturedPieces.advantage > 0
                     ? `+${capturedPieces.advantage}`
                     : playerColor === 'b' && capturedPieces.advantage < 0
@@ -1623,7 +1613,7 @@ export function ChessView({ player, onBack }) {
 
         {/* Active Player Clock: PVP Blitz Clock, or clean badge for practice */}
         {matchMode === 'bot' ? (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/80 text-zinc-400 font-mono text-xs font-semibold tracking-wider">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border border-slate-300/70 text-slate-700 font-mono text-xs font-semibold tracking-wider shadow-sm">
             <span>Practice</span>
           </div>
         ) : (

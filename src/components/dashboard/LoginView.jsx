@@ -261,7 +261,7 @@ export const LoginView = ({ onEnterArena }) => {
         <div className="flex flex-col items-center text-center mb-3">
           <Logo className="w-[68px] h-[68px] sm:w-20 sm:h-20 mb-1" />
           <h1 className="font-arena text-[32px] sm:text-[36px] font-black tracking-wider text-zinc-900">
-            ARENA
+            BMIIL ARENA
           </h1>
         </div>
 
