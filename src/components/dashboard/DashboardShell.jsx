@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { UserCirclePlus, UserList, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X, ArenaMapIcon, CurrencyCircleDollar, Lightbulb, Swords } from '../icons';
+import { UserCirclePlus, ChessPawn, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X, ArenaMapIcon, CurrencyCircleDollar, Lightbulb } from '../icons';
 import Logo from '../Logo';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
@@ -229,22 +229,16 @@ export const DashboardShell = ({
       description: 'Register new patient',
     },
     {
-      id: 'existing-patient',
-      label: 'Existing Patient',
-      icon: UserList,
-      description: 'Search records',
+      id: 'chess',
+      label: 'Chess',
+      icon: ChessPawn,
+      description: '5m Blitz & Arena points',
     },
     {
       id: 'scanner',
       label: 'Scan QR',
       icon: Scan,
       description: 'QR scanner & battle duels',
-    },
-    {
-      id: 'chess',
-      label: 'Chess 1v1',
-      icon: Swords,
-      description: '5m Blitz & Arena points',
     },
     {
       id: 'dashboard',
@@ -439,7 +433,7 @@ export const DashboardShell = ({
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#ebedf2]/95 backdrop-blur-lg border-t border-slate-300/60 shadow-[0_-4px_20px_rgba(197,204,214,0.7)] px-1.5 py-1.5">
         <div className="flex items-end justify-between max-w-md mx-auto w-full">
-          {navItems.filter((item) => item.id !== 'notifications' && item.id !== 'map' && item.id !== 'chess').map((item) => {
+          {navItems.filter((item) => item.id !== 'notifications' && item.id !== 'map').map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             const isCenterScanner = item.id === 'scanner';
@@ -530,7 +524,7 @@ export const DashboardShell = ({
             ARENA
           </span>
 
-          {/* Top Actions: Notification on left, Ideas in middle-left, Chess in middle-right, Map on rightmost end */}
+          {/* Top Actions: Notification on left, Ideas in center, Map on rightmost end */}
           <div className="flex items-center gap-2 sm:gap-2.5">
             {/* Notification Option (Two-layer GPU opacity cross-fade: zero scale wobble, rock-solid) */}
             <button
@@ -608,38 +602,6 @@ export const DashboardShell = ({
                   size={23}
                   weight="fill"
                   className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${(activeTab === 'ideas' || activeTab === 'prizes') ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                    }`}
-                />
-              </div>
-            </button>
-
-            {/* Chess 1v1 Arena Button */}
-            <button
-              type="button"
-              onClick={() => {
-                closeNotification();
-                if (typeof onTabChange === 'function') onTabChange('chess');
-              }}
-              title="Arena Chess 1v1"
-              className="relative w-9 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-[0.92] transition-transform duration-100 ease-out"
-            >
-              <span
-                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${activeTab === 'chess' ? 'opacity-0' : 'opacity-100'
-                  }`}
-              />
-              <span
-                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${activeTab === 'chess' ? 'opacity-100' : 'opacity-0'
-                  }`}
-              />
-              <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
-                <Swords
-                  size={20}
-                  className={`absolute text-zinc-700 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${activeTab === 'chess' ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
-                    }`}
-                />
-                <Swords
-                  size={20}
-                  className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${activeTab === 'chess' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
                     }`}
                 />
               </div>

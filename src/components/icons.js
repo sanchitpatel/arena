@@ -166,6 +166,18 @@ export { YoutubeLogo } from '@phosphor-icons/react/dist/icons/YoutubeLogo';
 
 // Official Esports & Battle Icons (Tree-shaken, 100% local)
 export { Swords, Sword as LucideSword } from 'lucide-react';
+import { ChessPawn as LucideChessPawn } from 'lucide-react';
+
+export const ChessPawn = ({ size = 24, weight = 'regular', strokeWidth, className = '', ...props }) => {
+  const resolvedStrokeWidth = strokeWidth || (weight === 'bold' ? 2.75 : 2);
+  return React.createElement(LucideChessPawn, {
+    size,
+    strokeWidth: resolvedStrokeWidth,
+    className,
+    ...props,
+  });
+};
+export const Pawn = ChessPawn;
 
 // Official Pixel-Perfect QR Code Icon (Bootstrap Icons spec)
 export const BootstrapQrCode = ({ size = 20, className = '', ...props }) =>
