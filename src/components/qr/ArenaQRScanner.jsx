@@ -12,6 +12,7 @@ import {
 import { getPlayerId, getPlayerUuid } from '../../utils/playerId';
 import { createDirectChallenge, subscribeToMatchmakingQueue } from '../../services/chessService';
 import { hasUploadedPhoto } from '../dashboard/ChessView';
+import { supabase } from '../../utils/supabase';
 
 /**
  * ArenaQRScanner Component:
@@ -60,74 +61,151 @@ export default function ArenaQRScanner({
   // Generate unique DOM container ID per mount to avoid collision
   const containerId = useRef(`arena-qr-reader-${Math.random().toString(36).substring(2, 9)}`).current;
 
-  // Validates and extracts official Arena QR player payload
+  // Validates and extracts official Arena QR player payload from ANY source format
   const parseArenaQRPayload = (rawText) => {
     if (!rawText || typeof rawText !== 'string') return null;
+    const text = rawText.trim();
+    if (!text) return null;
 
     let payload = null;
 
     // Case 1: JSON payload format (e.g. {"app":"ARENA","gid":"Guest008","orb":8,"name":"Guest008","avatar":"1"})
-    if (rawText.startsWith('{') && rawText.endsWith('}')) {
+    if (text.startsWith('{') && text.endsWith('}')) {
       try {
-        const json = JSON.parse(rawText);
-        const rawGid = json.gid || json.player;
-        if (json && (json.app === 'ARENA' || /^guest/i.test(rawGid)) && rawGid) {
+        const json = JSON.parse(text);
+        const rawGid = json.gid || json.player || json.guest_id || json.guest;
+        const rawUid = json.uid || json.id;
+        if (rawGid || rawUid || json.app === 'ARENA') {
+          const gidMatch = String(rawGid || '').match(/^guest[\s\-_]?(\d+)$/i);
           const parsedOrb = parseInt(json.orb, 10);
-          const gidMatch = String(rawGid).match(/^guest(\d+)$/i);
-          const canonicalGid = gidMatch ? `Guest${gidMatch[1].padStart(3, '0')}` : String(rawGid).trim();
+          const canonicalGid = gidMatch
+            ? `Guest${String(gidMatch[1]).padStart(3, '0')}`
+            : rawGid ? String(rawGid).trim() : null;
+          const orbVal = !isNaN(parsedOrb) && parsedOrb >= 1
+            ? parsedOrb
+            : (gidMatch ? parseInt(gidMatch[1], 10) : 1);
+
           payload = {
             app: 'ARENA',
             gid: canonicalGid,
-            uid: json.uid || null,
-            orb: isNaN(parsedOrb) || parsedOrb < 1 ? 1 : parsedOrb,
-            name: String(json.name || canonicalGid).trim(),
+            uid: rawUid || null,
+            orb: orbVal,
+            name: String(json.name || canonicalGid || 'Arena Player').trim(),
             avatar: String(json.avatar || '1').trim(),
           };
         }
       } catch { }
     }
 
-    // Case 2: Official URL format (e.g. https://arena.bmiil.com/arena?app=ARENA&player=Guest008&orb=8&name=Guest008&avatar=1)
-    if (!payload && (rawText.startsWith('http://') || rawText.startsWith('https://'))) {
-      try {
-        const url = new URL(rawText);
-        const params = url.searchParams;
+    // Case 2: URL format (Supports localhost, LAN IPs, production domains, with or without protocol)
+    if (!payload) {
+      let urlObj = null;
+      if (/^https?:\/\//i.test(text)) {
+        try { urlObj = new URL(text); } catch { }
+      } else if (text.includes('?') && (text.includes('player=') || text.includes('gid=') || text.includes('app=') || text.includes('uid='))) {
+        try { urlObj = new URL('https://' + text); } catch { }
+      }
+
+      if (urlObj) {
+        const params = urlObj.searchParams;
+        const rawGid = params.get('player') || params.get('gid') || params.get('guest_id') || params.get('guest') || params.get('user');
+        const rawUid = params.get('uid') || params.get('id');
         const appParam = params.get('app');
-        const playerParam = params.get('player') || params.get('gid');
 
-        // Security validation:
-        // 1. Strict protocol: http or https
-        // 2. Strict path: /arena or /arena/
-        // 3. Origin must match active domain or trusted Arena host (localhost gated to DEV)
-        const isDev = Boolean(typeof import.meta !== 'undefined' && import.meta.env?.DEV);
-        const isTrustedHost =
-          typeof window !== 'undefined' &&
-          (url.hostname === window.location.hostname ||
-            url.hostname === 'arena.bmiil.com' ||
-            url.hostname.endsWith('.bmiil.com') ||
-            (isDev && (url.hostname === 'localhost' || url.hostname === '127.0.0.1')));
-
-        const isArenaPath = url.pathname === '/arena' || url.pathname === '/arena/';
-
-        if (isTrustedHost && playerParam && (appParam === 'ARENA' || isArenaPath)) {
+        // Accept if it contains player/gid, or mentions Arena in app param or path
+        if (rawGid || rawUid || (appParam && appParam.toUpperCase() === 'ARENA') || /arena/i.test(urlObj.pathname)) {
+          const gidMatch = String(rawGid || '').match(/^guest[\s\-_]?(\d+)$/i);
           const parsedOrb = parseInt(params.get('orb'), 10);
-          const rawGid = String(playerParam).trim();
-          const gidMatch = rawGid.match(/^guest(\d+)$/i);
-          const canonicalGid = gidMatch ? `Guest${gidMatch[1].padStart(3, '0')}` : rawGid;
+          const canonicalGid = gidMatch
+            ? `Guest${String(gidMatch[1]).padStart(3, '0')}`
+            : rawGid ? String(rawGid).trim() : null;
+          const orbVal = !isNaN(parsedOrb) && parsedOrb >= 1
+            ? parsedOrb
+            : (gidMatch ? parseInt(gidMatch[1], 10) : 1);
+
           payload = {
             app: 'ARENA',
             gid: canonicalGid,
-            uid: params.get('uid') || null,
-            orb: isNaN(parsedOrb) || parsedOrb < 1 ? 1 : parsedOrb,
-            name: String(params.get('name') || canonicalGid).trim(),
+            uid: rawUid || null,
+            orb: orbVal,
+            name: String(params.get('name') || canonicalGid || 'Arena Player').trim(),
             avatar: String(params.get('avatar') || '1').trim(),
           };
         }
-      } catch { }
+      }
     }
 
-    // Sanity validation: must have non-empty gid between 3 and 32 characters
-    if (payload && payload.gid && payload.gid.length >= 3 && payload.gid.length <= 32) {
+    // Case 3: Prefixed plain string (e.g. "ARENA:Guest042", "player:Guest042", "guest:42")
+    if (!payload) {
+      const prefixMatch = text.match(/^(?:arena[:\-\s]+|player[:\-\s]+|guest[:\-\s]+)(.*)$/i);
+      if (prefixMatch) {
+        const candidate = prefixMatch[1].trim();
+        const gMatch = candidate.match(/^guest[\s\-_]?(\d+)$/i) || candidate.match(/^(\d{1,3})$/);
+        if (gMatch) {
+          const num = parseInt(gMatch[1], 10);
+          const canonicalGid = `Guest${String(num).padStart(3, '0')}`;
+          payload = {
+            app: 'ARENA',
+            gid: canonicalGid,
+            uid: null,
+            orb: num,
+            name: canonicalGid,
+            avatar: '1',
+          };
+        }
+      }
+    }
+
+    // Case 4: Plain Guest ID or UUID or number
+    if (!payload) {
+      // UUID check
+      const uuidMatch = text.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      if (uuidMatch) {
+        payload = {
+          app: 'ARENA',
+          gid: null,
+          uid: text.toLowerCase(),
+          orb: 1,
+          name: 'Arena Player',
+          avatar: '1',
+        };
+      } else {
+        // Direct "Guest042", "guest42", "Guest_042"
+        const gidMatch = text.match(/^guest[\s\-_]?(\d+)$/i);
+        if (gidMatch) {
+          const num = parseInt(gidMatch[1], 10);
+          const canonicalGid = `Guest${String(num).padStart(3, '0')}`;
+          payload = {
+            app: 'ARENA',
+            gid: canonicalGid,
+            uid: null,
+            orb: num,
+            name: canonicalGid,
+            avatar: '1',
+          };
+        } else {
+          // Direct 1-3 digit integer: "42", "042"
+          const numMatch = text.match(/^\d{1,3}$/);
+          if (numMatch) {
+            const num = parseInt(numMatch[0], 10);
+            if (num >= 1 && num <= 999) {
+              const canonicalGid = `Guest${String(num).padStart(3, '0')}`;
+              payload = {
+                app: 'ARENA',
+                gid: canonicalGid,
+                uid: null,
+                orb: num,
+                name: canonicalGid,
+                avatar: '1',
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // Validation: must have either gid or uid
+    if (payload && (payload.gid || payload.uid)) {
       return payload;
     }
 
@@ -215,15 +293,20 @@ export default function ArenaQRScanner({
       const html5QrCode = new Html5Qrcode(containerId);
       scannerRef.current = html5QrCode;
 
-      const qrCodeSuccessCallback = (decodedText) => {
+      const qrCodeSuccessCallback = async (decodedText) => {
         if (!isMountedRef.current || runId !== runIdRef.current || hasScannedRef.current) return;
 
         const parsed = parseArenaQRPayload(decodedText);
 
         if (parsed) {
           // Self-scan prevention: prevent an attendee from dueling or scanning themselves
-          const myId = getPlayerId();
-          if (myId && parsed.gid && parsed.gid.toUpperCase() === myId.toUpperCase()) {
+          const myGid = getPlayerId();
+          const myUid = player?.id || getPlayerUuid();
+
+          const isSelfGid = Boolean(myGid && parsed.gid && parsed.gid.toUpperCase() === myGid.toUpperCase());
+          const isSelfUid = Boolean(myUid && parsed.uid && parsed.uid.toLowerCase() === myUid.toLowerCase());
+
+          if (isSelfGid || isSelfUid) {
             if (lastInvalidCodeRef.current !== decodedText) {
               lastInvalidCodeRef.current = decodedText;
               setInvalidBanner("You can't duel yourself!");
@@ -238,7 +321,32 @@ export default function ArenaQRScanner({
 
           hasScannedRef.current = true;
           setInvalidBanner('');
-          setScannedPlayer(parsed);
+
+          // Live enrich opponent profile from database (real name, uploaded photo avatar, and UUID)
+          let enrichedPlayer = parsed;
+          try {
+            let q = supabase.from('players').select('id, name, guest_id, avatar, orb_number');
+            if (parsed.uid) {
+              q = q.eq('id', parsed.uid);
+            } else if (parsed.gid) {
+              q = q.ilike('guest_id', parsed.gid);
+            }
+            const { data: dbPlayer } = await q.maybeSingle();
+            if (dbPlayer) {
+              enrichedPlayer = {
+                ...parsed,
+                uid: dbPlayer.id || parsed.uid,
+                gid: dbPlayer.guest_id || parsed.gid,
+                name: dbPlayer.name || parsed.name,
+                avatar: dbPlayer.avatar || parsed.avatar,
+                orb: dbPlayer.orb_number || parsed.orb,
+              };
+            }
+          } catch (e) {
+            console.warn('[ArenaQRScanner] Player DB lookup fallback:', e);
+          }
+
+          setScannedPlayer(enrichedPlayer);
           setScannerStatus('success');
 
           if (navigator?.vibrate) {
@@ -253,7 +361,7 @@ export default function ArenaQRScanner({
           }
 
           if (typeof onScanSuccess === 'function') {
-            onScanSuccess(parsed);
+            onScanSuccess(enrichedPlayer);
           }
           return;
         }

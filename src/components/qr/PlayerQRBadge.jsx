@@ -66,19 +66,22 @@ export default function PlayerQRBadge({
       baseOrigin = window.location.origin;
     }
 
+    // Avoid packing huge base64 data URIs into the QR code; Supabase storage URLs or avatar IDs are compact
+    const safeAvatar = avatar && !String(avatar).startsWith('data:') ? String(avatar) : '1';
+
     const params = new URLSearchParams({
       app: 'ARENA',
       player: guestId,
       orb: String(orbNumber),
       name: displayName,
-      avatar: String(avatar),
+      avatar: safeAvatar,
     });
     if (player?.id) {
       params.set('uid', player.id);
     }
 
     return `${baseOrigin}/arena?${params.toString()}`;
-  }, [guestId, orbNumber, displayName, avatar]);
+  }, [guestId, orbNumber, displayName, avatar, player?.id]);
 
   useEffect(() => {
     if (!qrPayload) {

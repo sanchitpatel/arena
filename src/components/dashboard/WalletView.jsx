@@ -279,25 +279,25 @@ export const WalletView = ({ player, onNavigate }) => {
       {activeTab === 'leaderboard' ? (
         <div className="bg-white/80 backdrop-blur-xl border border-white/90 rounded-[2.2rem] p-4 sm:p-5 shadow-[0_16px_36px_rgba(180,200,225,0.38),inset_0_2px_4px_#ffffff] space-y-4">
           {/* Top 3 Podium (Rank 2 Silver | Rank 1 Gold | Rank 3 Bronze) */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 items-end pt-3 pb-1">
+          <div className="grid grid-cols-3 gap-1 sm:gap-2 items-end pt-2 pb-1">
             {/* ---------------- Rank 2 (Dr. Arjun Mehta - Silver) ---------------- */}
             <div className="flex flex-col items-center">
               {/* Silver Metallic Frame Container */}
-              <div className="relative w-[88px] h-[108px] sm:w-[98px] sm:h-[120px] flex items-center justify-center shrink-0">
+              <div className="relative w-[102px] h-[125px] sm:w-[112px] sm:h-[137px] flex items-center justify-center shrink-0">
                 {/* Circular Avatar placed in the clear aperture */}
-                <div className="absolute left-1/2 top-[52.3%] -translate-x-1/2 -translate-y-1/2 w-[49px] h-[49px] sm:w-[55px] sm:h-[55px] rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center z-0">
+                <div className="absolute left-1/2 top-[52.3%] -translate-x-1/2 -translate-y-1/2 w-[57px] h-[57px] sm:w-[63px] sm:h-[63px] rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center z-0">
                   <ArenaAvatar id={rank2.avatar} size="badge" className="w-full h-full object-cover" />
                 </div>
                 {/* Silver SVG Metallic Frame Overlay */}
                 <img
                   src="/silver.svg"
                   alt="Rank 2 Frame"
-                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10 drop-shadow-sm select-none"
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10 drop-shadow-md select-none"
                 />
               </div>
 
               {/* Pedestal Block 2 */}
-              <div className="w-full -mt-3.5 bg-gradient-to-b from-[#f1f6fc] via-[#e4eff9] to-[#d6e6f5] rounded-2xl p-2 pt-4 sm:pt-4.5 text-center border border-slate-200/90 shadow-[0_4px_14px_rgba(100,116,139,0.08)] min-h-[82px] sm:min-h-[88px] flex flex-col justify-center">
+              <div className="w-full -mt-4 sm:-mt-5 bg-gradient-to-b from-[#f1f6fc] via-[#e4eff9] to-[#d6e6f5] rounded-2xl p-2 pt-5 sm:pt-5.5 text-center border border-slate-200/90 shadow-[0_4px_14px_rgba(100,116,139,0.08)] min-h-[84px] sm:min-h-[90px] flex flex-col justify-center">
                 <span className="text-[11.5px] sm:text-[12px] font-black text-slate-900 leading-tight truncate px-0.5">
                   {rank2.name}
                 </span>
@@ -310,21 +310,21 @@ export const WalletView = ({ player, onNavigate }) => {
             {/* ---------------- Rank 1 (Dr. Elena Vance - Gold) ---------------- */}
             <div className="flex flex-col items-center">
               {/* Golden Metallic Frame Container */}
-              <div className="relative w-[114px] h-[105px] sm:w-[126px] sm:h-[116px] flex items-center justify-center shrink-0">
+              <div className="relative w-[136px] h-[125px] sm:w-[148px] sm:h-[136px] flex items-center justify-center shrink-0">
                 {/* Circular Avatar placed in the clear aperture */}
-                <div className="absolute left-1/2 top-[52.3%] -translate-x-1/2 -translate-y-1/2 w-[51px] h-[51px] sm:w-[57px] sm:h-[57px] rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center z-0">
+                <div className="absolute left-1/2 top-[52.3%] -translate-x-1/2 -translate-y-1/2 w-[60px] h-[60px] sm:w-[65px] sm:h-[65px] rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center z-0">
                   <ArenaAvatar id={rank1.avatar} size="badge" className="w-full h-full object-cover" />
                 </div>
                 {/* Golden SVG Metallic Frame Overlay */}
                 <img
                   src="/golden.svg"
                   alt="Rank 1 Frame"
-                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10 drop-shadow-md select-none"
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10 drop-shadow-lg select-none"
                 />
               </div>
 
               {/* Pedestal Block 1 (Elevated) */}
-              <div className="w-full -mt-3.5 bg-gradient-to-b from-[#fef8e7] via-[#fdeec4] to-[#fce4a6] rounded-2xl p-2 pt-4.5 sm:pt-5 text-center border border-amber-200/90 shadow-[0_6px_18px_rgba(245,158,11,0.14)] min-h-[96px] sm:min-h-[102px] flex flex-col justify-center">
+              <div className="w-full -mt-4 sm:-mt-5 bg-gradient-to-b from-[#fef8e7] via-[#fdeec4] to-[#fce4a6] rounded-2xl p-2 pt-5 sm:pt-6 text-center border border-amber-200/90 shadow-[0_6px_18px_rgba(245,158,11,0.14)] min-h-[98px] sm:min-h-[106px] flex flex-col justify-center">
                 <span className="text-[12px] sm:text-[12.5px] font-black text-slate-950 leading-tight truncate px-0.5">
                   {rank1.name}
                 </span>
@@ -337,21 +337,21 @@ export const WalletView = ({ player, onNavigate }) => {
             {/* ---------------- Rank 3 (Rohan Desai - Bronze) ---------------- */}
             <div className="flex flex-col items-center">
               {/* Bronze Metallic Frame Container */}
-              <div className="relative w-[88px] h-[108px] sm:w-[98px] sm:h-[120px] flex items-center justify-center shrink-0">
+              <div className="relative w-[102px] h-[125px] sm:w-[112px] sm:h-[137px] flex items-center justify-center shrink-0">
                 {/* Circular Avatar placed in the clear aperture */}
-                <div className="absolute left-1/2 top-[52.3%] -translate-x-1/2 -translate-y-1/2 w-[49px] h-[49px] sm:w-[55px] sm:h-[55px] rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center z-0">
+                <div className="absolute left-1/2 top-[52.3%] -translate-x-1/2 -translate-y-1/2 w-[57px] h-[57px] sm:w-[63px] sm:h-[63px] rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center z-0">
                   <ArenaAvatar id={rank3.avatar} size="badge" className="w-full h-full object-cover" />
                 </div>
                 {/* Bronze SVG Metallic Frame Overlay */}
                 <img
                   src="/bronze.svg"
                   alt="Rank 3 Frame"
-                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10 drop-shadow-sm select-none"
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10 drop-shadow-md select-none"
                 />
               </div>
 
               {/* Pedestal Block 3 */}
-              <div className="w-full -mt-3.5 bg-gradient-to-b from-[#fdf4f0] via-[#fae6de] to-[#f6d7cc] rounded-2xl p-2 pt-4 sm:pt-4.5 text-center border border-amber-200/60 shadow-[0_4px_14px_rgba(197,110,75,0.08)] min-h-[76px] sm:min-h-[82px] flex flex-col justify-center">
+              <div className="w-full -mt-4 sm:-mt-5 bg-gradient-to-b from-[#fdf4f0] via-[#fae6de] to-[#f6d7cc] rounded-2xl p-2 pt-5 sm:pt-5.5 text-center border border-amber-200/60 shadow-[0_4px_14px_rgba(197,110,75,0.08)] min-h-[78px] sm:min-h-[84px] flex flex-col justify-center">
                 <span className="text-[11.5px] sm:text-[12px] font-black text-slate-900 leading-tight truncate px-0.5">
                   {rank3.name}
                 </span>
