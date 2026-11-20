@@ -477,7 +477,7 @@ export const ExistingPatientView = ({
   };
 
   return (
-    <div className="space-y-2 sm:space-y-6 max-w-6xl mx-auto pb-10">
+    <div className="space-y-2 sm:space-y-6 max-w-6xl mx-auto pb-10 px-4 sm:px-0">
       {/* Sleek Minimalist Success Banner via Portal */}
       {mounted && toastNotification && createPortal(
         <div className="fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-[1000] flex items-center justify-between sm:justify-start gap-2 sm:gap-2.5 w-[92%] sm:w-auto max-w-md sm:max-w-none px-3.5 sm:px-5 py-2 sm:py-2.5 bg-[#e6ebf2]/95 backdrop-blur-xl border border-emerald-500/50 rounded-full shadow-[4px_4px_20px_rgba(0,0,0,0.25),-2px_-2px_10px_#ffffff] text-[11.5px] sm:text-sm animate-in fade-in slide-in-from-top-4 duration-200">

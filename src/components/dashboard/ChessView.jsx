@@ -32,6 +32,7 @@ import {
 } from '../../services/chessService';
 import {
   initAudioUnlock,
+  loadChessSounds,
   setChessAudioMuted,
   getChessAudioMuted,
   playMoveSound,
@@ -141,9 +142,10 @@ export function ChessView({ player, onBack }) {
   const botTimeoutRef = useRef(null);
   const lastInteractionRef = useRef({ time: 0, square: null });
 
-  // Unlock audio on first touch
+  // Unlock audio on first touch & preload chess audio samples
   useEffect(() => {
     initAudioUnlock();
+    loadChessSounds();
   }, []);
 
   // --------------------------------------------------------------------------

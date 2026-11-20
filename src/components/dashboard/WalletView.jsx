@@ -241,7 +241,7 @@ export const WalletView = ({ player, onNavigate }) => {
   const listPlayers = players.filter((p) => p.rank > 3);
 
   return (
-    <div className="w-full max-w-[430px] mx-auto px-3.5 sm:px-4 pt-2 pb-24 space-y-4 select-none font-sans">
+    <div className="w-full max-w-[430px] mx-auto px-4 sm:px-2 pt-2 pb-24 space-y-4 select-none font-sans">
       {/* ========================================================
           1. HEADER: "My Wallet" with Stacked Coins Badge
           ======================================================== */}

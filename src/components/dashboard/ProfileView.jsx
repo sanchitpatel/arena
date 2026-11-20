@@ -640,7 +640,7 @@ export const ProfileView = ({ player, onUpdatePlayer, onSignOut }) => {
   };
 
   return (
-    <div className="w-full max-w-[430px] mx-auto px-4 sm:px-2 space-y-6 pb-12 select-none font-sans">
+    <div className="w-full max-w-[430px] mx-auto px-7 sm:px-2 space-y-6 pb-12 select-none font-sans">
       {/* ========================================================
           1. MAIN PROFILE & AVATAR EDIT FORM (Directly on canvas)
           ======================================================== */}

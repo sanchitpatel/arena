@@ -439,7 +439,7 @@ export const DashboardShell = ({
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#ebedf2]/95 backdrop-blur-lg border-t border-slate-300/60 shadow-[0_-4px_20px_rgba(197,204,214,0.7)] px-1.5 py-1.5">
         <div className="flex items-end justify-between max-w-md mx-auto w-full">
-          {navItems.filter((item) => item.id !== 'notifications' && item.id !== 'map').map((item) => {
+          {navItems.filter((item) => item.id !== 'notifications' && item.id !== 'map' && item.id !== 'chess').map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             const isCenterScanner = item.id === 'scanner';
@@ -451,7 +451,7 @@ export const DashboardShell = ({
                   onTabChange(item.id);
                   setMobileProfileOpen(false);
                 }}
-                className={`flex-1 flex flex-col items-center justify-end py-0.5 px-0.5 rounded-2xl active:scale-95 transition-transform duration-100 ease-out cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] ${isCenterScanner ? '-mt-1 sm:-mt-2.5' : ''
+                className={`flex-1 min-w-0 flex flex-col items-center justify-end py-0.5 px-0.5 rounded-2xl active:scale-95 transition-transform duration-100 ease-out cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] ${isCenterScanner ? '-mt-1 sm:-mt-2.5' : ''
                   }`}
               >
                 <div className="relative">
@@ -515,8 +515,8 @@ export const DashboardShell = ({
       {/* ========================================================
           3. MAIN CONTENT WORKSPACE
           ======================================================== */}
-      <main className={`flex-1 flex flex-col min-w-0 h-full [scrollbar-gutter:stable] pb-20 md:pb-0 relative ${
-        isNotificationOpen || prizeRoadOpen ? 'overflow-hidden' : 'overflow-y-scroll'
+      <main className={`flex-1 flex flex-col min-w-0 h-full mobile-no-scrollbar md:[scrollbar-gutter:stable] pb-20 md:pb-0 relative ${
+        isNotificationOpen || prizeRoadOpen ? 'overflow-hidden' : 'overflow-y-auto md:overflow-y-scroll'
       }`}>
         {/* Authentic Frost Mountain & Crystal Theme Backdrop (Clamped to prevent occlusion by nav bars) */}
         <FrostMountainBackground hasSidebar={true} clampToBars={true} />
@@ -526,12 +526,12 @@ export const DashboardShell = ({
             ======================================================== */}
         <header className="sticky top-0 z-40 w-full bg-[#f0f2f5]/80 backdrop-blur-xl border-none px-4 sm:px-6 py-1.5 flex items-center justify-between select-none">
           {/* Brand Name */}
-          <span className="font-arena text-xl -ml-1 sm:text-lg font-black tracking-wider text-zinc-900 shrink-0">
+          <span className="font-arena text-xl sm:text-lg font-black tracking-wider text-zinc-900 shrink-0">
             ARENA
           </span>
 
-          {/* Top Actions: Notification on left, Prizes in middle, Map on rightmost end */}
-          <div className="flex items-center gap-3 -mr-1 sm:gap-2">
+          {/* Top Actions: Notification on left, Ideas in middle-left, Chess in middle-right, Map on rightmost end */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
             {/* Notification Option (Two-layer GPU opacity cross-fade: zero scale wobble, rock-solid) */}
             <button
               type="button"
@@ -685,7 +685,7 @@ export const DashboardShell = ({
         </header>
 
         {/* View Container */}
-        <div className="flex-1 px-2 pt-3 pb-6 sm:px-6 lg:p-8 max-w-7xl w-full mx-auto relative z-10">
+        <div className="flex-1 px-0 pt-3 pb-6 sm:px-6 lg:p-8 max-w-7xl w-full mx-auto relative z-10">
           {children}
         </div>
       </main>
