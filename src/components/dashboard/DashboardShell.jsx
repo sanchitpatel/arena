@@ -149,7 +149,9 @@ export const DashboardShell = ({
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, [player?.id]);
 
   const handleAcceptIncoming = async () => {

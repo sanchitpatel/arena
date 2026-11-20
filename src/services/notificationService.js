@@ -23,17 +23,14 @@ export async function fetchPlayerNotifications(playerId) {
       .limit(25);
 
     if (error) {
-      // Graceful fallback if table does not yet exist on fresh migration
-      if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        return { success: true, data: [] };
-      }
-      throw error;
+      console.warn('[NotificationService] fetchPlayerNotifications error:', error.message || error);
+      return { success: true, data: [] };
     }
 
     return { success: true, data: data || [] };
   } catch (err) {
-    console.warn('[NotificationService] fetchPlayerNotifications error:', err);
-    return { success: false, data: [], error: err.message };
+    console.warn('[NotificationService] fetchPlayerNotifications exception:', err);
+    return { success: true, data: [] };
   }
 }
 
@@ -50,7 +47,9 @@ export async function getUnreadNotificationCount(playerId) {
       .eq('player_id', playerId)
       .eq('is_read', false);
 
-    if (error) throw error;
+    if (error) {
+      return { success: true, count: 0 };
+    }
     return { success: true, count: count || 0 };
   } catch (err) {
     return { success: true, count: 0 };
@@ -89,33 +88,50 @@ export async function markAllNotificationsAsRead(playerId) {
 }
 
 /**
- * Subscribe to real-time notification push events for a player
+ * Subscribe to real-time notification push events for a player.
+ * Uses a unique subscription channel name per listener instance to prevent
+ * Supabase Realtime channel collisions across concurrently mounted components.
  */
 export function subscribeToPlayerNotifications(playerId, onNotification) {
   if (!playerId) return () => {};
 
-  const channelName = `notifications:player:${playerId}`;
-  const channel = supabase
-    .channel(channelName)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'notifications',
-        filter: `player_id=eq.${playerId}`,
-      },
-      (payload) => {
-        if (typeof onNotification === 'function') {
-          onNotification(payload);
-        }
-      }
-    )
-    .subscribe();
+  try {
+    const subId = Math.random().toString(36).substring(2, 9);
+    const channelName = `notifications:${playerId}:${subId}`;
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `player_id=eq.${playerId}`,
+        },
+        (payload) => {
+          try {
+            if (typeof onNotification === 'function') {
+              onNotification(payload);
+            }
+          } catch (e) {
+            console.warn('[NotificationService] onNotification handler error:', e);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (err) {
+        console.warn('[NotificationService] removeChannel error:', err);
+      }
+    };
+  } catch (err) {
+    console.warn('[NotificationService] Failed to initialize Realtime listener:', err);
+    return () => {};
+  }
 }
 
 /**
@@ -130,9 +146,9 @@ export async function respondToChessChallenge(challengeId, playerId, accept) {
     });
 
     if (error) throw error;
-    return data;
+    return data || { success: false, message: 'No response from server' };
   } catch (err) {
-    console.error('[NotificationService] respondToChessChallenge error:', err);
-    throw err;
+    console.error('[NotificationService] respondToChessChallenge failed:', err);
+    return { success: false, message: err.message };
   }
 }

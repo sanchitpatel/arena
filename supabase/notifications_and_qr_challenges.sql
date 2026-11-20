@@ -62,6 +62,9 @@ CREATE POLICY "Allow public insert notifications"
     TO anon, authenticated 
     WITH CHECK (true);
 
+-- Ensure anon & authenticated roles have full table permissions (subject to RLS)
+GRANT ALL ON TABLE public.notifications TO anon, authenticated, service_role;
+
 -- --------------------------------------------------------------------------
 -- 2. ENHANCED create_direct_chess_challenge
 -- Supports UUID or canonical Guest ID ("Guest042"), enforces photos, and posts notification

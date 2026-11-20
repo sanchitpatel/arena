@@ -326,6 +326,9 @@ CREATE POLICY "Allow public update notifications" ON public.notifications FOR UP
 DROP POLICY IF EXISTS "Allow public insert notifications" ON public.notifications;
 CREATE POLICY "Allow public insert notifications" ON public.notifications FOR INSERT TO anon, authenticated WITH CHECK (true);
 
+-- Ensure anon & authenticated roles have full table permissions (subject to RLS)
+GRANT ALL ON TABLE public.notifications TO anon, authenticated, service_role;
+
 DROP FUNCTION IF EXISTS public.create_direct_chess_challenge(UUID, UUID, INTEGER);
 DROP FUNCTION IF EXISTS public.create_direct_chess_challenge(UUID, UUID, TEXT, INTEGER);
 

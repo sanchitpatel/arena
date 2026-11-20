@@ -36,6 +36,8 @@ export async function fetchNotificationQueue(playerId) {
   if (!id) return { success: true, data: [] };
   return fetchPlayerNotifications(id);
 }
+
+export async function fetchDashboardMetrics() {
   return {
     success: true,
     data: {
@@ -44,6 +46,7 @@ export async function fetchNotificationQueue(playerId) {
       lifetime: { total: 0, done: 0, active: 0 },
       patients: [],
     },
+  };
 }
 
 export async function fetchAvailableMonths() {
@@ -79,10 +82,6 @@ export async function registerNewPatient(patientData) {
 }
 
 export async function searchExistingPatients(query = '') {
-  return { success: true, data: [] };
-}
-
-export async function fetchNotificationQueue() {
   return { success: true, data: [] };
 }
 

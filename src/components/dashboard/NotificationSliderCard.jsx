@@ -144,7 +144,9 @@ export const NotificationSliderCard = ({
     const unsubscribe = subscribeToClinicRealtime(() => {
       loadNotifications();
     });
-    return () => unsubscribe();
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, [loadNotifications]);
 
   const handleAcceptChallenge = async (item) => {

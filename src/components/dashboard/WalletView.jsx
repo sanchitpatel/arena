@@ -37,125 +37,6 @@ function StackedCoinsIcon({ size = 24, className = '' }) {
 }
 
 /**
- * 3D Crown Icon for Leaderboard Podium
- */
-function PodiumCrown({ rank = 1, className = '' }) {
-  if (rank === 1) {
-    return (
-      <svg width="28" height="22" viewBox="0 0 28 22" fill="none" className={className}>
-        <path
-          d="M2.5 18L1 6.5L8.5 11.5L14 2L19.5 11.5L27 6.5L25.5 18H2.5Z"
-          fill="url(#goldCrownGrad)"
-          stroke="#d97706"
-          strokeWidth="1.2"
-          strokeLinejoin="round"
-        />
-        <circle cx="1" cy="6.5" r="1.5" fill="#fef08a" />
-        <circle cx="14" cy="2" r="1.8" fill="#fef08a" />
-        <circle cx="27" cy="6.5" r="1.5" fill="#fef08a" />
-        <rect x="2.5" y="18" width="23" height="3" rx="1.5" fill="#b45309" />
-        <defs>
-          <linearGradient id="goldCrownGrad" x1="14" y1="2" x2="14" y2="18" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#fef08a" />
-            <stop offset="0.5" stopColor="#f59e0b" />
-            <stop offset="1" stopColor="#d97706" />
-          </linearGradient>
-        </defs>
-      </svg>
-    );
-  }
-
-  if (rank === 2) {
-    return (
-      <svg width="22" height="18" viewBox="0 0 28 22" fill="none" className={className}>
-        <path
-          d="M2.5 18L1 6.5L8.5 11.5L14 2L19.5 11.5L27 6.5L25.5 18H2.5Z"
-          fill="url(#silverCrownGrad)"
-          stroke="#94a3b8"
-          strokeWidth="1.2"
-          strokeLinejoin="round"
-        />
-        <circle cx="1" cy="6.5" r="1.5" fill="#ffffff" />
-        <circle cx="14" cy="2" r="1.8" fill="#ffffff" />
-        <circle cx="27" cy="6.5" r="1.5" fill="#ffffff" />
-        <rect x="2.5" y="18" width="23" height="3" rx="1.5" fill="#64748b" />
-        <defs>
-          <linearGradient id="silverCrownGrad" x1="14" y1="2" x2="14" y2="18" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#ffffff" />
-            <stop offset="0.5" stopColor="#cbd5e1" />
-            <stop offset="1" stopColor="#94a3b8" />
-          </linearGradient>
-        </defs>
-      </svg>
-    );
-  }
-
-  return (
-    <svg width="22" height="18" viewBox="0 0 28 22" fill="none" className={className}>
-      <path
-        d="M2.5 18L1 6.5L8.5 11.5L14 2L19.5 11.5L27 6.5L25.5 18H2.5Z"
-        fill="url(#bronzeCrownGrad)"
-        stroke="#b45309"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-      <circle cx="1" cy="6.5" r="1.5" fill="#fde68a" />
-      <circle cx="14" cy="2" r="1.8" fill="#fde68a" />
-      <circle cx="27" cy="6.5" r="1.5" fill="#fde68a" />
-      <rect x="2.5" y="18" width="23" height="3" rx="1.5" fill="#92400e" />
-      <defs>
-        <linearGradient id="bronzeCrownGrad" x1="14" y1="2" x2="14" y2="18" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#fed7aa" />
-          <stop offset="0.5" stopColor="#f97316" />
-          <stop offset="1" stopColor="#b45309" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
-/**
- * Golden Laurel Leaves Wreath behind 1st Place Avatar
- */
-function GoldenLaurelWreath({ className = '' }) {
-  return (
-    <svg
-      width="96"
-      height="72"
-      viewBox="0 0 96 72"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      {/* Left Laurel Branch */}
-      <g fill="url(#laurelGold)" opacity="0.9">
-        <path d="M22 62C18 52 16 38 25 25C26 23 23 21 21 23C13 36 14 53 20 63C20.5 64 22.5 63 22 62Z" />
-        <ellipse cx="14" cy="46" rx="5" ry="2.5" transform="rotate(-35 14 46)" />
-        <ellipse cx="12" cy="36" rx="5" ry="2.5" transform="rotate(-20 12 36)" />
-        <ellipse cx="15" cy="26" rx="5" ry="2.5" transform="rotate(0 15 26)" />
-        <ellipse cx="22" cy="18" rx="4.5" ry="2.2" transform="rotate(25 22 18)" />
-        <ellipse cx="30" cy="12" rx="4.5" ry="2.2" transform="rotate(45 30 12)" />
-      </g>
-      {/* Right Laurel Branch */}
-      <g fill="url(#laurelGold)" opacity="0.9">
-        <path d="M74 62C78 52 80 38 71 25C70 23 73 21 75 23C83 36 82 53 76 63C75.5 64 73.5 63 74 62Z" />
-        <ellipse cx="82" cy="46" rx="5" ry="2.5" transform="rotate(35 82 46)" />
-        <ellipse cx="84" cy="36" rx="5" ry="2.5" transform="rotate(20 84 36)" />
-        <ellipse cx="81" cy="26" rx="5" ry="2.5" transform="rotate(0 81 26)" />
-        <ellipse cx="74" cy="18" rx="4.5" ry="2.2" transform="rotate(-25 74 18)" />
-        <ellipse cx="66" cy="12" rx="4.5" ry="2.2" transform="rotate(-45 66 12)" />
-      </g>
-      <defs>
-        <linearGradient id="laurelGold" x1="48" y1="10" x2="48" y2="65" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#fbbf24" />
-          <stop offset="1" stopColor="#d97706" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
-/**
  * Authentic Mock Leaderboard Data matching public/wallet.png
  */
 const DEFAULT_TOP_PLAYERS = [
@@ -398,90 +279,83 @@ export const WalletView = ({ player, onNavigate }) => {
       {activeTab === 'leaderboard' ? (
         <div className="bg-white/80 backdrop-blur-xl border border-white/90 rounded-[2.2rem] p-4 sm:p-5 shadow-[0_16px_36px_rgba(180,200,225,0.38),inset_0_2px_4px_#ffffff] space-y-4">
           {/* Top 3 Podium (Rank 2 Silver | Rank 1 Gold | Rank 3 Bronze) */}
-          <div className="grid grid-cols-3 gap-2 items-end pt-5 pb-1">
-            {/* ---------------- Rank 2 (Dr. Arjun Mehta) ---------------- */}
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 items-end pt-3 pb-1">
+            {/* ---------------- Rank 2 (Dr. Arjun Mehta - Silver) ---------------- */}
             <div className="flex flex-col items-center">
-              {/* Crown */}
-              <div className="mb-1">
-                <PodiumCrown rank={2} />
-              </div>
-
-              {/* Avatar with Silver Border */}
-              <div className="relative">
-                <div className="w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-full border-[3px] border-slate-300 p-0.5 bg-white shadow-md overflow-hidden flex items-center justify-center">
-                  <ArenaAvatar id={rank2.avatar} size="badge" className="w-full h-full" />
+              {/* Silver Metallic Frame Container */}
+              <div className="relative w-[88px] h-[108px] sm:w-[98px] sm:h-[120px] flex items-center justify-center shrink-0">
+                {/* Circular Avatar placed in the clear aperture */}
+                <div className="absolute left-1/2 top-[52.3%] -translate-x-1/2 -translate-y-1/2 w-[49px] h-[49px] sm:w-[55px] sm:h-[55px] rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center z-0">
+                  <ArenaAvatar id={rank2.avatar} size="badge" className="w-full h-full object-cover" />
                 </div>
-                {/* Rank Badge 2 */}
-                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-gradient-to-b from-slate-200 to-slate-400 text-slate-800 font-black text-[11px] flex items-center justify-center border-2 border-white shadow-sm z-10">
-                  2
-                </div>
+                {/* Silver SVG Metallic Frame Overlay */}
+                <img
+                  src="/silver.svg"
+                  alt="Rank 2 Frame"
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10 drop-shadow-sm select-none"
+                />
               </div>
 
               {/* Pedestal Block 2 */}
-              <div className="w-full bg-gradient-to-b from-[#edf4fb] to-[#dceaf7] rounded-2xl p-2 pt-4 mt-1 text-center border border-slate-200/80 shadow-sm min-h-[82px] flex flex-col justify-center">
-                <span className="text-[11.5px] sm:text-[12.5px] font-black text-slate-900 leading-tight truncate">
+              <div className="w-full -mt-3.5 bg-gradient-to-b from-[#f1f6fc] via-[#e4eff9] to-[#d6e6f5] rounded-2xl p-2 pt-4 sm:pt-4.5 text-center border border-slate-200/90 shadow-[0_4px_14px_rgba(100,116,139,0.08)] min-h-[82px] sm:min-h-[88px] flex flex-col justify-center">
+                <span className="text-[11.5px] sm:text-[12px] font-black text-slate-900 leading-tight truncate px-0.5">
                   {rank2.name}
                 </span>
-                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 mt-0.5">
+                <span className="text-[10px] sm:text-[10.5px] font-bold text-slate-600 mt-0.5">
                   {rank2.points.toLocaleString()} PTS
                 </span>
               </div>
             </div>
 
-            {/* ---------------- Rank 1 (Dr. Elena Vance) ---------------- */}
+            {/* ---------------- Rank 1 (Dr. Elena Vance - Gold) ---------------- */}
             <div className="flex flex-col items-center">
-              {/* Golden Crown with subtle glow */}
-              <div className="relative mb-1">
-                <PodiumCrown rank={1} />
-              </div>
-
-              {/* Golden Laurel Wreath + Avatar with Gold Border */}
-              <div className="relative flex items-center justify-center">
-                <GoldenLaurelWreath className="absolute -top-3.5 pointer-events-none scale-110" />
-                <div className="w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-full border-[3.5px] border-amber-400 p-0.5 bg-white shadow-lg overflow-hidden flex items-center justify-center relative z-10">
-                  <ArenaAvatar id={rank1.avatar} size="badge" className="w-full h-full" />
+              {/* Golden Metallic Frame Container */}
+              <div className="relative w-[114px] h-[105px] sm:w-[126px] sm:h-[116px] flex items-center justify-center shrink-0">
+                {/* Circular Avatar placed in the clear aperture */}
+                <div className="absolute left-1/2 top-[52.3%] -translate-x-1/2 -translate-y-1/2 w-[51px] h-[51px] sm:w-[57px] sm:h-[57px] rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center z-0">
+                  <ArenaAvatar id={rank1.avatar} size="badge" className="w-full h-full object-cover" />
                 </div>
-                {/* Rank Badge 1 */}
-                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 text-amber-950 font-black text-[13px] flex items-center justify-center border-2 border-white shadow-md z-20">
-                  1
-                </div>
+                {/* Golden SVG Metallic Frame Overlay */}
+                <img
+                  src="/golden.svg"
+                  alt="Rank 1 Frame"
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10 drop-shadow-md select-none"
+                />
               </div>
 
               {/* Pedestal Block 1 (Elevated) */}
-              <div className="w-full bg-gradient-to-b from-[#fef7df] to-[#fdecc0] rounded-2xl p-2.5 pt-4.5 mt-1.5 text-center border border-amber-200/80 shadow-sm min-h-[96px] sm:min-h-[102px] flex flex-col justify-center">
-                <span className="text-[12.5px] sm:text-[13.5px] font-black text-slate-900 leading-tight truncate">
+              <div className="w-full -mt-3.5 bg-gradient-to-b from-[#fef8e7] via-[#fdeec4] to-[#fce4a6] rounded-2xl p-2 pt-4.5 sm:pt-5 text-center border border-amber-200/90 shadow-[0_6px_18px_rgba(245,158,11,0.14)] min-h-[96px] sm:min-h-[102px] flex flex-col justify-center">
+                <span className="text-[12px] sm:text-[12.5px] font-black text-slate-950 leading-tight truncate px-0.5">
                   {rank1.name}
                 </span>
-                <span className="text-[11px] sm:text-[12px] font-black text-slate-700 mt-0.5">
+                <span className="text-[10.5px] sm:text-[11px] font-black text-amber-950 mt-0.5">
                   {rank1.points.toLocaleString()} PTS
                 </span>
               </div>
             </div>
 
-            {/* ---------------- Rank 3 (Rohan Desai) ---------------- */}
+            {/* ---------------- Rank 3 (Rohan Desai - Bronze) ---------------- */}
             <div className="flex flex-col items-center">
-              {/* Crown */}
-              <div className="mb-1">
-                <PodiumCrown rank={3} />
-              </div>
-
-              {/* Avatar with Bronze Border */}
-              <div className="relative">
-                <div className="w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-full border-[3px] border-amber-600/40 p-0.5 bg-white shadow-md overflow-hidden flex items-center justify-center">
-                  <ArenaAvatar id={rank3.avatar} size="badge" className="w-full h-full" />
+              {/* Bronze Metallic Frame Container */}
+              <div className="relative w-[88px] h-[108px] sm:w-[98px] sm:h-[120px] flex items-center justify-center shrink-0">
+                {/* Circular Avatar placed in the clear aperture */}
+                <div className="absolute left-1/2 top-[52.3%] -translate-x-1/2 -translate-y-1/2 w-[49px] h-[49px] sm:w-[55px] sm:h-[55px] rounded-full overflow-hidden bg-white shadow-inner flex items-center justify-center z-0">
+                  <ArenaAvatar id={rank3.avatar} size="badge" className="w-full h-full object-cover" />
                 </div>
-                {/* Rank Badge 3 */}
-                <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-gradient-to-b from-amber-200 via-amber-300 to-amber-400 text-amber-950 font-black text-[11px] flex items-center justify-center border-2 border-white shadow-sm z-10">
-                  3
-                </div>
+                {/* Bronze SVG Metallic Frame Overlay */}
+                <img
+                  src="/bronze.svg"
+                  alt="Rank 3 Frame"
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10 drop-shadow-sm select-none"
+                />
               </div>
 
               {/* Pedestal Block 3 */}
-              <div className="w-full bg-gradient-to-b from-[#fbf0ec] to-[#f5dfd5] rounded-2xl p-2 pt-4 mt-1 text-center border border-amber-200/50 shadow-sm min-h-[74px] flex flex-col justify-center">
-                <span className="text-[11.5px] sm:text-[12.5px] font-black text-slate-900 leading-tight truncate">
+              <div className="w-full -mt-3.5 bg-gradient-to-b from-[#fdf4f0] via-[#fae6de] to-[#f6d7cc] rounded-2xl p-2 pt-4 sm:pt-4.5 text-center border border-amber-200/60 shadow-[0_4px_14px_rgba(197,110,75,0.08)] min-h-[76px] sm:min-h-[82px] flex flex-col justify-center">
+                <span className="text-[11.5px] sm:text-[12px] font-black text-slate-900 leading-tight truncate px-0.5">
                   {rank3.name}
                 </span>
-                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 mt-0.5">
+                <span className="text-[10px] sm:text-[10.5px] font-bold text-slate-600 mt-0.5">
                   {rank3.points.toLocaleString()} PTS
                 </span>
               </div>
