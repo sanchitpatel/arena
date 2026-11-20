@@ -28,7 +28,7 @@ export const DashboardShell = ({
 }) => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
-  const [pendingCount, setPendingCount] = useState(3);
+  const [pendingCount, setPendingCount] = useState(0);
   const [qrModalOpen, setQrModalOpen] = useState(null); // 'badge' | null
   const [internalNotificationOpen, setInternalNotificationOpen] = useState(false);
   const profileRef = useRef(null);
@@ -194,14 +194,14 @@ export const DashboardShell = ({
     const handleOpenNotifications = () => {
       if (propToggleNotification && !isNotificationOpen) {
         propToggleNotification();
-      } else {
+      } else if (propNotificationOpen === undefined) {
         setInternalNotificationOpen(true);
       }
     };
     const handleCloseNotifications = () => {
       if (propCloseNotification) {
         propCloseNotification();
-      } else {
+      } else if (propNotificationOpen === undefined) {
         setInternalNotificationOpen(false);
       }
     };
@@ -211,7 +211,7 @@ export const DashboardShell = ({
       window.removeEventListener('arena:open-notifications', handleOpenNotifications);
       window.removeEventListener('arena:close-notifications', handleCloseNotifications);
     };
-  }, [propToggleNotification, propCloseNotification, isNotificationOpen]);
+  }, [propToggleNotification, propCloseNotification, propNotificationOpen, isNotificationOpen]);
 
   const handleSignOutClick = () => {
     setProfileMenuOpen(false);
@@ -515,7 +515,9 @@ export const DashboardShell = ({
       {/* ========================================================
           3. MAIN CONTENT WORKSPACE
           ======================================================== */}
-      <main className="flex-1 flex flex-col min-w-0 h-full overflow-y-scroll [scrollbar-gutter:stable] pb-20 md:pb-0 relative">
+      <main className={`flex-1 flex flex-col min-w-0 h-full [scrollbar-gutter:stable] pb-20 md:pb-0 relative ${
+        isNotificationOpen || prizeRoadOpen ? 'overflow-hidden' : 'overflow-y-scroll'
+      }`}>
         {/* Authentic Frost Mountain & Crystal Theme Backdrop (Clamped to prevent occlusion by nav bars) */}
         <FrostMountainBackground hasSidebar={true} clampToBars={true} />
 
@@ -731,7 +733,6 @@ export const DashboardShell = ({
       <NotificationSliderCard
         isOpen={isNotificationOpen}
         onClose={closeNotification}
-        onCountChange={setPendingCount}
         onNavigate={(tab) => {
           closeNotification();
           if (typeof onTabChange === 'function') {

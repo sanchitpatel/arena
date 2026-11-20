@@ -32,32 +32,58 @@ export const DUMMY_NOTIFICATIONS = [
     avatar: '7',
     variant: 'dark',
   },
+  {
+    id: 'draft-4',
+    title: '1v1 Chess Challenge',
+    message: "Guest014 invited you to a 5m Blitz duel!",
+    time: '2h ago',
+    avatar: '11',
+    variant: 'light',
+  },
+  {
+    id: 'draft-5',
+    title: 'Mystery Chest Unlocked',
+    message: "Stage 2 Prize Road reward ready to claim.",
+    time: '3h ago',
+    avatar: '14',
+    variant: 'dark',
+  },
+  {
+    id: 'draft-6',
+    title: 'Zone Beacon Ping',
+    message: "Connected to Zone 3 Living Room Beacon.",
+    time: '5h ago',
+    avatar: null,
+    variant: 'light',
+  },
+  {
+    id: 'draft-7',
+    title: 'Pitch Wall Upvotes',
+    message: "Your clinical AI pitch crossed 100 votes!",
+    time: '7h ago',
+    avatar: '5',
+    variant: 'light',
+  },
 ];
 
 /**
  * NotificationSliderCard - Tactile Neumorphic Mobile Notification Slider Card.
  *
- * Replicates the exact physics, gestures, and lifecycle architecture of QuestSliderCard:
+ * Hardened architecture adhering to strict mobile touch and gesture physics:
  * 1. Sheet Stacking: Positioned at top-0 z-[38] to emerge from behind the sticky top nav bar (z-40)
  *    with rounded-b-[28px] sm:rounded-b-[32px] md:rounded-[28px].
- * 2. Full-Screen Focus Scrim: At z-[35] with soft 15% tint + 1px micro-blur,
- *    keeping top app bar and bottom nav at z-40 crisp and unblurred.
- * 3. Butter-Smooth Slide Animations: Double-rAF 320ms Apple spring glide down, 300ms exit up,
- *    and velocity-aware swipe-up gesture dismissal with rubber-band resistance when pulling down.
- * 4. Background Scroll Lock: Clean event filter on document preventing outside touchmove and wheel
- *    without layout shifts or brittle inline style mutations.
- * 5. Auto-Dismiss Channels:
- *    - Click / tap anywhere on focus scrim.
- *    - Click any external tab or button outside the card.
- *    - Pointer / touch swipe-up gesture (> 35px with downward rubber-band resistance).
- *    - Upward mouse wheel / trackpad scroll (> 12 delta) when at top of list.
- *    - Escape key press.
+ * 2. Full-Screen Focus Scrim: At z-[35] with soft 15% tint + 1px micro-blur.
+ * 3. Double-rAF Transition: Leak-free cancelable double requestAnimationFrame orchestration.
+ * 4. Micro-drag tap preservation: setPointerCapture only engages once |deltaY| > 5px, preserving
+ *    clean click/tap events on notification items.
+ * 5. Multi-fire dismiss guard: dismissTimerRef and dismissingRef prevent duplicate close executions.
+ * 6. Scoped touch action: touch-none on sheet frame prevents native pan cancellations, while
+ *    touch-pan-y on list preserves native vertical momentum scrolling.
  */
 export const NotificationSliderCard = ({
   isOpen = false,
   onClose,
   onNavigate,
-  onCountChange,
 }) => {
   const [displayed, setDisplayed] = useState(isOpen);
   const [isOpenState, setIsOpenState] = useState(false);
@@ -66,27 +92,29 @@ export const NotificationSliderCard = ({
 
   // Notification queue state
   const [queue, setQueue] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
 
   const startYRef = useRef(0);
   const currentYRef = useRef(0);
   const isDraggingRef = useRef(false);
+  const hasCapturedRef = useRef(false);
+  const dismissingRef = useRef(false);
+  const dismissTimerRef = useRef(null);
+
   const sheetRef = useRef(null);
   const listRef = useRef(null);
 
-  // Load real-time notification queue
+  // Clean up any lingering dismissal timer on component unmount
+  useEffect(() => () => clearTimeout(dismissTimerRef.current), []);
+
+  // Load real-time notification queue from PostgreSQL
   const loadNotifications = useCallback(async () => {
     try {
-      setIsLoading(true);
       const res = await fetchNotificationQueue();
       if (res.success && Array.isArray(res.data)) {
         setQueue(res.data);
       }
     } catch (err) {
       console.warn('[NotificationSliderCard] Error loading notifications:', err);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
@@ -98,22 +126,26 @@ export const NotificationSliderCard = ({
     return () => unsubscribe();
   }, [loadNotifications]);
 
-  // Entrance & Exit animation orchestration identical to QuestSliderCard
+  // Entrance & Exit animation orchestration with leak-free rAF cleanup
   useEffect(() => {
     if (isOpen) {
+      dismissingRef.current = false;
+      clearTimeout(dismissTimerRef.current);
       setDisplayed(true);
       setDragOffset(0);
       setIsDragging(false);
 
-      // Double rAF ensures element is painted in DOM at closed position (translateY(-115%))
-      // before transitioning to translateY(0), guaranteeing the slide entrance animation plays smoothly every time.
+      let r2;
       const r1 = requestAnimationFrame(() => {
-        const r2 = requestAnimationFrame(() => {
+        r2 = requestAnimationFrame(() => {
           setIsOpenState(true);
         });
-        return () => cancelAnimationFrame(r2);
       });
-      return () => cancelAnimationFrame(r1);
+
+      return () => {
+        cancelAnimationFrame(r1);
+        if (r2) cancelAnimationFrame(r2);
+      };
     } else {
       setIsOpenState(false);
       setDragOffset(0);
@@ -126,15 +158,18 @@ export const NotificationSliderCard = ({
     }
   }, [isOpen]);
 
-  // Smooth slide-up dismiss identical to QuestSliderCard
+  // Guarded slide-up dismiss (prevents duplicate timeouts or multiple onClose triggers)
   const animateDismiss = useCallback(() => {
+    if (dismissingRef.current) return;
+    dismissingRef.current = true;
     setIsOpenState(false);
     setDragOffset(0);
     setIsDragging(false);
 
-    setTimeout(() => {
+    dismissTimerRef.current = setTimeout(() => {
       onClose?.();
       setDisplayed(false);
+      dismissingRef.current = false;
     }, 310);
   }, [onClose]);
 
@@ -148,20 +183,26 @@ export const NotificationSliderCard = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [displayed, animateDismiss]);
 
-  // Prevent background and main screen scrolling while the slider is open (Identical to QuestSliderCard)
+  // Scoped background and sheet edge scroll lock
   useEffect(() => {
     if (!isOpenState) return;
 
-    // Prevent passive touchmove/wheel bubbling on document background
     const preventBackgroundScroll = (e) => {
-      if (!sheetRef.current || !sheetRef.current.contains(e.target)) {
-        if (e.cancelable) {
-          e.preventDefault();
-        }
-        // Also dismiss if mouse wheel is scrolled upwards anywhere on the background / scrim
-        if (e.deltaY < -12) {
-          animateDismiss();
-        }
+      const list = listRef.current;
+      const inList = list && list.contains(e.target);
+      const listScrolls = list && list.scrollHeight > list.clientHeight + 4;
+
+      // Allow native momentum scrolling inside overflowing list (overscroll-contain handles boundaries)
+      if (inList && listScrolls) return;
+
+      // Prevent wheel/touchmove leakage on sheet padding, background, or blank state
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+
+      // Wheel-up dismiss on background or scrim
+      if (e.deltaY < -12) {
+        animateDismiss();
       }
     };
 
@@ -174,44 +215,54 @@ export const NotificationSliderCard = ({
     };
   }, [isOpenState, animateDismiss]);
 
-  // --- Touch & Pointer Gesture Handling (Swipe UP to Dismiss) mirrored from QuestSliderCard ---
+  // --- Touch & Pointer Gesture Handling (Swipe UP to Dismiss) ---
   const handlePointerDown = (e) => {
-    // Ignore clicks on interactive buttons
+    // Ignore clicks on interactive buttons or links
     if (e.target.closest('button, a')) return;
 
     // Check if user is touching inside the scrollable notifications list when it has overflow
     const scrollable = listRef.current;
-    const isInsideScrollable = scrollable && scrollable.contains(e.target);
+    const inList = scrollable && scrollable.contains(e.target);
     const hasScrollOverflow = scrollable && (scrollable.scrollHeight > scrollable.clientHeight + 4);
 
-    // If touching inside a list that needs scrolling, allow native list scrolling
-    if (isInsideScrollable && hasScrollOverflow) {
+    // If touching inside a list that needs scrolling, let native touch-pan-y scroll it
+    if (inList && hasScrollOverflow) {
       return;
     }
 
     startYRef.current = e.clientY;
     currentYRef.current = 0;
-    isDraggingRef.current = true;
-    setIsDragging(true);
-
-    try {
-      e.currentTarget.setPointerCapture?.(e.pointerId);
-    } catch { }
+    isDraggingRef.current = false;
+    hasCapturedRef.current = false;
   };
 
   const handlePointerMove = (e) => {
-    if (!isDraggingRef.current) return;
+    const deltaY = e.clientY - startYRef.current;
+
+    // Only initiate drag after crossing 5px threshold (preserves tap/click events on notification cards)
+    if (!isDraggingRef.current) {
+      if (Math.abs(deltaY) > 5) {
+        isDraggingRef.current = true;
+        setIsDragging(true);
+        try {
+          e.currentTarget.setPointerCapture?.(e.pointerId);
+          hasCapturedRef.current = true;
+        } catch { }
+      } else {
+        return;
+      }
+    }
+
     if (e.cancelable) {
       e.preventDefault();
     }
 
-    const deltaY = e.clientY - startYRef.current;
     if (deltaY < 0) {
       // Dragging upwards towards top nav bar
       currentYRef.current = deltaY;
       setDragOffset(deltaY);
     } else {
-      // Pulling downwards with rubber-band resistance (mirrored from QuestSliderCard)
+      // Pulling downwards with rubber-band resistance
       const resisted = deltaY * 0.15;
       currentYRef.current = resisted;
       setDragOffset(resisted);
@@ -219,13 +270,16 @@ export const NotificationSliderCard = ({
   };
 
   const handlePointerUp = (e) => {
+    if (hasCapturedRef.current) {
+      try {
+        e.currentTarget.releasePointerCapture?.(e.pointerId);
+      } catch { }
+      hasCapturedRef.current = false;
+    }
+
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     setIsDragging(false);
-
-    try {
-      e.currentTarget.releasePointerCapture?.(e.pointerId);
-    } catch { }
 
     // Dismiss if dragged upwards by > 35px
     if (currentYRef.current < -35) {
@@ -250,11 +304,6 @@ export const NotificationSliderCard = ({
   const hasDbItems = Array.isArray(queue) && queue.length > 0;
   const notifications = hasDbItems ? queue : DUMMY_NOTIFICATIONS;
   const hasItems = notifications.length > 0;
-
-  // Sync notification count with top nav bar and parent shell
-  useEffect(() => {
-    onCountChange?.(notifications.length);
-  }, [notifications.length, onCountChange]);
 
   // Dynamic transform styles: gradual, physical drawer curves identical to QuestSliderCard
   const cardStyle = isDragging
@@ -295,7 +344,7 @@ export const NotificationSliderCard = ({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onWheel={handleWheel}
-          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+4.5rem)] min-h-[330px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-b-[28px] sm:rounded-b-[32px] md:rounded-[28px] shadow-[inset_0_4px_8px_rgba(0,0,0,0.22),inset_0_-4px_8px_#ffffff] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-4.5 pb-2 select-none cursor-grab active:cursor-grabbing flex flex-col justify-between"
+          className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+4.5rem)] min-h-[330px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-b-[28px] sm:rounded-b-[32px] md:rounded-[28px] shadow-[inset_0_4px_8px_rgba(0,0,0,0.22),inset_0_-4px_8px_#ffffff] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-4.5 pb-2 select-none touch-none cursor-grab active:cursor-grabbing flex flex-col justify-between"
           style={cardStyle}
         >
           {/* Main Notifications Content Area */}
@@ -306,13 +355,18 @@ export const NotificationSliderCard = ({
                 ref={listRef}
                 onWheel={handleWheel}
                 data-scrollable="true"
-                className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-0.5 avatar-scroll overscroll-contain touch-pan-y"
+                className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1 avatar-scroll overscroll-contain touch-pan-y"
               >
                 {notifications.map((item) => {
                   const isDark = item.variant === 'dark';
                   return (
                     <div
                       key={item.id}
+                      onClick={() => {
+                        if (typeof onNavigate === 'function') {
+                          onNavigate(item.tab || 'dashboard');
+                        }
+                      }}
                       className={`w-full rounded-2xl p-2.5 sm:p-3 flex items-center gap-3 transition-all active:scale-[0.99] cursor-pointer select-none ${
                         isDark
                           ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[0_3px_0_#18181b,0_4px_8px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.2)]'
@@ -387,7 +441,6 @@ export const NotificationSliderCard = ({
 
           {/* Bottom Centered Drag Handle Pill (Tactile Debossed Groove for Swiping UP to Dismiss) */}
           <div
-            onPointerDown={handlePointerDown}
             className="w-full flex items-center justify-center pt-1.5 pb-0.5 cursor-grab active:cursor-grabbing touch-none shrink-0"
           >
             <div className="w-11 h-1.5 rounded-full bg-zinc-300/70 shadow-[inset_1px_1px_2px_rgba(0,0,0,0.2),0_1px_1px_#ffffff]" />
