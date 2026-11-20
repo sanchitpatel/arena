@@ -1342,8 +1342,8 @@ export function ChessView({ player, onBack }) {
               </div>
 
               {queueSeconds >= 60 && (
-                <div className="p-3 rounded-2xl bg-white/80 border border-slate-200 max-w-xs flex flex-col items-center gap-2 animate-fade-in shadow-sm">
-                  <p className="text-sm text-zinc-500 text-center font-medium">
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-[#F0F4F8] border border-white/90 max-w-xs w-full flex flex-col items-center gap-2.5 animate-fade-in shadow-[inset_3px_3px_6px_#c5ccd6,inset_-3px_-3px_6px_#ffffff]">
+                  <p className="text-xs sm:text-sm text-zinc-600 text-center font-bold">
                     Taking longer than usual?
                   </p>
                   <button
@@ -1351,9 +1351,10 @@ export function ChessView({ player, onBack }) {
                       const matched = await handleCancelQueue();
                       if (!matched) startBotMatch();
                     }}
-                    className="px-2 py-2 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold active:scale-95 transition-all cursor-pointer"
+                    className="w-full py-2.5 px-2 rounded-xl bg-gradient-to-tr from-sky-400 via-sky-500 to-blue-600 hover:from-sky-500 hover:to-blue-600 active:scale-[0.98] transition-all text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.45),inset_0_-3px_5px_rgba(0,0,0,0.35),0_4px_12px_rgba(14,165,233,0.3)] border border-sky-300/60 cursor-pointer select-none"
                   >
-                    Play Practice Bot Instead
+                    <Play size={15} weight="fill" className="text-white shrink-0" />
+                    <span>Play Practice Bot</span>
                   </button>
                 </div>
               )}
@@ -1371,7 +1372,7 @@ export function ChessView({ player, onBack }) {
               <button
                 type="button"
                 onClick={startBotMatch}
-                className="py-3.5 px-2.5 rounded-2xl bg-gradient-to-b from-sky-400 via-sky-500 to-blue-600 hover:from-sky-300 hover:to-blue-500 active:scale-[0.98] transition-all text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.45),inset_0_-3px_5px_rgba(0,0,0,0.35),0_4px_12px_rgba(14,165,233,0.3)] border border-sky-300/60 cursor-pointer select-none"
+                className="py-3.5 px-2.5 rounded-2xl bg-gradient-to-t from-sky-400 via-sky-500 to-blue-600 hover:from-sky-500 hover:to-blue-600 active:scale-[0.98] transition-all text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.45),inset_0_-3px_5px_rgba(0,0,0,0.35),0_4px_12px_rgba(14,165,233,0.3)] border border-sky-300/60 cursor-pointer select-none"
               >
                 <Play size={18} weight="fill" className="text-white shrink-0" />
                 <span>Play Bot</span>
