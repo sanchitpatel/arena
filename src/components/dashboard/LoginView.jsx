@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { claimOrRegisterGuest } from '../../services/arenaService';
 import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 import { normalizePlayerInput, validatePlayerHandle } from '../../utils/sanitize';
@@ -7,10 +7,14 @@ import { ArrowRight } from '@phosphor-icons/react/dist/icons/ArrowRight';
 import { UserCircle } from '@phosphor-icons/react/dist/icons/UserCircle';
 import { User } from '@phosphor-icons/react/dist/icons/User';
 import { ShieldCheck } from '@phosphor-icons/react/dist/icons/ShieldCheck';
+import { Camera } from '@phosphor-icons/react/dist/icons/Camera';
+import { Images } from '@phosphor-icons/react/dist/icons/Images';
 import Logo from '../Logo';
 import ChatGPTOrb from './ChatGPTOrb';
 import ArenaAvatar, { CURATED_AVATARS } from '../avatars/ArenaAvatar';
 import { FrostMountainBackground } from '../common/FrostMountainBackground';
+import { compressImage } from '../../utils/imageCompressor';
+import { uploadPlayerAvatar } from '../../services/storageService';
 
 const STORAGE_KEY_DRAFT_NAME = 'arena_draft_username';
 const STORAGE_KEY_DRAFT_AVATAR = 'arena_draft_avatar';
@@ -47,6 +51,13 @@ export const LoginView = ({ onEnterArena }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEntering, setIsEntering] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Photo upload states & refs
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoUploadStatus, setPhotoUploadStatus] = useState('');
+  const [photoError, setPhotoError] = useState('');
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
 
   // On mount, claim or reconnect this device in PostgreSQL to fetch official sequential Orb & Guest ID
   const initGuest = useCallback(async () => {
@@ -137,6 +148,43 @@ export const LoginView = ({ onEnterArena }) => {
       window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, String(avatarId));
     } catch (err) {
       console.warn('[Onboarding] Error caching draft avatar:', err);
+    }
+  };
+
+  const handlePhotoFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    e.target.value = '';
+    setIsUploadingPhoto(true);
+    setPhotoError('');
+    setPhotoUploadStatus('Optimizing photo...');
+
+    try {
+      const compressed = await compressImage(file, { targetSize: 400, quality: 0.82 });
+      setPhotoUploadStatus('Syncing to venue cloud...');
+
+      const uploadRes = await uploadPlayerAvatar(compressed.blob, {
+        guestId: guestId || 'guest',
+      });
+
+      if (!uploadRes.success || !uploadRes.publicUrl) {
+        throw new Error(uploadRes.error || 'Failed to upload photo to server.');
+      }
+
+      const publicUrl = uploadRes.publicUrl;
+      setSelectedAvatar(publicUrl);
+
+      try {
+        window.localStorage.setItem(STORAGE_KEY_DRAFT_AVATAR, publicUrl);
+      } catch { }
+
+    } catch (err) {
+      console.error('[LoginView] Photo upload failed:', err);
+      setPhotoError(err.message || 'Photo upload failed. Please try again.');
+    } finally {
+      setIsUploadingPhoto(false);
+      setPhotoUploadStatus('');
     }
   };
 
@@ -274,17 +322,115 @@ export const LoginView = ({ onEnterArena }) => {
                 )}
               </div>
 
-              {/* Curated Lorelei Avatar Selector */}
-              <div className="space-y-1.5">
+              {/* Curated Lorelei Avatar Selector & Photo Identity */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between pl-1">
-                  <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5 -mt-2">
+                  <label className="text-[12px] font-bold tracking-wider text-zinc-500 flex items-center gap-1.5 -mt-1">
                     <UserCircle size={17} weight="bold" className="text-zinc-500/80 " />
-                    Choose Avatar
+                    Photo & Avatar
                   </label>
                 </div>
 
+                {/* Hidden native camera and gallery file inputs */}
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  className="hidden"
+                  onChange={handlePhotoFileChange}
+                  disabled={isUploadingPhoto}
+                />
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoFileChange}
+                  disabled={isUploadingPhoto}
+                />
+
+                {/* Photo Capture Actions */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={isUploadingPhoto}
+                    className="flex items-center justify-center gap-2 py-2 px-3 bg-[#F2F7FC] hover:bg-white active:scale-[0.98] disabled:opacity-50 text-zinc-800 text-[11.5px] font-bold rounded-2xl border border-white shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] transition-all cursor-pointer select-none group"
+                  >
+                    <div className="w-5 h-5 rounded-md bg-sky-100/80 text-sky-600 flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                      <Camera size={13} weight="bold" />
+                    </div>
+                    <span>Take Selfie</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    disabled={isUploadingPhoto}
+                    className="flex items-center justify-center gap-2 py-2 px-3 bg-[#F2F7FC] hover:bg-white active:scale-[0.98] disabled:opacity-50 text-zinc-800 text-[11.5px] font-bold rounded-2xl border border-white shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] transition-all cursor-pointer select-none group"
+                  >
+                    <div className="w-5 h-5 rounded-md bg-indigo-100/80 text-indigo-600 flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                      <Images size={13} weight="bold" />
+                    </div>
+                    <span>Upload Photo</span>
+                  </button>
+                </div>
+
+                {/* In-Flight Status Banner */}
+                {isUploadingPhoto && (
+                  <div className="flex items-center justify-center gap-2 py-2 px-3 bg-sky-50 border border-sky-200/80 rounded-xl text-sky-700 text-[11px] font-semibold animate-pulse shadow-sm">
+                    <CircleNotch size={14} className="animate-spin text-sky-600" />
+                    <span>{photoUploadStatus || 'Optimizing & uploading photo...'}</span>
+                  </div>
+                )}
+
+                {/* Photo Upload Error */}
+                {photoError && (
+                  <p className="text-[10.5px] font-medium text-rose-500 pl-1 pt-0.5 leading-tight">
+                    {photoError}
+                  </p>
+                )}
+
+                {/* Active Custom Photo Card */}
+                {typeof selectedAvatar === 'string' &&
+                  (selectedAvatar.startsWith('http://') ||
+                    selectedAvatar.startsWith('https://') ||
+                    selectedAvatar.startsWith('blob:') ||
+                    selectedAvatar.startsWith('/storage/')) && (
+                    <div className="p-2 bg-gradient-to-r from-sky-50/80 to-[#F2F7FC] border border-sky-200/60 rounded-xl flex items-center justify-between gap-2 shadow-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="relative shrink-0">
+                          <ArenaAvatar id={selectedAvatar} size="xs" className="w-7 h-7 ring-2 ring-sky-400 ring-offset-1 shadow-sm" />
+                          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border border-white rounded-full" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-bold text-zinc-900 truncate">
+                            Custom Photo Selected
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => cameraInputRef.current?.click()}
+                          className="text-[10px] font-bold text-zinc-700 bg-white border border-zinc-200 px-2 py-0.5 rounded shadow-2xs active:scale-95 transition-all cursor-pointer"
+                        >
+                          Retake
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAvatarSelect('1')}
+                          className="text-[10px] font-medium text-zinc-500 hover:text-zinc-800 px-1 py-0.5 active:scale-95 transition-all cursor-pointer"
+                        >
+                          Use Icon
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                 <div className="p-2 bg-[#F2F7FC] rounded-2xl shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff]">
-                  <div className="grid grid-cols-5 gap-2.5 sm:gap-3 max-h-[185px] overflow-y-auto p-1.5 pr-1.5 avatar-scroll">
+                  <div className="grid grid-cols-5 gap-2.5 sm:gap-3 max-h-[175px] overflow-y-auto p-1.5 pr-1.5 avatar-scroll">
                     {CURATED_AVATARS.map((av) => {
                       const isSelected = String(selectedAvatar) === String(av.id) || String(selectedAvatar) === String(av.num);
                       return (

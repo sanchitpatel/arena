@@ -223,6 +223,22 @@ export function subscribeToChessGame(gameId, onUpdate) {
 }
 
 // 12. Subscribe to Waiting Queue Matchmaking Challenge Row
+export async function getChessChallenge(challengeId) {
+  try {
+    const { data, error } = await supabase
+      .from('chess_challenges')
+      .select('*')
+      .eq('id', challengeId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('[ChessService] getChessChallenge failed:', err);
+    return null;
+  }
+}
+
 export function subscribeToMatchmakingQueue(challengeId, onMatched) {
   const channel = supabase
     .channel(`chess_queue_${challengeId}`)

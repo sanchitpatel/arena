@@ -119,10 +119,14 @@ BEGIN
     -- Server-side sanitization: enforce alphanumeric, space, hyphen, underscore (max 16 chars)
     v_clean_name := SUBSTRING(REGEXP_REPLACE(TRIM(COALESCE(p_name, '')), '[^a-zA-Z0-9 _-]', '', 'g'), 1, 16);
     
-    -- Normalize avatar to 1..30
-    v_clean_avatar := SUBSTRING(REGEXP_REPLACE(TRIM(COALESCE(p_avatar, '1')), '[^0-9]', '', 'g'), 1, 2);
-    IF v_clean_avatar = '' OR v_clean_avatar::INT < 1 OR v_clean_avatar::INT > 30 THEN
-        v_clean_avatar := '1';
+    -- Avatar handling: allow full URLs (e.g. Supabase Storage CDN) or fallback to numeric 1..30
+    IF p_avatar ~* '^https?://' OR p_avatar ~* '^/storage/' THEN
+        v_clean_avatar := TRIM(p_avatar);
+    ELSE
+        v_clean_avatar := SUBSTRING(REGEXP_REPLACE(TRIM(COALESCE(p_avatar, '1')), '[^0-9]', '', 'g'), 1, 2);
+        IF v_clean_avatar = '' OR v_clean_avatar::INT < 1 OR v_clean_avatar::INT > 30 THEN
+            v_clean_avatar := '1';
+        END IF;
     END IF;
 
     -- 1. Check if device already claimed a guest ID (reconnect after reload or profile update)
