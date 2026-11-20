@@ -4,21 +4,38 @@
  * while the frontend agent transforms the dashboard views into Arena views.
  */
 
-export async function getPendingNotificationCount() {
+import {
+  fetchPlayerNotifications,
+  getUnreadNotificationCount,
+  subscribeToPlayerNotifications,
+} from './notificationService';
+import { getPlayerUuid } from '../utils/playerId';
+
+export async function getPendingNotificationCount(playerId) {
   try {
-    const res = await fetchNotificationQueue();
-    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-      return { success: true, count: res.data.length };
+    const id = playerId || getPlayerUuid();
+    if (!id) return { success: true, count: 0 };
+    const res = await getUnreadNotificationCount(id);
+    if (res?.success) {
+      return { success: true, count: res.count };
     }
   } catch { }
-  return { success: true, count: 3 };
+  return { success: true, count: 0 };
 }
 
 export function subscribeToClinicRealtime(callback) {
-  return () => {};
+  const id = getPlayerUuid();
+  if (!id) return () => {};
+  return subscribeToPlayerNotifications(id, () => {
+    if (typeof callback === 'function') callback();
+  });
 }
 
-export async function fetchDashboardMetrics() {
+export async function fetchNotificationQueue(playerId) {
+  const id = playerId || getPlayerUuid();
+  if (!id) return { success: true, data: [] };
+  return fetchPlayerNotifications(id);
+}
   return {
     success: true,
     data: {
@@ -27,7 +44,6 @@ export async function fetchDashboardMetrics() {
       lifetime: { total: 0, done: 0, active: 0 },
       patients: [],
     },
-  };
 }
 
 export async function fetchAvailableMonths() {

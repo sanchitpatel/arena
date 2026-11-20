@@ -19,6 +19,7 @@ import {
   ChessKing,
   Camera,
   Images,
+  Scan,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import { getDeviceId, getPlayerUuid } from '../../utils/playerId';
@@ -1766,6 +1767,26 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
               </button>
             </div>
           )}
+
+          {/* Quick QR Duel Direct Scan Button */}
+          {viewState === 'LOBBY' && (
+            <div className="w-full pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof onNavigate === 'function') {
+                    onNavigate('scanner');
+                  } else {
+                    window.dispatchEvent(new CustomEvent('arena:open-scanner'));
+                  }
+                }}
+                className="w-full py-2.5 px-3 rounded-2xl bg-[#F2F7FC] hover:bg-white active:scale-[0.98] border border-white text-zinc-800 text-xs font-bold flex items-center justify-center gap-2 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] cursor-pointer transition-all"
+              >
+                <Scan size={16} weight="bold" className="text-sky-600" />
+                <span>Scan Opponent's QR Badge to Duel</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ================================================================== */}
@@ -1809,7 +1830,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
                   Photo Required for 1v1
                 </h3>
                 <p className="text-xs sm:text-[13px] text-zinc-600 font-medium mt-1.5 leading-relaxed">
-                  To help opponent spot and find each other at the venue, please upload your photo before starting 1v1 match.
+                  To help opponent spot & find each other at the venue, Please upload your photo before starting 1v1.
                 </p>
               </div>
 
@@ -1853,9 +1874,9 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
                   type="button"
                   onClick={() => cameraInputRef.current?.click()}
                   disabled={isUploadingPhoto}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-500 via-sky-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.98] transition-all text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_4px_14px_rgba(14,165,233,0.35)] cursor-pointer disabled:opacity-50"
+                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-sky-500 via-sky-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.98] transition-all text-white font-extrabold text-[14px] flex items-center justify-center gap-2 shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_4px_14px_rgba(14,165,233,0.35)] cursor-pointer disabled:opacity-50"
                 >
-                  <Camera size={18} weight="bold" />
+                  <Camera size={24} weight="bold" />
                   <span>Take Selfie</span>
                 </button>
 
@@ -1863,9 +1884,9 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
                   type="button"
                   onClick={() => galleryInputRef.current?.click()}
                   disabled={isUploadingPhoto}
-                  className="w-full py-2.5 px-3 rounded-2xl bg-white hover:bg-slate-50 active:scale-[0.98] transition-all text-zinc-800 font-bold text-xs flex items-center justify-center gap-2 border border-slate-300/80 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 px-3 rounded-2xl bg-white hover:bg-slate-50 active:scale-[0.98] transition-all text-zinc-800 font-bold text-[13px] flex items-center justify-center gap-2 border border-slate-300/80 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] cursor-pointer disabled:opacity-50"
                 >
-                  <Images size={16} weight="bold" className="text-indigo-600" />
+                  <Images size={22} weight="bold" className="text-indigo-600" />
                   <span>Choose from Photos</span>
                 </button>
 

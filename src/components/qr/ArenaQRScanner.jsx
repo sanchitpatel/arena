@@ -9,7 +9,9 @@ import {
   setInAppPermission,
   subscribeToPermissionChanges,
 } from '../../utils/mediaGuard';
-import { getPlayerId } from '../../utils/playerId';
+import { getPlayerId, getPlayerUuid } from '../../utils/playerId';
+import { createDirectChallenge, subscribeToMatchmakingQueue } from '../../services/chessService';
+import { hasUploadedPhoto } from '../dashboard/ChessView';
 
 /**
  * ArenaQRScanner Component:
@@ -23,13 +25,19 @@ export default function ArenaQRScanner({
   className = '',
   variant = 'modal',
   showMyQrButton = true,
+  player,
+  onNavigate,
 }) {
   const [scannerStatus, setScannerStatus] = useState('initializing'); // 'initializing' | 'scanning' | 'success' | 'error' | 'disabled'
   const [errorMessage, setErrorMessage] = useState('');
   const [scannedPlayer, setScannedPlayer] = useState(null);
   const [facingMode, setFacingMode] = useState('environment'); // 'environment' | 'user'
   const [invalidBanner, setInvalidBanner] = useState('');
-  const [duelStatus, setDuelStatus] = useState(null); // 'sent' | null
+  const [duelStatus, setDuelStatus] = useState(null); // 'sent' | 'declined' | null
+  const [duelLoading, setDuelLoading] = useState(false);
+  const [duelError, setDuelError] = useState('');
+  const [sentChallengeId, setSentChallengeId] = useState(null);
+  const challengeSubRef = useRef(null);
   const [showDuelToast, setShowDuelToast] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -70,6 +78,7 @@ export default function ArenaQRScanner({
           payload = {
             app: 'ARENA',
             gid: canonicalGid,
+            uid: json.uid || null,
             orb: isNaN(parsedOrb) || parsedOrb < 1 ? 1 : parsedOrb,
             name: String(json.name || canonicalGid).trim(),
             avatar: String(json.avatar || '1').trim(),
@@ -108,6 +117,7 @@ export default function ArenaQRScanner({
           payload = {
             app: 'ARENA',
             gid: canonicalGid,
+            uid: params.get('uid') || null,
             orb: isNaN(parsedOrb) || parsedOrb < 1 ? 1 : parsedOrb,
             name: String(params.get('name') || canonicalGid).trim(),
             avatar: String(params.get('avatar') || '1').trim(),
@@ -498,16 +508,69 @@ export default function ArenaQRScanner({
     }
   };
 
-  const handleInitiateDuel = () => {
-    setDuelStatus('sent');
-    setShowDuelToast(true);
-    if (navigator?.vibrate) {
-      navigator.vibrate([30, 40, 30]);
+  const handleInitiateDuel = async () => {
+    if (!scannedPlayer) return;
+    const myId = player?.id || getPlayerUuid();
+    if (!myId) {
+      setDuelError('Unable to identify player. Please refresh.');
+      return;
     }
-    if (duelToastTimerRef.current) clearTimeout(duelToastTimerRef.current);
-    duelToastTimerRef.current = setTimeout(() => {
-      setShowDuelToast(false);
-    }, 4500);
+
+    const myAvatar = player?.avatar || (typeof window !== 'undefined' ? window.localStorage.getItem('arena_draft_avatar') : null);
+    if (!hasUploadedPhoto(myAvatar)) {
+      setDuelError('Please upload your profile photo first in Profile or Chess before sending a 1v1 challenge.');
+      return;
+    }
+
+    setDuelLoading(true);
+    setDuelError('');
+
+    try {
+      const res = await createDirectChallenge(
+        myId,
+        {
+          challengedId: scannedPlayer.uid,
+          challengedGuestId: scannedPlayer.gid,
+        },
+        300
+      );
+
+      if (!res?.success) {
+        throw new Error(res?.message || 'Challenge request failed.');
+      }
+
+      setDuelStatus('sent');
+      setShowDuelToast(true);
+      setSentChallengeId(res.challenge_id);
+
+      if (navigator?.vibrate) {
+        navigator.vibrate([30, 40, 30]);
+      }
+
+      if (duelToastTimerRef.current) clearTimeout(duelToastTimerRef.current);
+      duelToastTimerRef.current = setTimeout(() => {
+        setShowDuelToast(false);
+      }, 5000);
+
+      // Listen for opponent accepting the challenge via Supabase Realtime
+      if (challengeSubRef.current) challengeSubRef.current();
+      challengeSubRef.current = subscribeToMatchmakingQueue(res.challenge_id, (matchedChallenge) => {
+        if (matchedChallenge && matchedChallenge.status === 'accepted' && matchedChallenge.game_id) {
+          if (challengeSubRef.current) challengeSubRef.current();
+          if (typeof onNavigate === 'function') {
+            onNavigate('chess');
+          }
+        } else if (matchedChallenge && matchedChallenge.status === 'declined') {
+          if (challengeSubRef.current) challengeSubRef.current();
+          setDuelStatus('declined');
+        }
+      });
+    } catch (err) {
+      console.error('[ArenaQRScanner] Initiate duel error:', err);
+      setDuelError(err.message || 'Failed to send challenge. Please try again.');
+    } finally {
+      setDuelLoading(false);
+    }
   };
 
   const handleOpenMyQr = () => {
@@ -768,8 +831,23 @@ export default function ArenaQRScanner({
             </div>
           </div>
 
+          {/* Error notice if challenge fails */}
+          {duelError && (
+            <p className="text-[11px] font-semibold text-rose-500 text-center mt-1.5 px-1 leading-tight">
+              {duelError}
+            </p>
+          )}
+
+          {/* Waiting for opponent acceptance banner */}
+          {duelStatus === 'sent' && (
+            <div className="mt-2 py-2 px-3 rounded-xl bg-sky-50 border border-sky-200/90 text-sky-800 text-[11.5px] font-bold flex items-center justify-center gap-2 animate-pulse">
+              <CircleNotch size={14} className="animate-spin text-sky-600" />
+              <span>Challenge sent! Waiting for {scannedPlayer?.name || scannedPlayer?.gid} to accept...</span>
+            </div>
+          )}
+
           {/* Action Row */}
-          <div className="mt-1.5 flex items-center gap-2">
+          <div className="mt-2 flex items-center gap-2">
             <button
               type="button"
               onClick={handleScanAgain}
@@ -781,22 +859,27 @@ export default function ArenaQRScanner({
             <button
               type="button"
               onClick={handleInitiateDuel}
-              disabled={duelStatus === 'sent'}
+              disabled={duelLoading || duelStatus === 'sent'}
               className={`flex-1 py-2.5 sm:py-3 px-2 text-xs sm:text-[13px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.96] group ${
                 duelStatus === 'sent'
                   ? 'bg-gradient-to-tr from-sky-500 to-blue-600 text-white border border-sky-400/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.25),inset_0_2px_5px_rgba(255,255,255,0.45)] opacity-95'
                   : 'bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)]'
               }`}
             >
-              {duelStatus === 'sent' ? (
+              {duelLoading ? (
+                <>
+                  <CircleNotch size={16} className="animate-spin text-white" />
+                  <span className="truncate">Sending...</span>
+                </>
+              ) : duelStatus === 'sent' ? (
                 <>
                   <Swords size={18} strokeWidth={2.2} className="text-white shrink-0" />
-                  <span className="truncate">Challenge Again</span>
+                  <span className="truncate">Sent</span>
                 </>
               ) : (
                 <>
                   <Swords size={18} strokeWidth={2.2} className="text-white scale-105 shrink-0" />
-                  <span className="truncate">Duel</span>
+                  <span className="truncate">1v1 Chess Duel</span>
                 </>
               )}
             </button>

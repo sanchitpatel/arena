@@ -1,10 +1,12 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Clock, User } from '../icons';
+import { Clock, User, CheckCircle, Swords } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import {
   fetchNotificationQueue,
   subscribeToClinicRealtime,
 } from '../../services/clinicService';
+import { respondToChessChallenge } from '../../services/notificationService';
+import { getPlayerUuid } from '../../utils/playerId';
 
 // Dummy draft notifications for UI preview (superseded by DB when populated)
 export const DUMMY_NOTIFICATIONS = [
@@ -84,11 +86,13 @@ export const NotificationSliderCard = ({
   isOpen = false,
   onClose,
   onNavigate,
+  player,
 }) => {
   const [displayed, setDisplayed] = useState(isOpen);
   const [isOpenState, setIsOpenState] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [respondingId, setRespondingId] = useState(null);
 
   // Notification queue state
   const [queue, setQueue] = useState([]);
@@ -125,14 +129,15 @@ export const NotificationSliderCard = ({
   // Load real-time notification queue from PostgreSQL
   const loadNotifications = useCallback(async () => {
     try {
-      const res = await fetchNotificationQueue();
+      const myId = player?.id || getPlayerUuid();
+      const res = await fetchNotificationQueue(myId);
       if (res.success && Array.isArray(res.data)) {
         setQueue(res.data);
       }
     } catch (err) {
       console.warn('[NotificationSliderCard] Error loading notifications:', err);
     }
-  }, []);
+  }, [player?.id]);
 
   useEffect(() => {
     loadNotifications();
@@ -141,6 +146,50 @@ export const NotificationSliderCard = ({
     });
     return () => unsubscribe();
   }, [loadNotifications]);
+
+  const handleAcceptChallenge = async (item) => {
+    const challengeId = item.data?.challenge_id;
+    const myId = player?.id || getPlayerUuid();
+    if (!challengeId || !myId) return;
+
+    setRespondingId(item.id);
+    try {
+      const res = await respondToChessChallenge(challengeId, myId, true);
+      if (res?.success) {
+        setQueue((prev) =>
+          prev.map((n) => (n.id === item.id ? { ...n, action_status: 'accepted' } : n))
+        );
+        onClose?.();
+        if (typeof onNavigate === 'function') {
+          onNavigate('chess');
+        }
+      } else {
+        alert(res?.message || 'Could not join challenge');
+      }
+    } catch (err) {
+      console.error('[NotificationSliderCard] Accept duel error:', err);
+    } finally {
+      setRespondingId(null);
+    }
+  };
+
+  const handleDeclineChallenge = async (item) => {
+    const challengeId = item.data?.challenge_id;
+    const myId = player?.id || getPlayerUuid();
+    if (!challengeId || !myId) return;
+
+    setRespondingId(item.id);
+    try {
+      await respondToChessChallenge(challengeId, myId, false);
+      setQueue((prev) =>
+        prev.map((n) => (n.id === item.id ? { ...n, action_status: 'declined' } : n))
+      );
+    } catch (err) {
+      console.error('[NotificationSliderCard] Decline duel error:', err);
+    } finally {
+      setRespondingId(null);
+    }
+  };
 
   // Entrance & Exit animation orchestration with leak-free rAF cleanup
   useEffect(() => {
@@ -390,8 +439,11 @@ export const NotificationSliderCard = ({
                             : 'bg-gradient-to-b from-zinc-300 to-zinc-400 border border-white shadow-[inset_0_1px_1px_#ffffff,0_1px_2px_rgba(0,0,0,0.08)]'
                         }`}
                       >
-                        {item.avatar ? (
-                          <ArenaAvatar id={item.avatar} size="badge" />
+                        {item.data?.challenger_avatar || item.sender?.avatar || item.avatar ? (
+                          <ArenaAvatar
+                            id={item.data?.challenger_avatar || item.sender?.avatar || item.avatar}
+                            size="badge"
+                          />
                         ) : (
                           <User size={20} weight="fill" className={isDark ? 'text-zinc-200' : 'text-white'} />
                         )}
@@ -416,12 +468,54 @@ export const NotificationSliderCard = ({
                           </span>
                         </div>
                         <p
-                          className={`text-[11.5px] sm:text-[12px] font-medium truncate mt-0.5 leading-tight ${
+                          className={`text-[11.5px] sm:text-[12px] font-medium mt-0.5 leading-tight ${
                             isDark ? 'text-zinc-300' : 'text-zinc-600'
                           }`}
                         >
                           {item.message}
                         </p>
+
+                        {/* Interactive 1v1 Chess Action Buttons */}
+                        {item.type === 'chess_challenge' && (
+                          <div className="mt-2 pt-2 border-t border-zinc-200/60 flex items-center gap-2">
+                            {item.action_status === 'pending' ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAcceptChallenge(item);
+                                  }}
+                                  disabled={respondingId === item.id}
+                                  className="flex-1 py-1.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-600 hover:from-emerald-400 hover:to-sky-500 active:scale-95 text-white text-xs font-bold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                >
+                                  <Swords size={14} weight="bold" />
+                                  <span>{respondingId === item.id ? 'Joining...' : 'Accept Duel'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeclineChallenge(item);
+                                  }}
+                                  disabled={respondingId === item.id}
+                                  className="py-1.5 px-3 rounded-xl bg-zinc-200 hover:bg-zinc-300 text-zinc-700 text-xs font-semibold active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                  <span>Decline</span>
+                                </button>
+                              </>
+                            ) : item.action_status === 'accepted' ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+                                <CheckCircle size={13} weight="fill" />
+                                <span>Accepted — Game Live</span>
+                              </span>
+                            ) : item.action_status === 'declined' ? (
+                              <span className="text-[11px] font-medium text-zinc-400">Declined</span>
+                            ) : (
+                              <span className="text-[11px] font-medium text-zinc-400">Expired</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

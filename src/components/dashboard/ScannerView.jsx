@@ -31,6 +31,8 @@ export const ScannerView = ({ player, onNavigate, isActive = true }) => {
             showMyQrButton={true}
             onMyQrClick={() => setViewMode('badge')}
             onScanSuccess={handleScanSuccess}
+            player={player}
+            onNavigate={onNavigate}
           />
         ) : null
       ) : (

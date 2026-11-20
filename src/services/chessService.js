@@ -38,11 +38,31 @@ export async function cancelChessMatchmaking(challengeId, playerId) {
 }
 
 // 3. Direct Challenge (e.g. Scanned via QR)
-export async function createDirectChallenge(challengerId, challengedId, timeControlSec = 300) {
+export async function createDirectChallenge(
+  challengerId,
+  target,
+  timeControlSec = 300
+) {
   try {
+    // Support passing UUID, canonical Guest ID ("Guest042"), or options object
+    let targetId = null;
+    let targetGuest = null;
+
+    if (typeof target === 'string') {
+      if (target.includes('-')) {
+        targetId = target;
+      } else {
+        targetGuest = target;
+      }
+    } else if (target && typeof target === 'object') {
+      targetId = target.challengedId || target.id || null;
+      targetGuest = target.challengedGuestId || target.guest_id || target.gid || null;
+    }
+
     const { data, error } = await supabase.rpc('create_direct_chess_challenge', {
       p_challenger_id: challengerId,
-      p_challenged_id: challengedId,
+      p_challenged_id: targetId,
+      p_challenged_guest_id: targetGuest,
       p_time_control_sec: timeControlSec,
     });
     if (error) throw error;

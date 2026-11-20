@@ -73,6 +73,9 @@ export default function PlayerQRBadge({
       name: displayName,
       avatar: String(avatar),
     });
+    if (player?.id) {
+      params.set('uid', player.id);
+    }
 
     return `${baseOrigin}/arena?${params.toString()}`;
   }, [guestId, orbNumber, displayName, avatar]);

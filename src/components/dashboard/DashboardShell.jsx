@@ -10,11 +10,15 @@ import { PrizeRoadModal } from '../prizes/PrizeRoadModal';
 import { calculatePrizeProgress } from '../../data/prizesData';
 import { FrostMountainBackground } from '../common/FrostMountainBackground';
 import { MAP_TASKS } from './MapView';
-import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
+import { getPlayerId, getOrbNumber, getStoredOrbNumber, getPlayerUuid } from '../../utils/playerId';
 import {
   getPendingNotificationCount,
   subscribeToClinicRealtime
 } from '../../services/clinicService';
+import {
+  subscribeToPlayerNotifications,
+  respondToChessChallenge,
+} from '../../services/notificationService';
 
 export const DashboardShell = ({
   activeTab,
@@ -115,6 +119,73 @@ export const DashboardShell = ({
   const orbNumber = player?.orb_number || (guestId ? getOrbNumber(guestId) : null) || getStoredOrbNumber() || '?';
   const displayName = player?.name || guestId || 'Player';
   const avatar = player?.avatar || '1';
+
+  const [incomingChallenge, setIncomingChallenge] = useState(null);
+  const [isRespondingChallenge, setIsRespondingChallenge] = useState(false);
+
+  // Real-time listener for incoming 1v1 chess challenges
+  useEffect(() => {
+    const myId = player?.id || getPlayerUuid();
+    if (!myId) return;
+
+    const unsubscribe = subscribeToPlayerNotifications(myId, (payload) => {
+      if (
+        payload.eventType === 'INSERT' &&
+        payload.new?.type === 'chess_challenge' &&
+        payload.new?.action_status === 'pending'
+      ) {
+        setIncomingChallenge(payload.new);
+        setPendingCount((prev) => prev + 1);
+        if (navigator?.vibrate) {
+          navigator.vibrate([40, 80, 40]);
+        }
+      } else if (
+        payload.eventType === 'UPDATE' &&
+        payload.new?.type === 'chess_challenge'
+      ) {
+        if (payload.new.action_status !== 'pending') {
+          setIncomingChallenge((prev) => (prev?.id === payload.new.id ? null : prev));
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [player?.id]);
+
+  const handleAcceptIncoming = async () => {
+    if (!incomingChallenge?.data?.challenge_id) return;
+    const myId = player?.id || getPlayerUuid();
+    setIsRespondingChallenge(true);
+    try {
+      const res = await respondToChessChallenge(incomingChallenge.data.challenge_id, myId, true);
+      if (res?.success) {
+        setIncomingChallenge(null);
+        if (typeof onTabChange === 'function') {
+          onTabChange('chess');
+        }
+      } else {
+        alert(res?.message || 'Could not join match');
+      }
+    } catch (err) {
+      console.error('Accept duel error:', err);
+    } finally {
+      setIsRespondingChallenge(false);
+    }
+  };
+
+  const handleDeclineIncoming = async () => {
+    if (!incomingChallenge?.data?.challenge_id) return;
+    const myId = player?.id || getPlayerUuid();
+    setIsRespondingChallenge(true);
+    try {
+      await respondToChessChallenge(incomingChallenge.data.challenge_id, myId, false);
+      setIncomingChallenge(null);
+    } catch (err) {
+      console.error('Decline duel error:', err);
+    } finally {
+      setIsRespondingChallenge(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -694,6 +765,7 @@ export const DashboardShell = ({
       <NotificationSliderCard
         isOpen={isNotificationOpen}
         onClose={closeNotification}
+        player={player}
         onNavigate={(tab) => {
           closeNotification();
           if (typeof onTabChange === 'function') {
@@ -701,6 +773,44 @@ export const DashboardShell = ({
           }
         }}
       />
+
+      {/* Floating Incoming 1v1 Chess Challenge Alert Banner */}
+      {incomingChallenge && (
+        <div className="fixed top-14 sm:top-16 left-1/2 -translate-x-1/2 z-[60] w-[94vw] max-w-md animate-in fade-in slide-in-from-top-4 duration-200 select-none">
+          <div className="rounded-[1.75rem] p-3 sm:p-3.5 bg-gradient-to-b from-zinc-900 to-black border-2 border-sky-400/80 shadow-[0_12px_36px_rgba(0,0,0,0.5),0_0_20px_rgba(14,165,233,0.35)] flex items-center gap-3 text-white">
+            <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white/80 shrink-0 bg-zinc-800 flex items-center justify-center">
+              <ArenaAvatar id={incomingChallenge.data?.challenger_avatar || '1'} size="badge" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-black text-sky-400 uppercase tracking-wider">1v1 Chess Duel</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+              </div>
+              <p className="text-xs font-bold text-zinc-100 truncate mt-0.5">
+                {incomingChallenge.data?.challenger_name || 'A Doctor'} challenged you!
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={handleAcceptIncoming}
+                disabled={isRespondingChallenge}
+                className="py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 active:scale-95 text-white font-black text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isRespondingChallenge ? 'Joining...' : 'Accept'}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeclineIncoming}
+                disabled={isRespondingChallenge}
+                className="py-2 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-bold text-xs transition-all cursor-pointer disabled:opacity-50"
+              >
+                <X size={15} weight="bold" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Draggable Prize Road Floating Action Button (Universal across all tabs, always visible at z-[34]) */}
       <PrizeFloatingButton
