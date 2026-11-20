@@ -497,12 +497,14 @@ BEGIN
             -- Winner gets +100
             UPDATE public.players
             SET total_score = total_score + v_points_win,
+                rounds_played = rounds_played + 1,
                 updated_at = NOW()
             WHERE id = p_winner_id;
 
             -- Loser gets +10
             UPDATE public.players
             SET total_score = total_score + v_points_loss,
+                rounds_played = rounds_played + 1,
                 updated_at = NOW()
             WHERE id = v_loser_id;
         END IF;
@@ -511,6 +513,7 @@ BEGIN
         -- Both get +50
         UPDATE public.players
         SET total_score = total_score + v_points_draw,
+            rounds_played = rounds_played + 1,
             updated_at = NOW()
         WHERE id IN (v_game.white_player_id, v_game.black_player_id);
     END IF;
@@ -528,6 +531,9 @@ BEGIN
     );
 END;
 $$;
+
+-- Revoke execute on settle_chess_game from public & client roles (Internal RPC calls only)
+REVOKE EXECUTE ON FUNCTION public.settle_chess_game(UUID, TEXT, UUID, TEXT) FROM PUBLIC, anon, authenticated;
 
 -- --------------------------------------------------------------------------
 -- STEP 7: VERIFICATION QUERY

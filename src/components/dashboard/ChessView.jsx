@@ -18,7 +18,8 @@ import {
   SpeakerSlash,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { getDeviceId } from '../../utils/playerId';
+import { getDeviceId, getPlayerUuid } from '../../utils/playerId';
+import { claimOrRegisterGuest } from '../../services/arenaService';
 import {
   joinOrCreateMatchmaking,
   cancelChessMatchmaking,
@@ -167,7 +168,7 @@ export function ChessView({ player, onBack }) {
   const lastInteractionRef = useRef({ time: 0, square: null });
   const pendingMoveRef = useRef(null);
   const activeChallengeIdRef = useRef(null);
-  const playerIdRef = useRef(player?.id);
+  const playerIdRef = useRef(player?.id || getPlayerUuid());
   const actionErrorTimeoutRef = useRef(null);
   const [queueSeconds, setQueueSeconds] = useState(0);
 
@@ -176,7 +177,22 @@ export function ChessView({ player, onBack }) {
   }, [activeChallengeId]);
 
   useEffect(() => {
-    playerIdRef.current = player?.id;
+    if (player?.id) {
+      playerIdRef.current = player.id;
+    } else if (!playerIdRef.current) {
+      const stored = getPlayerUuid();
+      if (stored) {
+        playerIdRef.current = stored;
+      } else {
+        claimOrRegisterGuest()
+          .then((res) => {
+            if (res?.success && res.data?.player_id) {
+              playerIdRef.current = res.data.player_id;
+            }
+          })
+          .catch(() => {});
+      }
+    }
   }, [player?.id]);
 
   // Unmount safety: Cancel queue challenge if player navigates away while matching
@@ -325,14 +341,14 @@ export function ChessView({ player, onBack }) {
         if (isWinner) playVictorySound();
         else if (!isDraw) playDefeatSound();
 
-        const pointsAwarded = g.end_reason === 'early_resignation_no_points'
-          ? 0
-          : typeof g.points_awarded === 'number'
-            ? g.points_awarded
-            : isWinner
-              ? 100
-              : isDraw
-                ? 50
+        const base = g.points_awarded;
+        const pointsAwarded =
+          (typeof base === 'number' && base === 0) || g.end_reason === 'early_resignation_no_points'
+            ? 0
+            : isDraw
+              ? (typeof base === 'number' ? base : 50)
+              : isWinner
+                ? (typeof base === 'number' ? base : 100)
                 : 10;
 
         setEndSummary({
@@ -353,15 +369,24 @@ export function ChessView({ player, onBack }) {
   // RECONNECT ON MOUNT: Check if player already has an ongoing live match
   // --------------------------------------------------------------------------
   useEffect(() => {
-    if (!player?.id) return;
     let isSubscribed = true;
 
     async function checkOngoing() {
-      const activeGame = await getActiveOngoingGame(player.id);
+      let currentId = player?.id || playerIdRef.current || getPlayerUuid();
+      if (!currentId) {
+        const res = await claimOrRegisterGuest().catch(() => null);
+        if (res?.success && res.data?.player_id) {
+          currentId = res.data.player_id;
+          playerIdRef.current = currentId;
+        }
+      }
+      if (!currentId || !isSubscribed) return;
+
+      const activeGame = await getActiveOngoingGame(currentId);
       if (activeGame && isSubscribed) {
         setGameId(activeGame.id);
         setMatchMode('pvp');
-        setPlayerColor(activeGame.white_player_id === player.id ? 'w' : 'b');
+        setPlayerColor(activeGame.white_player_id === currentId ? 'w' : 'b');
         finishedRef.current = activeGame.status !== 'in_progress';
         hasClaimedTimeoutRef.current = false;
         applyServerGame(activeGame);
@@ -480,10 +505,14 @@ export function ChessView({ player, onBack }) {
   useEffect(() => {
     if (viewState !== 'MATCHING' || !activeChallengeId) return;
 
+    let alive = true;
+    const startedAt = Date.now();
+
     const handleChallengeUpdate = async (ch) => {
-      if (!ch || ch.status !== 'accepted' || !ch.game_id) return;
+      if (!alive || !ch || ch.status !== 'accepted' || !ch.game_id) return;
       try {
         const initialGame = await getChessGame(ch.game_id).catch(() => null);
+        if (!alive) return;
         if (initialGame) {
           setGameId(ch.game_id);
           setPlayerColor(initialGame.white_player_id === player?.id ? 'w' : 'b');
@@ -500,16 +529,27 @@ export function ChessView({ player, onBack }) {
     // Immediate check right on entering MATCHING (covers 0-50ms gap)
     getChessChallenge(activeChallengeId)
       .then((ch) => {
-        if (ch) handleChallengeUpdate(ch);
+        if (alive && ch) handleChallengeUpdate(ch);
       })
       .catch(() => {});
 
     // 4s polling fallback in case Realtime message drops or expires after 2 minutes
     const pollInterval = setInterval(async () => {
       const ch = await getChessChallenge(activeChallengeId).catch(() => null);
-      if (!ch) return;
-      if (ch.status === 'expired') {
+      if (!alive || !ch) return;
+
+      const isStale =
+        ch.status === 'expired' ||
+        (ch.status === 'pending' &&
+          ((ch.expires_at && new Date(ch.expires_at).getTime() < Date.now()) ||
+            Date.now() - startedAt > 105000));
+
+      if (isStale) {
         const res = await joinOrCreateMatchmaking(player?.id, 300).catch(() => null);
+        if (!alive) {
+          if (res?.challenge_id) cancelChessMatchmaking(res.challenge_id, player.id).catch(() => {});
+          return;
+        }
         if (res?.action === 'waiting' && res.challenge_id) {
           setActiveChallengeId(res.challenge_id);
         } else if (res?.game_id) {
@@ -521,10 +561,13 @@ export function ChessView({ player, onBack }) {
     }, 4000);
 
     const unsubscribe = subscribeToMatchmakingQueue(activeChallengeId, (matchedChallenge) => {
-      handleChallengeUpdate(matchedChallenge);
+      if (alive && matchedChallenge) {
+        handleChallengeUpdate(matchedChallenge);
+      }
     });
 
     return () => {
+      alive = false;
       clearInterval(pollInterval);
       unsubscribe();
     };
@@ -574,18 +617,38 @@ export function ChessView({ player, onBack }) {
   }, []);
 
   const startPvpMatch = async () => {
-    if (!player?.id) return;
     setLoadingAction(true);
     setActionError('');
+
+    let currentId = player?.id || playerIdRef.current || getPlayerUuid();
+    if (!currentId) {
+      try {
+        const regRes = await claimOrRegisterGuest();
+        if (regRes?.success && regRes.data?.player_id) {
+          currentId = regRes.data.player_id;
+          playerIdRef.current = currentId;
+        }
+      } catch (e) {
+        console.warn('[ChessView] Player registration fallback error:', e);
+      }
+    }
+
+    if (!currentId) {
+      setLoadingAction(false);
+      showActionError('Unable to connect to matchmaking server. Please refresh.');
+      return;
+    }
+
+    playerIdRef.current = currentId;
     setMatchMode('pvp');
 
     try {
-      const res = await joinOrCreateMatchmaking(player.id, 300);
+      const res = await joinOrCreateMatchmaking(currentId, 300);
       if (res.action === 'matched' || res.action === 'reconnected') {
         const initialGame = await getChessGame(res.game_id).catch(() => null);
         if (initialGame) {
           setGameId(res.game_id);
-          setPlayerColor(initialGame.white_player_id === player?.id ? 'w' : 'b');
+          setPlayerColor(initialGame.white_player_id === currentId ? 'w' : 'b');
           finishedRef.current = false;
           hasClaimedTimeoutRef.current = false;
           applyServerGame(initialGame);
@@ -605,14 +668,15 @@ export function ChessView({ player, onBack }) {
   };
 
   const handleCancelQueue = async () => {
-    if (activeChallengeId && player?.id) {
+    const currentId = player?.id || playerIdRef.current;
+    if (activeChallengeId && currentId) {
       try {
-        const res = await cancelChessMatchmaking(activeChallengeId, player.id);
+        const res = await cancelChessMatchmaking(activeChallengeId, currentId);
         if (res?.action === 'matched' && res.game_id) {
           const initialGame = await getChessGame(res.game_id).catch(() => null);
           if (initialGame) {
             setGameId(res.game_id);
-            setPlayerColor(initialGame.white_player_id === player?.id ? 'w' : 'b');
+            setPlayerColor(initialGame.white_player_id === currentId ? 'w' : 'b');
             finishedRef.current = false;
             hasClaimedTimeoutRef.current = false;
             applyServerGame(initialGame);
@@ -1049,11 +1113,12 @@ export function ChessView({ player, onBack }) {
       return;
     }
 
-    if (gameId && player?.id) {
+    const currentId = player?.id || playerIdRef.current;
+    if (gameId && currentId) {
       setLoadingAction(true);
       try {
         const deviceId = getDeviceId();
-        await resignChessGame(gameId, player.id, deviceId);
+        await resignChessGame(gameId, currentId, deviceId);
         const fresh = await getChessGame(gameId);
         if (fresh) {
           applyServerGame(fresh);
@@ -1074,9 +1139,10 @@ export function ChessView({ player, onBack }) {
       handleBotGameOver('player_timeout');
       return;
     }
-    if (hasClaimedTimeoutRef.current || !gameId || !player?.id) return;
+    const currentId = player?.id || playerIdRef.current;
+    if (hasClaimedTimeoutRef.current || !gameId || !currentId) return;
     hasClaimedTimeoutRef.current = true;
-    claimChessTimeout(gameId, player.id).catch((err) => {
+    claimChessTimeout(gameId, currentId).catch((err) => {
       console.warn('[ChessView] Timeout claim note:', err);
     });
     // 3-second throttle prevents 250ms interval hammering

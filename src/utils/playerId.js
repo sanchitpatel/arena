@@ -12,6 +12,7 @@ const STORAGE_KEY_GUEST = 'arena_guest_id';
 const STORAGE_KEY_DEVICE = 'arena_device_id';
 const STORAGE_KEY_EXPIRES = 'arena_expires_at';
 const STORAGE_KEY_ORB = 'arena_orb_number';
+const STORAGE_KEY_PLAYER_ID = 'arena_player_id';
 
 // Helper to read a cookie value
 export function getCookie(name) {
@@ -149,6 +150,12 @@ export function savePlayerRecord(player) {
   if (typeof window === 'undefined' || !player) return;
 
   try {
+    const playerId = player.player_id || player.id;
+    if (playerId) {
+      window.localStorage.setItem(STORAGE_KEY_PLAYER_ID, playerId);
+      setCookie(STORAGE_KEY_PLAYER_ID, playerId, TWELVE_HOURS_SEC);
+    }
+
     const guestId = player.guest_id || (/^guest\d+$/i.test(player.name) ? player.name : null);
     const expiresAt = String(Date.now() + TWELVE_HOURS_MS);
 
@@ -166,6 +173,16 @@ export function savePlayerRecord(player) {
     window.localStorage.setItem(STORAGE_KEY_EXPIRES, expiresAt);
   } catch (err) {
     console.warn('[PlayerID] Unable to persist player identity:', err);
+  }
+}
+
+// Helper to retrieve persisted official Player UUID from localStorage or cookie
+export function getPlayerUuid() {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage.getItem(STORAGE_KEY_PLAYER_ID) || getCookie(STORAGE_KEY_PLAYER_ID);
+  } catch {
+    return null;
   }
 }
 

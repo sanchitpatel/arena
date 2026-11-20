@@ -422,9 +422,6 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM public.player_devices 
         WHERE player_id = p_player_id AND device_id = p_device_id
-    ) AND NOT EXISTS (
-        SELECT 1 FROM public.players 
-        WHERE id = p_player_id AND device_id = p_device_id
     ) THEN
         RETURN jsonb_build_object('success', FALSE, 'message', 'Unauthorized: Device credential mismatch');
     END IF;
@@ -550,9 +547,6 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM public.player_devices 
         WHERE player_id = p_player_id AND device_id = p_device_id
-    ) AND NOT EXISTS (
-        SELECT 1 FROM public.players 
-        WHERE id = p_player_id AND device_id = p_device_id
     ) THEN
         RETURN jsonb_build_object('success', FALSE, 'message', 'Unauthorized: Device mismatch');
     END IF;

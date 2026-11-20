@@ -3,7 +3,7 @@ import { LoginView } from './LoginView';
 import { DashboardShell } from './DashboardShell';
 import { FrostMountainBackground } from '../common/FrostMountainBackground';
 import { CircleNotch } from '@phosphor-icons/react/dist/icons/CircleNotch';
-import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
+import { getPlayerId, getOrbNumber, getStoredOrbNumber, getPlayerUuid } from '../../utils/playerId';
 import { claimOrRegisterGuest } from '../../services/arenaService';
 
 // Lazy-load individual heavy dashboard views on demand
@@ -130,6 +130,7 @@ export default function DashboardApp() {
   const [player, setPlayer] = useState(() => {
     const gId = getPlayerId();
     const storedOrb = getStoredOrbNumber();
+    const storedUuid = getPlayerUuid();
     const orb = (gId ? getOrbNumber(gId) : null) || storedOrb || '?';
     let storedName = '';
     let storedAvatar = '1';
@@ -138,6 +139,7 @@ export default function DashboardApp() {
       storedAvatar = window.localStorage.getItem('arena_draft_avatar') || '1';
     } catch { }
     return {
+      id: storedUuid || null,
       guest_id: gId || 'Guest...',
       orb_number: orb,
       name: storedName || gId || 'Player',
@@ -145,9 +147,8 @@ export default function DashboardApp() {
     };
   });
 
-  // Re-sync freshest player identity and Orb from PostgreSQL when returning attendee loads session
+  // Re-sync freshest player identity and Orb from PostgreSQL
   useEffect(() => {
-    if (!isEntered) return;
     let isMounted = true;
     claimOrRegisterGuest().then((res) => {
       if (isMounted && res?.success && res.data) {
@@ -160,6 +161,7 @@ export default function DashboardApp() {
           } catch { }
           return {
             ...prev,
+            id: res.data.player_id || prev.id,
             guest_id: res.data.guest_id || prev.guest_id,
             orb_number: res.data.orb_number || prev.orb_number,
             name: res.data.name || prev.name,
@@ -174,7 +176,7 @@ export default function DashboardApp() {
     return () => {
       isMounted = false;
     };
-  }, [isEntered]);
+  }, []);
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(null);
