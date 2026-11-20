@@ -566,39 +566,7 @@ BEGIN
 END;
 $$;
 
-    INSERT INTO public.chess_games (
-        white_player_id,
-        black_player_id,
-        time_control_sec,
-        white_time_left_ms,
-        black_time_left_ms,
-        status,
-        turn,
-        last_move_at
-    ) VALUES (
-        v_white_id,
-        v_black_id,
-        v_challenge.time_control_sec,
-        v_challenge.time_control_sec * 1000,
-        v_challenge.time_control_sec * 1000,
-        'in_progress',
-        'w',
-        NOW()
-    ) RETURNING id INTO v_new_game_id;
-
-    UPDATE public.chess_challenges
-    SET status = 'accepted',
-        game_id = v_new_game_id
-    WHERE id = p_challenge_id;
-
-    RETURN jsonb_build_object(
-        'success', TRUE,
-        'action', 'accepted',
-        'game_id', v_new_game_id,
-        'color', CASE WHEN v_white_id = p_player_id THEN 'w' ELSE 'b' END
-    );
-END;
-$$;
+GRANT EXECUTE ON FUNCTION public.respond_direct_chess_challenge(UUID, UUID, BOOLEAN) TO anon, authenticated;
 
 -- ==========================================================================
 -- 6. ATOMIC RPC: SUBMIT MOVE (Direct DB Mode with Device Verification)
@@ -1014,7 +982,7 @@ DROP FUNCTION IF EXISTS public.submit_chess_move(UUID, UUID, TEXT, TEXT, BOOLEAN
 
 GRANT EXECUTE ON FUNCTION public.join_or_create_chess_matchmaking(UUID, INTEGER) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.cancel_chess_matchmaking(UUID, UUID) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.create_direct_chess_challenge(UUID, UUID, INTEGER) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_direct_chess_challenge(UUID, UUID, TEXT, INTEGER) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.respond_direct_chess_challenge(UUID, UUID, BOOLEAN) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.submit_chess_move(UUID, UUID, TEXT, TEXT, TEXT, BOOLEAN, TEXT, UUID, TEXT) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.resign_chess_game(UUID, UUID, TEXT) TO anon, authenticated;
