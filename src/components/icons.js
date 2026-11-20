@@ -169,7 +169,7 @@ export { Swords, Sword as LucideSword } from 'lucide-react';
 import { ChessPawn as LucideChessPawn } from 'lucide-react';
 
 export const ChessPawn = ({ size = 24, weight = 'regular', strokeWidth, className = '', ...props }) => {
-  const resolvedStrokeWidth = strokeWidth || (weight === 'bold' ? 2.75 : 2);
+  const resolvedStrokeWidth = strokeWidth || (weight === 'bold' ? 2.1 : 1.55);
   return React.createElement(LucideChessPawn, {
     size,
     strokeWidth: resolvedStrokeWidth,
