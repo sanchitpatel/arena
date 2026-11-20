@@ -1201,16 +1201,32 @@ export function ChessView({ player, onBack }) {
           loading={loadingAction || viewState === 'MATCHING'}
         />
 
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900/90 to-zinc-950 border border-zinc-800 p-6 flex flex-col items-center text-center gap-4 shadow-2xl">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
-            <Crown size={36} weight="fill" />
+        <div className="relative overflow-hidden bg-[#F5F6F7]/85 border border-slate-300/60 rounded-[2.5rem] p-6 sm:p-8 flex flex-col items-center text-center gap-4 shadow-[inset_8px_8px_20px_#ffffff,inset_-8px_-8px_20px_#c5ccd6,0_12px_32px_rgba(0,0,0,0.08)]">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-b from-zinc-800 via-zinc-900 to-black border border-zinc-700/80 flex items-center justify-center text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-4px_8px_rgba(0,0,0,0.7),0_10px_22px_rgba(0,0,0,0.35),3px_3px_8px_#c2c9d4,-3px_-3px_8px_#ffffff]">
+            <Crown size={34} weight="fill" className="text-white drop-shadow-[0_2px_6px_rgba(255,255,255,0.25)]" />
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Arena 1v1 Chess</h2>
-            <p className="text-xs text-zinc-400 mt-1 max-w-xs">
-              Fast 5-minute blitz chess against fellow doctors. Win +100 pts on the venue leaderboard.
-            </p>
+            <h2 className="text-2xl font-arena font-black text-zinc-800 tracking-tight">1V1 Chess</h2>
+          </div>
+
+          {/* Reward Badges matching neumorphic clay card theme (Monochrome & Larger Icons) */}
+          <div className="w-full grid grid-cols-3 gap-3 sm:gap-2.5">
+            <div className="py-1.5 px-1 rounded-2xl bg-[#F2F7FC] border border-white/80 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] text-center flex flex-col items-center justify-center gap-1 transition-transform">
+              <Trophy size={26} weight="bold" className="text-zinc-800" />
+              <span className="text-[10px] sm:text-[10.5px] font-bold text-zinc-500 uppercase tracking-wider">Win</span>
+              <span className="text-xs sm:text-sm font-black text-zinc-900">+100 pts</span>
+            </div>
+            <div className="py-1.5 px-1 rounded-2xl bg-[#F2F7FC] border border-white/80 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] text-center flex flex-col items-center justify-center gap-1 transition-transform">
+              <Swords size={26} className="text-zinc-800" />
+              <span className="text-[10px] sm:text-[10.5px] font-bold text-zinc-500 uppercase tracking-wider">Draw</span>
+              <span className="text-xs sm:text-sm font-black text-zinc-900">+50 pts</span>
+            </div>
+            <div className="py-1.5 px-1 rounded-2xl bg-[#F2F7FC] border border-white/80 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] text-center flex flex-col items-center justify-center gap-1 transition-transform">
+              <CheckCircle size={26} weight="bold" className="text-zinc-800" />
+              <span className="text-[10px] sm:text-[10.5px] font-bold text-zinc-500 uppercase tracking-wider">Play</span>
+              <span className="text-xs sm:text-sm font-black text-zinc-900">+10 pts</span>
+            </div>
           </div>
 
           {actionError && (
@@ -1228,13 +1244,13 @@ export function ChessView({ player, onBack }) {
                 </div>
               </div>
               <div className="flex flex-col items-center">
-                <p className="text-sm font-medium text-sky-300">Finding an opponent doctor in Arena...</p>
+                <p className="text-sm font-bold text-zinc-800">Finding an opponent doctor in Arena...</p>
                 <p className="text-[11px] text-zinc-500 font-mono mt-0.5">Searching for {queueSeconds}s</p>
               </div>
 
               {queueSeconds >= 60 && (
-                <div className="p-3 rounded-2xl bg-zinc-800/80 border border-zinc-700/60 max-w-xs flex flex-col items-center gap-2 animate-fade-in">
-                  <p className="text-xs text-zinc-300 text-center">
+                <div className="p-3 rounded-2xl bg-white/80 border border-slate-200 max-w-xs flex flex-col items-center gap-2 animate-fade-in shadow-sm">
+                  <p className="text-xs text-zinc-700 text-center font-medium">
                     Queue taking longer than usual?
                   </p>
                   <button
@@ -1251,7 +1267,7 @@ export function ChessView({ player, onBack }) {
 
               <button
                 onClick={handleCancelQueue}
-                className="text-xs text-zinc-400 underline hover:text-white cursor-pointer active:scale-95 transition-transform"
+                className="text-xs text-zinc-600 underline hover:text-zinc-900 cursor-pointer active:scale-95 transition-transform font-medium"
               >
                 Cancel Queue
               </button>
@@ -1261,7 +1277,7 @@ export function ChessView({ player, onBack }) {
               <button
                 onClick={startPvpMatch}
                 disabled={loadingAction}
-                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.98] transition-all text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 cursor-pointer"
+                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.98] transition-all text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 cursor-pointer"
               >
                 <Lightning size={18} weight="fill" />
                 <span>Find 1v1 Opponent (5 min Blitz)</span>
@@ -1269,31 +1285,13 @@ export function ChessView({ player, onBack }) {
 
               <button
                 onClick={startBotMatch}
-                className="w-full py-3 px-4 rounded-2xl bg-zinc-800 hover:bg-zinc-750 active:scale-[0.98] transition-all border border-zinc-700/60 text-zinc-200 font-medium text-sm flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 px-4 rounded-2xl bg-[#F2F7FC] hover:bg-white active:scale-[0.98] transition-all border border-white text-zinc-800 font-bold text-sm flex items-center justify-center gap-2 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] cursor-pointer"
               >
-                <Play size={16} weight="fill" className="text-emerald-400" />
+                <Play size={16} weight="fill" className="text-emerald-500" />
                 <span>Practice vs Dr. DeepBlue (AI Bot)</span>
               </button>
             </div>
           )}
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center flex flex-col items-center gap-1">
-            <Trophy size={18} className="text-amber-400" />
-            <span className="text-[11px] text-zinc-400">Win</span>
-            <span className="text-xs font-bold text-white">+100 pts</span>
-          </div>
-          <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center flex flex-col items-center gap-1">
-            <Swords size={18} className="text-sky-400" />
-            <span className="text-[11px] text-zinc-400">Draw</span>
-            <span className="text-xs font-bold text-white">+50 pts</span>
-          </div>
-          <div className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-center flex flex-col items-center gap-1">
-            <CheckCircle size={18} className="text-emerald-400" />
-            <span className="text-[11px] text-zinc-400">Play</span>
-            <span className="text-xs font-bold text-white">+10 pts</span>
-          </div>
         </div>
       </div>
     );
