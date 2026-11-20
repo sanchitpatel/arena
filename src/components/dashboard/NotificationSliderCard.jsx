@@ -97,11 +97,27 @@ export const NotificationSliderCard = ({
   const currentYRef = useRef(0);
   const isDraggingRef = useRef(false);
   const hasCapturedRef = useRef(false);
+  const trackingRef = useRef(false);
   const dismissingRef = useRef(false);
   const dismissTimerRef = useRef(null);
 
   const sheetRef = useRef(null);
   const listRef = useRef(null);
+
+  const resetGesture = useCallback(() => {
+    trackingRef.current = false;
+    isDraggingRef.current = false;
+    hasCapturedRef.current = false;
+    currentYRef.current = 0;
+  }, []);
+
+  const releaseCapture = useCallback((e) => {
+    if (!hasCapturedRef.current) return;
+    try {
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+    } catch { }
+    hasCapturedRef.current = false;
+  }, []);
 
   // Clean up any lingering dismissal timer on component unmount
   useEffect(() => () => clearTimeout(dismissTimerRef.current), []);
@@ -217,6 +233,8 @@ export const NotificationSliderCard = ({
 
   // --- Touch & Pointer Gesture Handling (Swipe UP to Dismiss) ---
   const handlePointerDown = (e) => {
+    resetGesture(); // Always reset first so nothing stale survives an early return
+
     // Ignore clicks on interactive buttons or links
     if (e.target.closest('button, a')) return;
 
@@ -231,61 +249,57 @@ export const NotificationSliderCard = ({
     }
 
     startYRef.current = e.clientY;
-    currentYRef.current = 0;
-    isDraggingRef.current = false;
-    hasCapturedRef.current = false;
+    trackingRef.current = true;
   };
 
   const handlePointerMove = (e) => {
+    if (!trackingRef.current) return; // Guard: only runs if pointerdown started tracking
+
     const deltaY = e.clientY - startYRef.current;
 
     // Only initiate drag after crossing 5px threshold (preserves tap/click events on notification cards)
     if (!isDraggingRef.current) {
-      if (Math.abs(deltaY) > 5) {
-        isDraggingRef.current = true;
-        setIsDragging(true);
-        try {
-          e.currentTarget.setPointerCapture?.(e.pointerId);
-          hasCapturedRef.current = true;
-        } catch { }
-      } else {
-        return;
-      }
+      if (Math.abs(deltaY) <= 5) return;
+      isDraggingRef.current = true;
+      setIsDragging(true);
+      try {
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        hasCapturedRef.current = true;
+      } catch { }
     }
 
     if (e.cancelable) {
       e.preventDefault();
     }
 
-    if (deltaY < 0) {
-      // Dragging upwards towards top nav bar
-      currentYRef.current = deltaY;
-      setDragOffset(deltaY);
-    } else {
-      // Pulling downwards with rubber-band resistance
-      const resisted = deltaY * 0.15;
-      currentYRef.current = resisted;
-      setDragOffset(resisted);
-    }
+    const offset = deltaY < 0 ? deltaY : deltaY * 0.15;
+    currentYRef.current = offset;
+    setDragOffset(offset);
   };
 
   const handlePointerUp = (e) => {
-    if (hasCapturedRef.current) {
-      try {
-        e.currentTarget.releasePointerCapture?.(e.pointerId);
-      } catch { }
-      hasCapturedRef.current = false;
-    }
+    releaseCapture(e);
+    const wasDragging = isDraggingRef.current;
+    const shouldDismiss = wasDragging && currentYRef.current < -35;
+    resetGesture();
 
-    if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
+    if (!wasDragging) return;
     setIsDragging(false);
 
-    // Dismiss if dragged upwards by > 35px
-    if (currentYRef.current < -35) {
+    if (shouldDismiss) {
       animateDismiss();
     } else {
-      // Snap back to open position
+      setDragOffset(0);
+    }
+  };
+
+  // Cancel = browser took over (native momentum scroll). Never dismiss, just reset and snap back if dragging.
+  const handlePointerCancel = (e) => {
+    releaseCapture(e);
+    const wasDragging = isDraggingRef.current;
+    resetGesture();
+    if (wasDragging) {
+      setIsDragging(false);
       setDragOffset(0);
     }
   };
@@ -339,10 +353,11 @@ export const NotificationSliderCard = ({
       <div className="fixed top-0 left-0 right-0 z-[38] pointer-events-none flex justify-center px-1.5 sm:px-4">
         <div
           ref={sheetRef}
+          onClick={(e) => e.stopPropagation()}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
           onWheel={handleWheel}
           className="pointer-events-auto w-full max-w-full sm:max-w-[500px] md:max-w-[540px] h-[calc((100dvh-135px)*0.38+4.5rem)] min-h-[330px] max-h-[385px] md:h-[255px] md:min-h-[255px] md:max-h-[255px] bg-[#ebedf2] border border-white/90 rounded-b-[28px] sm:rounded-b-[32px] md:rounded-[28px] shadow-[inset_0_4px_8px_rgba(0,0,0,0.22),inset_0_-4px_8px_#ffffff] pt-14 sm:pt-14 md:pt-4 md:mt-4 px-4 sm:px-4.5 pb-2 select-none touch-none cursor-grab active:cursor-grabbing flex flex-col justify-between"
           style={cardStyle}
@@ -353,7 +368,6 @@ export const NotificationSliderCard = ({
               {/* Scrollable list of individual notification cards */}
               <div
                 ref={listRef}
-                onWheel={handleWheel}
                 data-scrollable="true"
                 className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1 avatar-scroll overscroll-contain touch-pan-y"
               >
@@ -362,12 +376,7 @@ export const NotificationSliderCard = ({
                   return (
                     <div
                       key={item.id}
-                      onClick={() => {
-                        if (typeof onNavigate === 'function') {
-                          onNavigate(item.tab || 'dashboard');
-                        }
-                      }}
-                      className={`w-full rounded-2xl p-2.5 sm:p-3 flex items-center gap-3 transition-all active:scale-[0.99] cursor-pointer select-none ${
+                      className={`w-full rounded-2xl p-2.5 sm:p-3 flex items-center gap-3 transition-all active:scale-[0.99] select-none ${
                         isDark
                           ? 'bg-gradient-to-b from-zinc-900 to-black text-white border border-zinc-800/80 shadow-[0_3px_0_#18181b,0_4px_8px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.2)]'
                           : 'bg-white text-zinc-900 border border-white/90 shadow-[0_3px_0_#c8d0db,0_4px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_#ffffff]'
