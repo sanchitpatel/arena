@@ -16,6 +16,7 @@ import {
   ArrowClockwise,
   SpeakerHigh,
   SpeakerSlash,
+  ChessKing,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import { ChessNewGamePanel } from './ChessNewGamePanel';
@@ -137,6 +138,8 @@ export function ChessView({ player, onBack }) {
   const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [gameData, setGameData] = useState(null);
   const [playerColor, setPlayerColor] = useState('w'); // 'w' | 'b'
+  const [playerSide, setPlayerSide] = useState('random'); // 'white' | 'random' | 'black'
+  const [selectedFormat, setSelectedFormat] = useState('5 min'); // '3 min' | '5 min' | '10 min'
   const [flipBoard, setFlipBoard] = useState(false);
   const [isMuted, setIsMuted] = useState(getChessAudioMuted);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -699,11 +702,14 @@ export function ChessView({ player, onBack }) {
     pendingMoveRef.current = null;
     setMatchMode('bot');
     setGameId(`bot_${Date.now()}`);
-    setPlayerColor('w');
+    const chosenColor = playerSide === 'white' ? 'w' : playerSide === 'black' ? 'b' : (Math.random() < 0.5 ? 'w' : 'b');
+    setPlayerColor(chosenColor);
+    setFlipBoard(chosenColor === 'b');
     chessRef.current.reset();
     setFen(chessRef.current.fen());
-    setWhiteBaseMs(300000);
-    setBlackBaseMs(300000);
+    const baseMs = selectedFormat === '3 min' ? 180000 : selectedFormat === '10 min' ? 600000 : 300000;
+    setWhiteBaseMs(baseMs);
+    setBlackBaseMs(baseMs);
     setLastMoveAt(new Date().toISOString());
     setServerOffsetMs(0);
     finishedRef.current = false;
@@ -1229,6 +1235,93 @@ export function ChessView({ player, onBack }) {
             </div>
           </div>
 
+          {/* 1. "I play as" piece side selector (left-aligned) */}
+          <div className="w-full flex items-center justify-start gap-4 px-0.5 pt-3.5">
+            <span className="text-base font-bold text-zinc-800 select-none ml-2">I play as</span>
+            <div className="flex items-center gap-2.5">
+              {/* White King Button */}
+              <button
+                type="button"
+                onClick={() => setPlayerSide('white')}
+                title="Play as White"
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                  playerSide === 'white'
+                    ? 'border-2 border-sky-500 shadow-[0_0_0_1px_#0ea5e9,0_3px_8px_rgba(14,165,233,0.3)]'
+                    : 'border border-slate-300/80 shadow-sm hover:border-slate-400'
+                }`}
+              >
+                <ChessKing size={27} strokeWidth={2} className="text-zinc-900" />
+              </button>
+
+              {/* Random (?) King Button */}
+              <button
+                type="button"
+                onClick={() => setPlayerSide('random')}
+                title="Play as Random Side"
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl relative overflow-hidden flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                  playerSide === 'random'
+                    ? 'border-2 border-sky-500 shadow-[0_0_0_1px_#0ea5e9,0_3px_8px_rgba(14,165,233,0.3)]'
+                    : 'border border-slate-300/80 shadow-sm hover:border-slate-400'
+                }`}
+              >
+                <div className="absolute inset-y-0 left-0 w-1/2 bg-white" />
+                <div className="absolute inset-y-0 right-0 w-1/2 bg-[#262522]" />
+                <span className="relative z-10 text-xl sm:text-2xl font-black text-zinc-900 drop-shadow-[0_0_2px_#ffffff]">
+                  ?
+                </span>
+              </button>
+
+              {/* Black King Button */}
+              <button
+                type="button"
+                onClick={() => setPlayerSide('black')}
+                title="Play as Black"
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#262522] flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                  playerSide === 'black'
+                    ? 'border-2 border-sky-500 shadow-[0_0_0_1px_#0ea5e9,0_3px_8px_rgba(14,165,233,0.3)]'
+                    : 'border border-zinc-700 shadow-sm hover:border-zinc-600'
+                }`}
+              >
+                <ChessKing size={27} strokeWidth={2} className="text-white" />
+              </button>
+            </div>
+          </div>
+
+          {/* 2. Format selector (3 min | 5 min | 10 min) */}
+          <div className="w-full flex flex-col gap-1.5 text-left pt-1.5">
+            <div className="flex items-center justify-between px-0.5">
+              <span className="text-sm font-bold text-zinc-800 ml-2 select-none">Format</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { time: '3 min', type: 'Blitz' },
+                { time: '5 min', type: 'Blitz' },
+                { time: '10 min', type: 'Rapid' },
+              ].map(({ time, type }) => {
+                const isSelected = selectedFormat === time;
+                return (
+                  <button
+                    key={time}
+                    type="button"
+                    onClick={() => setSelectedFormat(time)}
+                    className={`py-2.5 px-2 rounded-2xl text-center cursor-pointer transition-all active:scale-[0.97] ${
+                      isSelected
+                        ? 'bg-[#e2e8f0] text-zinc-950 border-2 border-sky-500 shadow-[inset_3px_3px_6px_#c2c9d4,inset_-3px_-3px_6px_#ffffff]'
+                        : 'bg-[#F2F7FC] hover:bg-white text-zinc-700 border border-white/90 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff]'
+                    }`}
+                  >
+                    <div className={`text-sm sm:text-base tracking-tight ${isSelected ? 'font-black text-zinc-950' : 'font-extrabold text-zinc-800'}`}>
+                      {time}
+                    </div>
+                    <div className={`text-xs mt-0.5 ${isSelected ? 'font-bold text-sky-600' : 'font-semibold text-zinc-400'}`}>
+                      {type}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {actionError && (
             <div className="w-full p-3 rounded-xl bg-red-950/60 border border-red-800/40 text-red-300 text-xs text-center">
               {actionError}
@@ -1280,7 +1373,7 @@ export function ChessView({ player, onBack }) {
                 className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:scale-[0.98] transition-all text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 cursor-pointer"
               >
                 <Lightning size={18} weight="fill" />
-                <span>Find 1v1 Opponent (5 min Blitz)</span>
+                <span>Find 1v1 Opponent ({selectedFormat})</span>
               </button>
 
               <button

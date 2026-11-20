@@ -165,7 +165,7 @@ export { XCircle } from '@phosphor-icons/react/dist/icons/XCircle';
 export { YoutubeLogo } from '@phosphor-icons/react/dist/icons/YoutubeLogo';
 
 // Official Esports & Battle Icons (Tree-shaken, 100% local)
-export { Swords, Sword as LucideSword } from 'lucide-react';
+export { Swords, Sword as LucideSword, ChessKing } from 'lucide-react';
 import { ChessPawn as LucideChessPawn } from 'lucide-react';
 
 export const ChessPawn = ({ size = 24, weight = 'regular', strokeWidth, className = '', ...props }) => {

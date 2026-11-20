@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" width="240" height="220" fill="none">
+  <defs>
+    <!-- Gold Metallic Gradients -->
+    <linearGradient id="gold-ring-outer" x1="60" y1="55" x2="180" y2="175" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF5B8" />
+      <stop offset="35%" stop-color="#FFD447" />
+      <stop offset="70%" stop-color="#F5A613" />
+      <stop offset="100%" stop-color="#FFE066" />
+    </linearGradient>
+
+    <linearGradient id="gold-ring-inner" x1="180" y1="175" x2="60" y2="55" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF2A6" />
+      <stop offset="50%" stop-color="#E0910B" />
+      <stop offset="100%" stop-color="#FFF9D6" />
+    </linearGradient>
+
+    <linearGradient id="gold-crown" x1="95" y1="18" x2="145" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF099" />
+      <stop offset="45%" stop-color="#FFC72C" />
+      <stop offset="100%" stop-color="#E08B08" />
+    </linearGradient>
+
+    <linearGradient id="gold-laurel" x1="40" y1="60" x2="90" y2="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFE46B" />
+      <stop offset="55%" stop-color="#FFBE26" />
+      <stop offset="100%" stop-color="#E89610" />
+    </linearGradient>
+
+    <linearGradient id="gold-badge" x1="100" y1="154" x2="140" y2="198" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF3AD" />
+      <stop offset="45%" stop-color="#FFD03B" />
+      <stop offset="100%" stop-color="#E6950A" />
+    </linearGradient>
+
+    <!-- Soft Glow & Drop Shadows -->
+    <filter id="gold-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#FFCA28" flood-opacity="0.45" />
+    </filter>
+    <filter id="gold-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#B87000" flood-opacity="0.28" />
+    </filter>
+  </defs>
+
+  <!-- Left Laurel Wreath -->
+  <g id="gold-laurel-left" fill="url(#gold-laurel)" filter="url(#gold-shadow)">
+    <!-- Stem -->
+    <path d="M98 168 C62 162, 42 128, 48 80" stroke="url(#gold-laurel)" stroke-width="2.2" stroke-linecap="round" fill="none" />
+    <!-- Leaves (bottom to top) -->
+    <path d="M84 164 C74 168, 65 164, 62 156 C71 154, 80 157, 84 164 Z" />
+    <path d="M71 155 C59 156, 51 150, 49 142 C58 141, 67 146, 71 155 Z" />
+    <path d="M60 142 C48 141, 41 134, 40 125 C49 126, 57 132, 60 142 Z" />
+    <path d="M52 127 C40 124, 35 115, 36 106 C45 109, 51 117, 52 127 Z" />
+    <path d="M48 110 C38 104, 34 95, 37 86 C45 91, 49 100, 48 110 Z" />
+    <path d="M48 92 C41 84, 40 75, 45 67 C51 74, 52 83, 48 92 Z" />
+    <!-- Inner Leaves -->
+    <path d="M77 159 C75 150, 79 142, 86 138 C87 146, 84 154, 77 159 Z" />
+    <path d="M64 146 C64 136, 69 128, 76 125 C76 134, 72 141, 64 146 Z" />
+    <path d="M55 130 C56 120, 62 113, 69 111 C68 120, 63 127, 55 130 Z" />
+    <path d="M50 112 C53 102, 59 96, 66 95 C64 104, 58 110, 50 112 Z" />
+    <path d="M49 93 C53 84, 59 79, 65 79 C62 87, 56 92, 49 93 Z" />
+  </g>
+
+  <!-- Right Laurel Wreath (Mirrored) -->
+  <g transform="translate(240, 0) scale(-1, 1)">
+    <use href="#gold-laurel-left" />
+  </g>
+
+  <!-- Crown -->
+  <g filter="url(#gold-shadow)">
+    <path d="M98 48 L92 26 L109 36 L120 19 L131 36 L148 26 L142 48 C130 51, 110 51, 98 48 Z" fill="url(#gold-crown)" />
+    <circle cx="91.5" cy="24.5" r="3.2" fill="#FFE875" />
+    <circle cx="120" cy="17.5" r="3.8" fill="#FFF3A8" />
+    <circle cx="148.5" cy="24.5" r="3.2" fill="#FFD24C" />
+    <!-- Crown base rim -->
+    <path d="M99 47 C110 49.5, 130 49.5, 141 47" stroke="#FFF4B5" stroke-width="1.5" stroke-linecap="round" />
+  </g>
+
+  <!-- Main Circular Frame (Transparent Center) -->
+  <g filter="url(#gold-glow)">
+    <circle cx="120" cy="115" r="56" stroke="url(#gold-ring-outer)" stroke-width="9" />
+    <circle cx="120" cy="115" r="52.5" stroke="url(#gold-ring-inner)" stroke-width="2" />
+  </g>
+
+  <!-- Bottom Rank Badge -->
+  <g filter="url(#gold-shadow)">
+    <circle cx="120" cy="176" r="21" fill="url(#gold-badge)" stroke="#FFF5BA" stroke-width="2" />
+    <!-- Remove <text> if you want a blank badge -->
+    <text x="120" y="184" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="800" fill="#1E1B18">1</text>
+  </g>
+</svg>
