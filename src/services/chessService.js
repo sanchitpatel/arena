@@ -262,3 +262,35 @@ export function subscribeToMatchmakingQueue(challengeId, onMatched) {
     supabase.removeChannel(channel);
   };
 }
+
+
+// 13. Synchronize Server Time Offset for Clock Skew Calibration
+export async function getServerTimeOffset() {
+  const t0 = Date.now();
+  try {
+    const { data, error } = await supabase.rpc('server_now');
+    if (!error && data) {
+      const t1 = Date.now();
+      return new Date(data).getTime() - (t0 + t1) / 2;
+    }
+  } catch {}
+
+  // Fallback: Use HTTP Date response header from PostgREST endpoint
+  try {
+    const supabaseUrl = supabase.supabaseUrl || 'https://ocnuhgvoicjgznfymmhj.supabase.co';
+    const supabaseKey = supabase.supabaseKey || 'sb_publishable_4Zuy1bxqLNdbflwxdFvz7w_InZ5nP5-';
+    const res = await fetch(`${supabaseUrl}/rest/v1/players?limit=1&select=id`, {
+      method: 'HEAD',
+      headers: { apikey: supabaseKey },
+    });
+    const dateHeader = res.headers.get('date');
+    if (dateHeader) {
+      const t1 = Date.now();
+      return new Date(dateHeader).getTime() - (t0 + t1) / 2;
+    }
+  } catch (err) {
+    console.warn('[ChessService] getServerTimeOffset fallback error:', err);
+  }
+
+  return 0;
+}

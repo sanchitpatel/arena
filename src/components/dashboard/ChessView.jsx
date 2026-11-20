@@ -30,6 +30,7 @@ import {
   resignChessGame,
   subscribeToChessGame,
   subscribeToMatchmakingQueue,
+  getServerTimeOffset,
 } from '../../services/chessService';
 import {
   initAudioUnlock,
@@ -46,6 +47,14 @@ import {
 
 // Piece value table for evaluation
 const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+
+// Calculate half-move ply from FEN for optimistic move protection
+const plyOf = (fen) => {
+  if (!fen) return 0;
+  const parts = fen.split(' ');
+  const fullmove = parseInt(parts[5], 10) || 1;
+  return (fullmove - 1) * 2 + (parts[1] === 'b' ? 1 : 0);
+};
 
 // Move dot highlights: grey/white gradient for legal moves, rose-red for captures
 const MOVE_DOT_NORMAL =
@@ -149,12 +158,78 @@ export function ChessView({ player, onBack }) {
   const [showResignModal, setShowResignModal] = useState(false);
   const [endSummary, setEndSummary] = useState(null);
 
-  // Guard flags
+  // Guard flags & anti-rollback tracking
   const hasClaimedTimeoutRef = useRef(false);
   const botTimeoutRef = useRef(null);
   const botFlaggedRef = useRef(false);
   const finishedRef = useRef(false);
   const lastInteractionRef = useRef({ time: 0, square: null });
+  const pendingMoveRef = useRef(null);
+  const activeChallengeIdRef = useRef(null);
+  const playerIdRef = useRef(player?.id);
+  const actionErrorTimeoutRef = useRef(null);
+  const [queueSeconds, setQueueSeconds] = useState(0);
+
+  useEffect(() => {
+    activeChallengeIdRef.current = activeChallengeId;
+  }, [activeChallengeId]);
+
+  useEffect(() => {
+    playerIdRef.current = player?.id;
+  }, [player?.id]);
+
+  // Unmount safety: Cancel queue challenge if player navigates away while matching
+  useEffect(() => {
+    return () => {
+      if (activeChallengeIdRef.current && playerIdRef.current) {
+        cancelChessMatchmaking(activeChallengeIdRef.current, playerIdRef.current).catch(() => {});
+      }
+      if (actionErrorTimeoutRef.current) clearTimeout(actionErrorTimeoutRef.current);
+    };
+  }, []);
+
+  // Track queue duration while searching
+  useEffect(() => {
+    if (viewState !== 'MATCHING') {
+      setQueueSeconds(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setQueueSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [viewState]);
+
+  // Periodic Clock Skew Calibration with Supabase Server Time (every 60s in PVP)
+  useEffect(() => {
+    if (matchMode !== 'pvp') return;
+    let alive = true;
+    const sync = () => {
+      getServerTimeOffset()
+        .then((offset) => {
+          if (alive && typeof offset === 'number' && !isNaN(offset)) {
+            setServerOffsetMs(offset);
+          }
+        })
+        .catch(() => {});
+    };
+
+    sync();
+    const interval = setInterval(sync, 60000);
+    return () => {
+      alive = false;
+      clearInterval(interval);
+    };
+  }, [matchMode]);
+
+  const showActionError = useCallback((msg) => {
+    if (actionErrorTimeoutRef.current) clearTimeout(actionErrorTimeoutRef.current);
+    setActionError(msg);
+    actionErrorTimeoutRef.current = setTimeout(() => {
+      setActionError('');
+      actionErrorTimeoutRef.current = null;
+    }, 3500);
+  }, []);
 
   // Unlock audio on first touch & preload chess audio samples
   useEffect(() => {
@@ -175,6 +250,20 @@ export function ChessView({ player, onBack }) {
   const applyServerGame = useCallback(
     (g) => {
       if (!g) return;
+
+      // Ply Guard: Ignore stale snapshots arriving shortly after local move
+      const pend = pendingMoveRef.current;
+      if (pend && g.status === 'in_progress') {
+        const serverPly = plyOf(g.fen);
+        if (serverPly >= pend.ply) {
+          pendingMoveRef.current = null; // Server caught up
+        } else if (Date.now() - pend.at < 6000) {
+          return; // Stale snapshot; do not roll back active move
+        } else {
+          pendingMoveRef.current = null;
+        }
+      }
+
       const c = chessRef.current;
       const prevCount = c.board().flat().filter(Boolean).length;
       const currentFen = c.fen();
@@ -210,7 +299,7 @@ export function ChessView({ player, onBack }) {
         }
       }
 
-      // Sync Clocks & Measure Phone Clock Skew Offset
+      // Sync Clocks (Do NOT compute offset from last_move_at! Skew is calibrated via getServerTimeOffset())
       if (typeof g.white_time_left_ms === 'number') {
         setWhiteBaseMs(g.white_time_left_ms);
       }
@@ -219,10 +308,6 @@ export function ChessView({ player, onBack }) {
       }
       if (g.last_move_at) {
         setLastMoveAt(g.last_move_at);
-        const offset = new Date(g.last_move_at).getTime() - Date.now();
-        if (Math.abs(offset) < 7200000) {
-          setServerOffsetMs(offset);
-        }
       }
 
       setGameData((prev) => ({ ...(prev || {}), ...g }));
@@ -239,13 +324,15 @@ export function ChessView({ player, onBack }) {
         if (isWinner) playVictorySound();
         else if (!isDraw) playDefeatSound();
 
-        const pointsAwarded = isWinner
-          ? 100
-          : isDraw
-            ? 50
-            : g.end_reason === 'early_resignation_no_points'
-              ? 0
-              : 10;
+        const pointsAwarded = typeof g.points_awarded === 'number'
+          ? g.points_awarded
+          : isWinner
+            ? 100
+            : isDraw
+              ? 50
+              : g.end_reason === 'early_resignation_no_points'
+                ? 0
+                : 10;
 
         setEndSummary({
           status: g.status,
@@ -395,10 +482,10 @@ export function ChessView({ player, onBack }) {
     const handleChallengeUpdate = async (ch) => {
       if (!ch || ch.status !== 'accepted' || !ch.game_id) return;
       try {
-        setGameId(ch.game_id);
-        setPlayerColor(ch.challenger_id === player?.id ? 'w' : 'b');
-        const initialGame = await getChessGame(ch.game_id);
+        const initialGame = await getChessGame(ch.game_id).catch(() => null);
         if (initialGame) {
+          setGameId(ch.game_id);
+          setPlayerColor(initialGame.white_player_id === player?.id ? 'w' : 'b');
           finishedRef.current = false;
           hasClaimedTimeoutRef.current = false;
           applyServerGame(initialGame);
@@ -410,15 +497,19 @@ export function ChessView({ player, onBack }) {
     };
 
     // Immediate check right on entering MATCHING (covers 0-50ms gap)
-    getChessChallenge(activeChallengeId).then((ch) => {
-      if (ch) handleChallengeUpdate(ch);
-    });
+    getChessChallenge(activeChallengeId)
+      .then((ch) => {
+        if (ch) handleChallengeUpdate(ch);
+      })
+      .catch(() => {});
 
     // 4s polling fallback in case Realtime message drops
     const pollInterval = setInterval(() => {
-      getChessChallenge(activeChallengeId).then((ch) => {
-        if (ch) handleChallengeUpdate(ch);
-      });
+      getChessChallenge(activeChallengeId)
+        .then((ch) => {
+          if (ch) handleChallengeUpdate(ch);
+        })
+        .catch(() => {});
     }, 4000);
 
     const unsubscribe = subscribeToMatchmakingQueue(activeChallengeId, (matchedChallenge) => {
@@ -449,6 +540,8 @@ export function ChessView({ player, onBack }) {
   // --------------------------------------------------------------------------
   const resetToLobby = useCallback(() => {
     if (botTimeoutRef.current) clearTimeout(botTimeoutRef.current);
+    if (actionErrorTimeoutRef.current) clearTimeout(actionErrorTimeoutRef.current);
+    pendingMoveRef.current = null;
     chessRef.current.reset();
     setFen(chessRef.current.fen());
     setGameId(null);
@@ -465,6 +558,7 @@ export function ChessView({ player, onBack }) {
     setWhiteBaseMs(300000);
     setBlackBaseMs(300000);
     setLastMoveAt(new Date().toISOString());
+    setServerOffsetMs(0);
     finishedRef.current = false;
     hasClaimedTimeoutRef.current = false;
     botFlaggedRef.current = false;
@@ -480,13 +574,12 @@ export function ChessView({ player, onBack }) {
     try {
       const res = await joinOrCreateMatchmaking(player.id, 300);
       if (res.action === 'matched' || res.action === 'reconnected') {
-        setGameId(res.game_id);
-        setPlayerColor(res.color || 'w');
-        finishedRef.current = false;
-        hasClaimedTimeoutRef.current = false;
-
-        const initialGame = await getChessGame(res.game_id);
+        const initialGame = await getChessGame(res.game_id).catch(() => null);
         if (initialGame) {
+          setGameId(res.game_id);
+          setPlayerColor(initialGame.white_player_id === player?.id ? 'w' : 'b');
+          finishedRef.current = false;
+          hasClaimedTimeoutRef.current = false;
           applyServerGame(initialGame);
           setViewState('PLAYING');
         }
@@ -496,7 +589,7 @@ export function ChessView({ player, onBack }) {
       }
     } catch (err) {
       console.error(err);
-      setActionError(err.message || 'Matchmaking failed. Try again.');
+      showActionError(err.message || 'Matchmaking failed. Try again.');
       setViewState('LOBBY');
     } finally {
       setLoadingAction(false);
@@ -506,12 +599,12 @@ export function ChessView({ player, onBack }) {
   const handleCancelQueue = async () => {
     if (activeChallengeId && player?.id) {
       try {
-        const ch = await getChessChallenge(activeChallengeId);
+        const ch = await getChessChallenge(activeChallengeId).catch(() => null);
         if (ch && ch.status === 'accepted' && ch.game_id) {
-          setGameId(ch.game_id);
-          setPlayerColor(ch.challenger_id === player.id ? 'w' : 'b');
-          const initialGame = await getChessGame(ch.game_id);
+          const initialGame = await getChessGame(ch.game_id).catch(() => null);
           if (initialGame) {
+            setGameId(ch.game_id);
+            setPlayerColor(initialGame.white_player_id === player?.id ? 'w' : 'b');
             finishedRef.current = false;
             hasClaimedTimeoutRef.current = false;
             applyServerGame(initialGame);
@@ -529,6 +622,8 @@ export function ChessView({ player, onBack }) {
 
   const startBotMatch = () => {
     if (botTimeoutRef.current) clearTimeout(botTimeoutRef.current);
+    if (actionErrorTimeoutRef.current) clearTimeout(actionErrorTimeoutRef.current);
+    pendingMoveRef.current = null;
     setMatchMode('bot');
     setGameId(`bot_${Date.now()}`);
     setPlayerColor('w');
@@ -537,6 +632,7 @@ export function ChessView({ player, onBack }) {
     setWhiteBaseMs(300000);
     setBlackBaseMs(300000);
     setLastMoveAt(new Date().toISOString());
+    setServerOffsetMs(0);
     finishedRef.current = false;
     hasClaimedTimeoutRef.current = false;
     botFlaggedRef.current = false;
@@ -762,6 +858,9 @@ export function ChessView({ player, onBack }) {
         }
       }
 
+      // Register pending move for optimistic ply guard protection
+      pendingMoveRef.current = { ply: plyOf(newFen), at: Date.now() };
+
       submitMove({
         gameId,
         playerId: player.id,
@@ -774,6 +873,7 @@ export function ChessView({ player, onBack }) {
         endReason,
       }).catch((err) => {
         console.error('Server move submission failed, rolling back board:', err);
+        pendingMoveRef.current = null;
         // Rollback on rejection: restore PGN, clocks, and lastMoveAt
         try {
           if (previousPgn && previousPgn.trim().length > 0) {
@@ -790,8 +890,7 @@ export function ChessView({ player, onBack }) {
         setLastMoveAt(prevLastMoveAt);
         setSelectedSquare(null);
         setSquareStyles({});
-        setActionError(err.message || 'Illegal move rejected by server.');
-        setTimeout(() => setActionError(''), 3500);
+        showActionError(err.message || 'Illegal move rejected by server.');
       });
 
       return true;
@@ -953,35 +1052,29 @@ export function ChessView({ player, onBack }) {
         }
       } catch (err) {
         console.error('Failed to resign:', err);
-        setActionError(err.message || 'Failed to submit resignation.');
-        setTimeout(() => setActionError(''), 3500);
+        showActionError(err.message || 'Failed to submit resignation.');
       } finally {
         setLoadingAction(false);
       }
     }
   };
 
-  const handleOpponentFlagFall = useCallback(() => {
-    if (hasClaimedTimeoutRef.current) return;
+  const handleFlagFall = useCallback(() => {
     if (matchMode === 'bot') {
       if (botFlaggedRef.current) return;
       botFlaggedRef.current = true;
-      handleBotGameOver('opponent_timeout');
+      handleBotGameOver('player_timeout');
       return;
     }
-    if (gameId && player?.id) {
-      hasClaimedTimeoutRef.current = true;
-      claimChessTimeout(gameId, player.id)
-        .then((res) => {
-          if (!res || !res.success) {
-            hasClaimedTimeoutRef.current = false;
-          }
-        })
-        .catch((err) => {
-          console.warn('Timeout claim note:', err);
-          hasClaimedTimeoutRef.current = false;
-        });
-    }
+    if (hasClaimedTimeoutRef.current || !gameId || !player?.id) return;
+    hasClaimedTimeoutRef.current = true;
+    claimChessTimeout(gameId, player.id).catch((err) => {
+      console.warn('[ChessView] Timeout claim note:', err);
+    });
+    // 3-second throttle prevents 250ms interval hammering
+    setTimeout(() => {
+      hasClaimedTimeoutRef.current = false;
+    }, 3000);
   }, [matchMode, gameId, player?.id, handleBotGameOver]);
 
   const toggleMute = () => {
@@ -1050,7 +1143,28 @@ export function ChessView({ player, onBack }) {
                   <CircleNotch size={28} className="animate-spin" />
                 </div>
               </div>
-              <p className="text-sm font-medium text-sky-300">Finding an opponent doctor in Arena...</p>
+              <div className="flex flex-col items-center">
+                <p className="text-sm font-medium text-sky-300">Finding an opponent doctor in Arena...</p>
+                <p className="text-[11px] text-zinc-500 font-mono mt-0.5">Searching for {queueSeconds}s</p>
+              </div>
+
+              {queueSeconds >= 60 && (
+                <div className="p-3 rounded-2xl bg-zinc-800/80 border border-zinc-700/60 max-w-xs flex flex-col items-center gap-2 animate-fade-in">
+                  <p className="text-xs text-zinc-300 text-center">
+                    Queue taking longer than usual?
+                  </p>
+                  <button
+                    onClick={() => {
+                      handleCancelQueue();
+                      startBotMatch();
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold active:scale-95 transition-all cursor-pointer"
+                  >
+                    Play Practice Bot Instead
+                  </button>
+                </div>
+              )}
+
               <button
                 onClick={handleCancelQueue}
                 className="text-xs text-zinc-400 underline hover:text-white cursor-pointer active:scale-95 transition-transform"
@@ -1204,14 +1318,20 @@ export function ChessView({ player, onBack }) {
           </div>
         </div>
 
-        {/* Isolated Opponent Clock */}
-        <ChessClock
-          isRunning={isOpponentClockRunning}
-          baseTimeMs={playerColor === 'w' ? blackBaseMs : whiteBaseMs}
-          lastMoveAt={lastMoveAt}
-          serverOffsetMs={serverOffsetMs}
-          onFlagFall={handleOpponentFlagFall}
-        />
+        {/* Opponent Clock: PVP Blitz Clock, or clean badge for practice */}
+        {matchMode === 'bot' ? (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/80 text-zinc-400 font-mono text-xs font-semibold tracking-wider">
+            <span>Practice</span>
+          </div>
+        ) : (
+          <ChessClock
+            isRunning={isOpponentClockRunning}
+            baseTimeMs={playerColor === 'w' ? blackBaseMs : whiteBaseMs}
+            lastMoveAt={lastMoveAt}
+            serverOffsetMs={serverOffsetMs}
+            onFlagFall={handleFlagFall}
+          />
+        )}
       </div>
 
       {/* CHESSBOARD (Mobile 1:1 Locked Viewport) */}
@@ -1354,20 +1474,20 @@ export function ChessView({ player, onBack }) {
           </div>
         </div>
 
-        {/* Isolated Active Player Clock */}
-        <ChessClock
-          isRunning={isMyClockRunning}
-          baseTimeMs={playerColor === 'w' ? whiteBaseMs : blackBaseMs}
-          lastMoveAt={lastMoveAt}
-          serverOffsetMs={serverOffsetMs}
-          onFlagFall={() => {
-            if (matchMode === 'bot') {
-              if (botFlaggedRef.current) return;
-              botFlaggedRef.current = true;
-              handleBotGameOver('player_timeout');
-            }
-          }}
-        />
+        {/* Active Player Clock: PVP Blitz Clock, or clean badge for practice */}
+        {matchMode === 'bot' ? (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/80 text-zinc-400 font-mono text-xs font-semibold tracking-wider">
+            <span>Practice</span>
+          </div>
+        ) : (
+          <ChessClock
+            isRunning={isMyClockRunning}
+            baseTimeMs={playerColor === 'w' ? whiteBaseMs : blackBaseMs}
+            lastMoveAt={lastMoveAt}
+            serverOffsetMs={serverOffsetMs}
+            onFlagFall={handleFlagFall}
+          />
+        )}
       </div>
 
       {/* Action Bar */}

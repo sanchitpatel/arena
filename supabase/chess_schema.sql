@@ -731,3 +731,17 @@ GRANT EXECUTE ON FUNCTION public.submit_chess_move(UUID, UUID, TEXT, TEXT, TEXT,
 GRANT EXECUTE ON FUNCTION public.resign_chess_game(UUID, UUID, TEXT) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_chess_timeout(UUID, UUID) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.sweep_expired_chess_games() TO anon, authenticated;
+
+
+-- ==========================================================================
+-- 12. ATOMIC RPC: SERVER CURRENT TIME (Clock Skew Synchronization)
+-- ==========================================================================
+CREATE OR REPLACE FUNCTION public.server_now()
+RETURNS TIMESTAMPTZ
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT clock_timestamp();
+$$;
+
+GRANT EXECUTE ON FUNCTION public.server_now() TO anon, authenticated;

@@ -12,7 +12,18 @@
 let audioCtx = null;
 let master = null;
 let noiseBuf = null;
-let isMuted = false;
+
+const MUTE_STORAGE_KEY = 'arena_chess_muted';
+function initMuteState() {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(MUTE_STORAGE_KEY);
+      if (stored !== null) return stored === 'true';
+    } catch {}
+  }
+  return false;
+}
+let isMuted = initMuteState();
 const samples = {};
 
 const SAMPLE_FILES = {
@@ -82,7 +93,14 @@ export async function loadChessSounds(base = '/sounds/chess') {
   );
 }
 
-export function setChessAudioMuted(muted) { isMuted = Boolean(muted); }
+export function setChessAudioMuted(muted) {
+  isMuted = Boolean(muted);
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(MUTE_STORAGE_KEY, String(isMuted));
+    } catch {}
+  }
+}
 export function getChessAudioMuted() { return isMuted; }
 
 // ---------- Internal Fallback Synthesizer ----------
