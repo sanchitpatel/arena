@@ -18,6 +18,7 @@ import {
   SpeakerSlash,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
+import { ChessNewGamePanel } from './ChessNewGamePanel';
 import { getDeviceId, getPlayerUuid } from '../../utils/playerId';
 import { claimOrRegisterGuest } from '../../services/arenaService';
 import {
@@ -1190,6 +1191,15 @@ export function ChessView({ player, onBack }) {
             </div>
           </div>
         </div>
+
+        {/* ========================================================
+            IMAGE 2 COMPONENT: CHESS.COM "NEW GAME" SELECTION PANEL
+            Built on top of existing components without removing anything
+            ======================================================== */}
+        <ChessNewGamePanel
+          onStartGame={() => startPvpMatch()}
+          loading={loadingAction || viewState === 'MATCHING'}
+        />
 
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900/90 to-zinc-950 border border-zinc-800 p-6 flex flex-col items-center text-center gap-4 shadow-2xl">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
