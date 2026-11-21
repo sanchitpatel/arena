@@ -155,6 +155,7 @@ export { UserCirclePlus } from '@phosphor-icons/react/dist/icons/UserCirclePlus'
 export { UserList } from '@phosphor-icons/react/dist/icons/UserList';
 export { Users } from '@phosphor-icons/react/dist/icons/Users';
 export { UsersThree } from '@phosphor-icons/react/dist/icons/UsersThree';
+export { Wallet } from '@phosphor-icons/react/dist/icons/Wallet';
 export { WarningCircle } from '@phosphor-icons/react/dist/icons/WarningCircle';
 export { WhatsappLogo } from '@phosphor-icons/react/dist/icons/WhatsappLogo';
 export { Wheelchair } from '@phosphor-icons/react/dist/icons/Wheelchair';

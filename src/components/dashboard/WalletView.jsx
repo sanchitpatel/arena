@@ -1,43 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { Wallet } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import ChatGPTOrb from './ChatGPTOrb';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
 import { fetchLeaderboard, subscribeToLeaderboard } from '../../services/arenaService';
 import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
-
-/**
- * 3D Isometric Stacked Coins Icon
- * Replicating the authentic blue coin stack on the "My Wallet" badge and inside the points orb.
- */
-function StackedCoinsIcon({ size = 24, className = '' }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      {/* Bottom Coin */}
-      <ellipse cx="16" cy="22" rx="10" ry="3.8" fill="#0284c7" />
-      <path d="M6 22v3c0 2.1 4.5 3.8 10 3.8s10-1.7 10-3.8v-3c0 2.1-4.5 3.8-10 3.8S6 24.1 6 22z" fill="#0369a1" />
-      <ellipse cx="16" cy="22" rx="9" ry="3" fill="#38bdf8" />
-
-      {/* Middle Coin */}
-      <ellipse cx="16" cy="15" rx="10" ry="3.8" fill="#0284c7" />
-      <path d="M6 15v3c0 2.1 4.5 3.8 10 3.8s10-1.7 10-3.8v-3c0 2.1-4.5 3.8-10 3.8S6 17.1 6 15z" fill="#0369a1" />
-      <ellipse cx="16" cy="15" rx="9" ry="3" fill="#38bdf8" />
-
-      {/* Top Coin */}
-      <ellipse cx="16" cy="8" rx="10" ry="3.8" fill="#0284c7" />
-      <path d="M6 8v3c0 2.1 4.5 3.8 10 3.8s10-1.7 10-3.8v-3c0 2.1-4.5 3.8-10 3.8S6 10.1 6 8z" fill="#0369a1" />
-      <ellipse cx="16" cy="8" rx="9" ry="3" fill="#7dd3fc" />
-      <ellipse cx="16" cy="8" rx="6.5" ry="2" fill="#e0f2fe" opacity="0.8" />
-    </svg>
-  );
-}
 
 /**
  * Authentic Mock Leaderboard Data matching public/wallet.png
@@ -138,12 +106,12 @@ export const WalletView = ({ player, onNavigate }) => {
   return (
     <div className="w-full max-w-[430px] mx-auto px-4 sm:px-2 pt-2 pb-24 space-y-4 select-none font-sans">
       {/* ========================================================
-          1. HEADER: "My Wallet" with Stacked Coins Badge
+          1. HEADER: "My Wallet" with Standard Wallet Badge
           ======================================================== */}
       <div className="flex items-center gap-3 pt-1">
-        {/* Circular Blue Coin Badge */}
+        {/* Circular Wallet Badge */}
         <div className="w-12 h-12 rounded-full bg-white/90 border border-sky-200/90 shadow-[0_4px_16px_rgba(2,110,220,0.12),inset_0_2px_4px_#ffffff] flex items-center justify-center shrink-0">
-          <StackedCoinsIcon size={26} />
+          <Wallet size={24} weight="fill" className="text-sky-600" />
         </div>
 
         <div>
@@ -163,13 +131,14 @@ export const WalletView = ({ player, onNavigate }) => {
         {/* Left: Authentic ChatGPT-Style Player Orb from Profile page */}
         <div className="shrink-0 flex items-center justify-center py-1 pl-1">
           <ChatGPTOrb
-            orbNumber={orbNumber}
+            orbNumber={userPoints.toLocaleString()}
             avatar={userAvatar}
             badge="qr"
             onBadgeClick={() => setQrModalOpen(true)}
             onOrbClick={() => setQrModalOpen(true)}
             size="w-28 h-28 sm:w-28 sm:h-28"
-            numberSize="text-[40px] sm:text-[40px]"
+            numberSize="text-[24px] sm:text-[27px]"
+            label="POINTS"
           />
         </div>
 
