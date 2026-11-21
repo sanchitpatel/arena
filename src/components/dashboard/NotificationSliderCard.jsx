@@ -149,6 +149,18 @@ export const NotificationSliderCard = ({
         setQueue((prev) =>
           prev.map((n) => (n.id === notificationId ? { ...n, action_status: 'accepted', is_read: true } : n))
         );
+        if (res.game_id && typeof window !== 'undefined') {
+          window.localStorage.setItem('arena_chess_active_pvp_session', JSON.stringify({
+            matchMode: 'pvp',
+            gameId: res.game_id,
+            playerColor: res.color || 'w',
+            status: 'in_progress',
+            updatedAt: Date.now()
+          }));
+          window.dispatchEvent(new CustomEvent('arena:enter-chess-game', {
+            detail: { gameId: res.game_id, color: res.color }
+          }));
+        }
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('arena:notification-updated'));
         }

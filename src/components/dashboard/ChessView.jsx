@@ -187,6 +187,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
   const [matchMode, setMatchMode] = useState(() => initialSession?.matchMode || null); // 'pvp' | 'bot'
   const [gameId, setGameId] = useState(() => initialSession?.gameId || null);
   const [activeChallengeId, setActiveChallengeId] = useState(null);
+  const [ongoingPvpGame, setOngoingPvpGame] = useState(null);
   const [gameData, setGameData] = useState(() => (initialSession?.matchMode === 'pvp' ? initialSession : null));
   const [playerColor, setPlayerColor] = useState(() => initialSession?.playerColor || 'w'); // 'w' | 'b'
   const [playerSide, setPlayerSide] = useState(() => initialSession?.playerSide || 'random'); // 'white' | 'random' | 'black'
@@ -615,17 +616,67 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [viewState, gameId, matchMode, applyServerGame]);
 
+  // Listen for direct challenge acceptance events from Notification/Dashboard banner
+  useEffect(() => {
+    const handleEnterGame = async (e) => {
+      const targetGid = e.detail?.gameId;
+      const targetColor = e.detail?.color;
+      if (!targetGid) return;
+
+      try {
+        const fresh = await getChessGame(targetGid);
+        if (fresh && fresh.status === 'in_progress') {
+          setGameId(fresh.id);
+          setMatchMode('pvp');
+          const currentId = player?.id || getPlayerUuid();
+          setPlayerColor(targetColor || (fresh.white_player_id === currentId ? 'w' : 'b'));
+          finishedRef.current = false;
+          hasClaimedTimeoutRef.current = false;
+          applyServerGame(fresh);
+          setViewState('PLAYING');
+        }
+      } catch (err) {
+        console.warn('[ChessView] arena:enter-chess-game handler error:', err);
+      }
+    };
+
+    window.addEventListener('arena:enter-chess-game', handleEnterGame);
+    return () => window.removeEventListener('arena:enter-chess-game', handleEnterGame);
+  }, [player?.id, applyServerGame]);
+
   // Synchronize when Chess tab becomes active in DashboardShell
   useEffect(() => {
     if (isActive) {
       window.dispatchEvent(new Event('resize'));
+      const currentId = player?.id || getPlayerUuid();
+
       if (viewState === 'PLAYING' && gameId && matchMode === 'pvp') {
-        getChessGame(gameId).then((fresh) => {
-          if (fresh) applyServerGame(fresh);
-        }).catch(() => {});
+        getChessGame(gameId)
+          .then((fresh) => {
+            if (fresh) applyServerGame(fresh);
+          })
+          .catch(() => {});
+      } else if (currentId) {
+        // Automatically discover and resume any live PVP match
+        getActiveOngoingGame(currentId)
+          .then((activeGame) => {
+            if (activeGame && activeGame.status === 'in_progress') {
+              setOngoingPvpGame(activeGame);
+              setGameId(activeGame.id);
+              setMatchMode('pvp');
+              setPlayerColor(activeGame.white_player_id === currentId ? 'w' : 'b');
+              finishedRef.current = false;
+              hasClaimedTimeoutRef.current = false;
+              applyServerGame(activeGame);
+              setViewState('PLAYING');
+            } else {
+              setOngoingPvpGame(null);
+            }
+          })
+          .catch(() => {});
       }
     }
-  }, [isActive, viewState, gameId, matchMode, applyServerGame]);
+  }, [isActive, viewState, gameId, matchMode, player?.id, applyServerGame]);
 
   // Persist session before page unload / refresh
   useEffect(() => {
@@ -1744,27 +1795,48 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
               </button>
             </div>
           ) : (
-            <div className="w-full grid grid-cols-2 gap-2.5 sm:gap-3 mt-2">
-              {/* Left: Play Bot Button (Gradient Blue with Inward Shadows) */}
-              <button
-                type="button"
-                onClick={startBotMatch}
-                className="py-3.5 px-2.5 rounded-2xl bg-gradient-to-t from-sky-400 via-sky-500 to-blue-600 hover:from-sky-500 hover:to-blue-600 active:scale-[0.98] transition-all text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.45),inset_0_-3px_5px_rgba(0,0,0,0.35),0_4px_12px_rgba(14,165,233,0.3)] border border-sky-300/60 cursor-pointer select-none"
-              >
-                <Play size={18} weight="fill" className="text-white shrink-0" />
-                <span>Play Bot</span>
-              </button>
+            <div className="w-full flex flex-col gap-2.5 mt-2">
+              {/* Ongoing Live Match Resume Banner if active */}
+              {ongoingPvpGame && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGameId(ongoingPvpGame.id);
+                    setMatchMode('pvp');
+                    const currentId = player?.id || getPlayerUuid();
+                    setPlayerColor(ongoingPvpGame.white_player_id === currentId ? 'w' : 'b');
+                    applyServerGame(ongoingPvpGame);
+                    setViewState('PLAYING');
+                  }}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-600 hover:from-emerald-600 hover:to-sky-700 active:scale-[0.98] transition-all text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(16,185,129,0.35)] cursor-pointer select-none animate-pulse"
+                >
+                  <Swords size={20} weight="bold" />
+                  <span>Resume Live Duel in Progress</span>
+                </button>
+              )}
 
-              {/* Right: Find Opponent Button (Shiny Black with Inward Shadows) */}
-              <button
-                type="button"
-                onClick={startPvpMatch}
-                disabled={loadingAction}
-                className="py-3.5 px-2.5 rounded-2xl bg-gradient-to-b from-zinc-800 via-zinc-900 to-black hover:from-zinc-750 hover:to-zinc-950 active:scale-[0.98] transition-all text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-3px_5px_rgba(0,0,0,0.7),0_4px_12px_rgba(0,0,0,0.35)] border border-zinc-700/80 cursor-pointer select-none disabled:opacity-50"
-              >
-                <Lightning size={20} weight="fill" className="text-white shrink-0" />
-                <span>Find Opponent</span>
-              </button>
+              <div className="w-full grid grid-cols-2 gap-2.5 sm:gap-3">
+                {/* Left: Play Bot Button (Gradient Blue with Inward Shadows) */}
+                <button
+                  type="button"
+                  onClick={startBotMatch}
+                  className="py-3.5 px-2.5 rounded-2xl bg-gradient-to-t from-sky-400 via-sky-500 to-blue-600 hover:from-sky-500 hover:to-blue-600 active:scale-[0.98] transition-all text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.45),inset_0_-3px_5px_rgba(0,0,0,0.35),0_4px_12px_rgba(14,165,233,0.3)] border border-sky-300/60 cursor-pointer select-none"
+                >
+                  <Play size={18} weight="fill" className="text-white shrink-0" />
+                  <span>Play Bot</span>
+                </button>
+
+                {/* Right: Find Opponent Button (Shiny Black with Inward Shadows) */}
+                <button
+                  type="button"
+                  onClick={startPvpMatch}
+                  disabled={loadingAction}
+                  className="py-3.5 px-2.5 rounded-2xl bg-gradient-to-b from-zinc-800 via-zinc-900 to-black hover:from-zinc-750 hover:to-zinc-950 active:scale-[0.98] transition-all text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-3px_5px_rgba(0,0,0,0.7),0_4px_12px_rgba(0,0,0,0.35)] border border-zinc-700/80 cursor-pointer select-none disabled:opacity-50"
+                >
+                  <Lightning size={20} weight="fill" className="text-white shrink-0" />
+                  <span>Find Opponent</span>
+                </button>
+              </div>
             </div>
           )}
 

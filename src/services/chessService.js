@@ -287,8 +287,14 @@ export function subscribeToMatchmakingQueue(challengeId, onMatched) {
         filter: `id=eq.${challengeId}`,
       },
       (payload) => {
-        if (payload?.new && payload.new.status === 'accepted' && payload.new.game_id) {
-          onMatched(payload.new);
+        if (payload?.new) {
+          if (
+            (payload.new.status === 'accepted' && payload.new.game_id) ||
+            payload.new.status === 'declined' ||
+            payload.new.status === 'expired'
+          ) {
+            onMatched(payload.new);
+          }
         }
       }
     )

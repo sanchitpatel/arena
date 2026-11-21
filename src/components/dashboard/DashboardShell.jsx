@@ -162,6 +162,22 @@ export const DashboardShell = ({
     try {
       const res = await respondToChessChallenge(incomingChallenge.data.challenge_id, myId, true);
       if (res?.success) {
+        if (incomingChallenge.id) {
+          await updateNotificationActionStatus(incomingChallenge.id, 'accepted');
+        }
+        if (res.game_id && typeof window !== 'undefined') {
+          window.localStorage.setItem('arena_chess_active_pvp_session', JSON.stringify({
+            matchMode: 'pvp',
+            gameId: res.game_id,
+            playerColor: res.color || 'w',
+            status: 'in_progress',
+            updatedAt: Date.now()
+          }));
+          window.dispatchEvent(new CustomEvent('arena:enter-chess-game', {
+            detail: { gameId: res.game_id, color: res.color }
+          }));
+          window.dispatchEvent(new CustomEvent('arena:notification-updated'));
+        }
         setIncomingChallenge(null);
         if (typeof onTabChange === 'function') {
           onTabChange('chess');
@@ -792,19 +808,19 @@ export const DashboardShell = ({
         }}
       />
 
-      {/* Floating Incoming 1v1 Chess Challenge Alert Banner */}
+      {/* Floating Incoming 1v1 Chess Challenge Alert Banner (Clean Neumorphic Theme matching Image 2) */}
       {incomingChallenge && (
         <div className="fixed top-14 sm:top-16 left-1/2 -translate-x-1/2 z-[60] w-[94vw] max-w-md animate-in fade-in slide-in-from-top-4 duration-200 select-none">
-          <div className="rounded-[1.75rem] p-3 sm:p-3.5 bg-gradient-to-b from-zinc-900 to-black border-2 border-sky-400/80 shadow-[0_12px_36px_rgba(0,0,0,0.5),0_0_20px_rgba(14,165,233,0.35)] flex items-center gap-3 text-white">
-            <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white/80 shrink-0 bg-zinc-800 flex items-center justify-center">
+          <div className="rounded-[1.75rem] p-3 sm:p-3.5 bg-white/95 backdrop-blur-xl border border-white/90 shadow-[0_12px_36px_rgba(15,23,42,0.14),0_2px_8px_rgba(15,23,42,0.06),inset_0_2px_4px_#ffffff] flex items-center gap-3 text-zinc-900">
+            <div className="w-11 h-11 rounded-full overflow-hidden border border-slate-200/90 shrink-0 bg-slate-100 flex items-center justify-center shadow-inner">
               <ArenaAvatar id={incomingChallenge.data?.challenger_avatar || '1'} size="badge" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-black text-sky-400 uppercase tracking-wider">1v1 Chess Duel</span>
+                <span className="text-[11px] font-black text-sky-600 uppercase tracking-wider">1v1 Chess Duel</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
               </div>
-              <p className="text-xs font-bold text-zinc-100 truncate mt-0.5">
+              <p className="text-xs font-bold text-zinc-900 truncate mt-0.5">
                 {incomingChallenge.data?.challenger_name || 'A Doctor'} challenged you!
               </p>
             </div>
@@ -813,7 +829,7 @@ export const DashboardShell = ({
                 type="button"
                 onClick={handleAcceptIncoming}
                 disabled={isRespondingChallenge}
-                className="py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 active:scale-95 text-white font-black text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+                className="py-2 px-4 rounded-xl bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:scale-95 text-white font-black text-xs shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-all cursor-pointer disabled:opacity-50"
               >
                 {isRespondingChallenge ? 'Joining...' : 'Accept'}
               </button>
@@ -821,7 +837,7 @@ export const DashboardShell = ({
                 type="button"
                 onClick={handleDeclineIncoming}
                 disabled={isRespondingChallenge}
-                className="py-2 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white font-bold text-xs transition-all cursor-pointer disabled:opacity-50"
+                className="w-8 h-8 rounded-xl bg-[#F2F7FC] hover:bg-zinc-200 text-zinc-600 hover:text-zinc-900 border border-zinc-200/80 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
               >
                 <X size={15} weight="bold" />
               </button>

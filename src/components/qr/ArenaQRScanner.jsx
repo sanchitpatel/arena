@@ -660,17 +660,32 @@ export default function ArenaQRScanner({
         setShowDuelToast(false);
       }, 5000);
 
-      // Listen for opponent accepting the challenge via Supabase Realtime
+      // Listen for opponent accepting or declining the challenge via Supabase Realtime
       if (challengeSubRef.current) challengeSubRef.current();
       challengeSubRef.current = subscribeToMatchmakingQueue(res.challenge_id, (matchedChallenge) => {
         if (matchedChallenge && matchedChallenge.status === 'accepted' && matchedChallenge.game_id) {
           if (challengeSubRef.current) challengeSubRef.current();
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem('arena_chess_active_pvp_session', JSON.stringify({
+              matchMode: 'pvp',
+              gameId: matchedChallenge.game_id,
+              status: 'in_progress',
+              updatedAt: Date.now()
+            }));
+            window.dispatchEvent(new CustomEvent('arena:enter-chess-game', {
+              detail: { gameId: matchedChallenge.game_id }
+            }));
+          }
           if (typeof onNavigate === 'function') {
             onNavigate('chess');
           }
         } else if (matchedChallenge && matchedChallenge.status === 'declined') {
           if (challengeSubRef.current) challengeSubRef.current();
           setDuelStatus('declined');
+          setDuelError(`${scannedPlayer?.name || scannedPlayer?.gid || 'Opponent'} declined the duel request.`);
+          if (navigator?.vibrate) {
+            navigator.vibrate([80, 50, 80]);
+          }
         }
       });
     } catch (err) {
@@ -939,8 +954,8 @@ export default function ArenaQRScanner({
             </div>
           </div>
 
-          {/* Error notice if challenge fails */}
-          {duelError && (
+          {/* Error notice if challenge fails (without declined) */}
+          {duelError && duelStatus !== 'declined' && (
             <p className="text-[11px] font-semibold text-rose-500 text-center mt-1.5 px-1 leading-tight">
               {duelError}
             </p>
@@ -951,6 +966,23 @@ export default function ArenaQRScanner({
             <div className="mt-2 py-2 px-3 rounded-xl bg-sky-50 border border-sky-200/90 text-sky-800 text-[11.5px] font-bold flex items-center justify-center gap-2 animate-pulse">
               <CircleNotch size={14} className="animate-spin text-sky-600" />
               <span>Challenge sent! Waiting for {scannedPlayer?.name || scannedPlayer?.gid} to accept...</span>
+            </div>
+          )}
+
+          {/* Opponent Declined Banner */}
+          {duelStatus === 'declined' && (
+            <div className="mt-2 py-2 px-3 rounded-xl bg-rose-50 border border-rose-200/90 text-rose-800 text-[11.5px] font-bold flex items-center justify-between gap-2 animate-in fade-in">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <X size={15} weight="bold" className="text-rose-600 shrink-0" />
+                <span className="truncate">{scannedPlayer?.name || scannedPlayer?.gid || 'Opponent'} declined the duel.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setDuelStatus(null); setDuelError(''); }}
+                className="text-xs text-rose-700 underline font-bold shrink-0 cursor-pointer"
+              >
+                Retry
+              </button>
             </div>
           )}
 

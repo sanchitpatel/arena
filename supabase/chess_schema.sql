@@ -493,6 +493,30 @@ BEGIN
         WHERE data->>'challenge_id' = p_challenge_id::TEXT
            OR (player_id = p_player_id AND data->>'challenge_id' = p_challenge_id::TEXT);
 
+        -- Alert the challenger (scanner player) that their challenge was declined
+        INSERT INTO public.notifications (
+            player_id,
+            sender_id,
+            type,
+            title,
+            message,
+            data,
+            action_status,
+            is_read
+        )
+        SELECT 
+            c.challenger_id,
+            p_player_id,
+            'general',
+            'Challenge Declined',
+            COALESCE(p.name, p.guest_id) || ' declined your 1v1 chess duel request.',
+            jsonb_build_object('challenge_id', p_challenge_id),
+            'declined',
+            FALSE
+        FROM public.chess_challenges c
+        JOIN public.players p ON p.id = p_player_id
+        WHERE c.id = p_challenge_id;
+
         RETURN jsonb_build_object('success', TRUE, 'action', 'declined');
     END IF;
 
