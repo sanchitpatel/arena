@@ -8,9 +8,10 @@ import { claimOrRegisterGuest } from '../../services/arenaService';
 
 // Lazy-load individual heavy dashboard views on demand
 const QuestsView = lazy(() => import('./QuestsView').then(m => ({ default: m.QuestsView })));
-const NewPatientView = lazy(() => import('./NewPatientView').then(m => ({ default: m.NewPatientView })));
-const ExistingPatientView = lazy(() => import('./ExistingPatientView').then(m => ({ default: m.ExistingPatientView })));
-const DoctorDashboardView = lazy(() => import('./DoctorDashboardView').then(m => ({ default: m.DoctorDashboardView })));
+// Excluded legacy clinic views (preserved without deletion):
+// const NewPatientView = lazy(() => import('./NewPatientView').then(m => ({ default: m.NewPatientView })));
+// const ExistingPatientView = lazy(() => import('./ExistingPatientView').then(m => ({ default: m.ExistingPatientView })));
+// const DoctorDashboardView = lazy(() => import('./DoctorDashboardView').then(m => ({ default: m.DoctorDashboardView })));
 const WalletView = lazy(() => import('./WalletView').then(m => ({ default: m.WalletView })));
 const NotificationView = lazy(() => import('./NotificationView').then(m => ({ default: m.NotificationView })));
 const ProfileView = lazy(() => import('./ProfileView').then(m => ({ default: m.ProfileView })));
@@ -26,9 +27,6 @@ const prefetchDashboard = () => {
   idle(() => {
     import('./DashboardShell');
     import('./QuestsView');
-    import('./NewPatientView');
-    import('./ExistingPatientView');
-    import('./DoctorDashboardView');
     import('./WalletView');
     import('./NotificationView');
     import('./ProfileView');
@@ -77,8 +75,6 @@ const ROOT_PATH = '/profile';
 const TAB_TO_PATH = {
   'profile': '/profile',
   'quests': '/quests',
-  'new-patient': '/quests',
-  'existing-patient': '/leaderboard',
   'dashboard': '/wallet',
   'scanner': '/scanner',
   'ideas': '/ideas',
@@ -91,12 +87,10 @@ const PATH_TO_TAB = {
   '/profile': 'profile',
   '/quests': 'quests',
   '/arena': 'quests',
-  '/new-patient': 'quests',
-  '/leaderboard': 'existing-patient',
+  '/leaderboard': 'dashboard',
   '/live': 'dashboard',
   '/wallet': 'dashboard',
   '/notifications': 'profile',
-  '/records': 'existing-patient',
   '/scanner': 'scanner',
   '/scan': 'scanner',
   '/ideas': 'ideas',
@@ -329,14 +323,8 @@ export default function DashboardApp() {
         onToggleNotification={() => setIsNotificationOpen((prev) => !prev)}
         onCloseNotification={() => setIsNotificationOpen(false)}
       >
-        <div className={(activeTab === 'quests' || activeTab === 'new-patient') ? 'block' : 'hidden'}>
+        <div className={activeTab === 'quests' ? 'block' : 'hidden'}>
           <QuestsView onNavigate={handleTabChange} />
-        </div>
-        <div className={activeTab === 'existing-patient' ? 'block' : 'hidden'}>
-          <ExistingPatientView
-            selectedMonth={selectedMonth}
-            onSelectMonth={handleSelectMonth}
-          />
         </div>
         <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
           <WalletView
