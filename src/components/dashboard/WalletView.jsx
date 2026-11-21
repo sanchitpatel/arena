@@ -5,26 +5,21 @@ import ArenaAvatar from '../avatars/ArenaAvatar';
 import ChatGPTOrb from './ChatGPTOrb';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
 import { fetchLeaderboard, subscribeToLeaderboard } from '../../services/arenaService';
-import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
-
-/**
- * Authentic Mock Leaderboard Data matching public/wallet.png
- */
-const DEFAULT_TOP_PLAYERS = [
-  { id: '1', rank: 1, name: 'Dr. Elena Vance', points: 5420, avatar: '18', isYou: false },
-  { id: '2', rank: 2, name: 'Dr. Arjun Mehta', points: 4980, avatar: '1', isYou: false },
-  { id: '3', rank: 3, name: 'Rohan Desai', points: 4610, avatar: '3', isYou: false },
-  { id: '4', rank: 4, name: 'Dr. Karan Shah', points: 4200, avatar: '4', isYou: false },
-  { id: '5', rank: 5, name: 'Dr. Priya Nair', points: 3980, avatar: '5', isYou: false },
-  { id: '6', rank: 6, name: 'You', points: 2840, avatar: '6', isYou: true },
-  { id: '7', rank: 7, name: 'Aditi Kulkarni', points: 2720, avatar: '7', isYou: false },
-];
+import { fetchPlayerWalletStats, subscribeToPlayerWallet } from '../../services/walletService';
+import { getPlayerId, getPlayerUuid, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 
 export const WalletView = ({ player, onNavigate }) => {
   const guestId = player?.guest_id || getPlayerId() || null;
   const orbNumber = player?.orb_number || (guestId ? getOrbNumber(guestId) : null) || getStoredOrbNumber() || '?';
 
-  const [players, setPlayers] = useState(DEFAULT_TOP_PLAYERS);
+  const [players, setPlayers] = useState([]);
+  const [walletStats, setWalletStats] = useState({
+    points: player?.total_score || 0,
+    rank: 1,
+    ideas_submitted: 0,
+    votes_received: 0,
+    challenges_completed: 0,
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
 
@@ -36,52 +31,67 @@ export const WalletView = ({ player, onNavigate }) => {
     }
   };
 
-  // Synchronize player stats with local user data
+  // Synchronize player stats with local user data and real PostgreSQL wallet stats
+  useEffect(() => {
+    let isMounted = true;
+    const loadStats = async () => {
+      const myId = player?.id || getPlayerUuid();
+      if (!myId) return;
+      const res = await fetchPlayerWalletStats(myId);
+      if (isMounted && res?.success && res.data) {
+        setWalletStats(res.data);
+      }
+    };
+
+    loadStats();
+    const unsub = subscribeToPlayerWallet(player?.id, () => {
+      loadStats();
+    });
+    return () => {
+      isMounted = false;
+      unsub();
+    };
+  }, [player?.id]);
+
   const userPoints = useMemo(() => {
-    if (player?.total_score && Number(player.total_score) > 0) {
+    if (walletStats?.points !== undefined && walletStats.points !== null) {
+      return Number(walletStats.points);
+    }
+    if (player?.total_score !== undefined && player?.total_score !== null) {
       return Number(player.total_score);
     }
-    return 2840;
-  }, [player?.total_score]);
+    return 0;
+  }, [walletStats?.points, player?.total_score]);
 
   const userAvatar = useMemo(() => {
     return player?.avatar ? String(player.avatar) : '6';
   }, [player?.avatar]);
 
-  // Fetch real Postgres leaderboard if active
+  // Fetch real Postgres leaderboard
   useEffect(() => {
     let isMounted = true;
     const loadStandings = async () => {
       try {
-        const live = await fetchLeaderboard(15);
-        if (isMounted && live && live.length > 0) {
-          // Merge real DB players while preserving the visual replica structure
+        const res = await fetchLeaderboard(25);
+        const live = Array.isArray(res) ? res : (res?.data || []);
+        if (isMounted && live.length > 0) {
+          const myGid = player?.guest_id || getPlayerId();
+          const myUid = player?.id || getPlayerUuid();
+
+          // Merge real DB players
           const formatted = live.map((p, idx) => ({
             id: p.id || String(idx + 1),
             rank: idx + 1,
             name: p.name || p.guest_id || `Guest ${idx + 1}`,
-            points: p.total_score || 0,
+            points: Number(p.total_score || 0),
             avatar: p.avatar || String((idx % 30) + 1),
-            isYou: p.guest_id === player?.guest_id,
+            isYou: Boolean((myGid && p.guest_id === myGid) || (myUid && p.id === myUid)),
           }));
 
-          // If current user is not in top 3, ensure their rank appears as highlighted "You"
-          const hasUser = formatted.some((p) => p.isYou);
-          if (!hasUser && formatted.length >= 5) {
-            formatted[5] = {
-              id: 'you',
-              rank: 6,
-              name: 'You',
-              points: userPoints,
-              avatar: userAvatar,
-              isYou: true,
-            };
-          }
-
-          setPlayers(formatted.slice(0, 7));
+          setPlayers(formatted);
         }
       } catch (err) {
-        console.warn('[WalletView] Using mock replica leaderboard standings:', err);
+        console.warn('[WalletView] Leaderboard fetch error:', err);
       }
     };
 
@@ -95,13 +105,27 @@ export const WalletView = ({ player, onNavigate }) => {
       isMounted = false;
       unsubscribe();
     };
-  }, [player?.guest_id, userPoints, userAvatar]);
+  }, [player?.guest_id, player?.id]);
 
   // Partition top 3 podium vs rest
-  const rank1 = players.find((p) => p.rank === 1) || DEFAULT_TOP_PLAYERS[0];
-  const rank2 = players.find((p) => p.rank === 2) || DEFAULT_TOP_PLAYERS[1];
-  const rank3 = players.find((p) => p.rank === 3) || DEFAULT_TOP_PLAYERS[2];
-  const listPlayers = players.filter((p) => p.rank > 3);
+  const rank1 = players[0] || { rank: 1, name: 'Arena Leader', points: 0, avatar: '18', isYou: false };
+  const rank2 = players[1] || { rank: 2, name: 'Contender', points: 0, avatar: '1', isYou: false };
+  const rank3 = players[2] || { rank: 3, name: 'Challenger', points: 0, avatar: '3', isYou: false };
+  const listPlayers = players.slice(3, 10);
+
+  // If current user is outside top 3 and not in top list, add "You" at the bottom with real rank
+  const userInTopList = players.slice(0, 10).some((p) => p.isYou);
+  const displayList = [...listPlayers];
+  if (!userInTopList && walletStats.rank > 3) {
+    displayList.push({
+      id: 'you',
+      rank: walletStats.rank,
+      name: 'You',
+      points: userPoints,
+      avatar: userAvatar,
+      isYou: true,
+    });
+  }
 
   return (
     <div className="w-full max-w-[430px] mx-auto px-4 sm:px-2 pt-2 pb-24 space-y-4 select-none font-sans">
@@ -156,7 +180,7 @@ export const WalletView = ({ player, onNavigate }) => {
               </span>
             </div>
             <span className="text-[15px] sm:text-[16px] font-black text-slate-900 ml-2">
-              3
+              {walletStats.ideas_submitted}
             </span>
           </div>
 
@@ -173,7 +197,7 @@ export const WalletView = ({ player, onNavigate }) => {
               </span>
             </div>
             <span className="text-[15px] sm:text-[16px] font-black text-slate-900 ml-2">
-              128
+              {walletStats.votes_received}
             </span>
           </div>
 
@@ -191,7 +215,7 @@ export const WalletView = ({ player, onNavigate }) => {
               </span>
             </div>
             <span className="text-[15px] sm:text-[16px] font-black text-slate-900 ml-2">
-              5
+              {walletStats.challenges_completed}
             </span>
           </div>
         </div>
@@ -285,14 +309,14 @@ export const WalletView = ({ player, onNavigate }) => {
             </div>
           </div>
 
-          {/* ---------------- Rankings List: Rank 4 to 7 ---------------- */}
+          {/* ---------------- Rankings List: Rank 4 to 10 ---------------- */}
           <div className="space-y-2 pt-1">
-            {listPlayers.map((item) => {
+            {displayList.map((item) => {
               const isUserRow = item.isYou;
 
               return (
                 <div
-                  key={item.rank}
+                  key={`${item.id || 'rank'}-${item.rank}`}
                   className={`rounded-2xl p-2.5 px-3.5 sm:px-4 flex items-center justify-between transition-all duration-150 ${
                     isUserRow
                       ? 'bg-[#dbeafe]/95 border border-sky-300/90 shadow-[0_4px_16px_rgba(56,189,248,0.22)]'

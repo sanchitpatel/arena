@@ -24,8 +24,14 @@ import {
   CaretDown,
 } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
-import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
+import { getPlayerId, getPlayerUuid, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 import { normalizePitchTitle, normalizePitchDescription } from '../../utils/sanitize';
+import {
+  fetchPitches,
+  submitNewPitch,
+  togglePitchVote,
+  subscribeToPitchWall,
+} from '../../services/pitchWallService';
 
 const STORAGE_VOTES_KEY = 'arena_pitch_wall_votes';
 const STORAGE_CUSTOM_PITCHES_KEY = 'arena_pitch_wall_custom_pitches';
@@ -123,29 +129,37 @@ export const IdeasPitchWallView = ({ player }) => {
   // Active view section: 'pitch' (Submit Idea) | 'wall' (Explore & Vote)
   const [activeSection, setActiveSection] = useState('pitch');
 
-  // Pitches state with localStorage persistence
-  const [pitches, setPitches] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_CUSTOM_PITCHES_KEY);
-      if (stored) {
-        const custom = JSON.parse(stored);
-        if (Array.isArray(custom)) {
-          return [...custom, ...INITIAL_PITCHES];
-        }
-      }
-    } catch {}
-    return INITIAL_PITCHES;
-  });
+  // Pitches state loaded live from PostgreSQL database
+  const [pitches, setPitches] = useState([]);
+  const [isLoadingPitches, setIsLoadingPitches] = useState(true);
 
   // Track voted pitch IDs
-  const [votedIds, setVotedIds] = useState(() => {
+  const [votedIds, setVotedIds] = useState([]);
+
+  // Fetch live pitches from PostgreSQL
+  const loadLivePitches = useCallback(async () => {
     try {
-      const stored = localStorage.getItem(STORAGE_VOTES_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
+      const myId = player?.id || getPlayerUuid();
+      const res = await fetchPitches(myId);
+      if (res?.success && Array.isArray(res.data)) {
+        setPitches(res.data);
+        const myVoted = res.data.filter((p) => p.has_voted).map((p) => p.id);
+        setVotedIds(myVoted);
+      }
+    } catch (err) {
+      console.warn('[IdeasPitchWallView] Error loading pitches:', err);
+    } finally {
+      setIsLoadingPitches(false);
     }
-  });
+  }, [player?.id]);
+
+  useEffect(() => {
+    loadLivePitches();
+    const unsub = subscribeToPitchWall(() => {
+      loadLivePitches();
+    });
+    return () => unsub();
+  }, [loadLivePitches]);
 
   // Sort order: 'votes' | 'recent'
   const [sortBy, setSortBy] = useState('votes');
@@ -199,15 +213,18 @@ export const IdeasPitchWallView = ({ player }) => {
     return () => clearTimeout(timer);
   }, [toastMessage]);
 
-  // Handle voting and un-voting
-  const handleVote = useCallback((pitchId) => {
-    const isVoted = votedIds.includes(pitchId);
-    let updatedVotes;
+  // Handle voting and un-voting live with PostgreSQL
+  const handleVote = useCallback(async (pitchId) => {
+    const myId = player?.id || getPlayerUuid();
+    if (!myId) return;
 
+    const isVoted = votedIds.includes(pitchId);
+
+    // Optimistic UI update
     if (isVoted) {
-      updatedVotes = votedIds.filter((id) => id !== pitchId);
+      setVotedIds((prev) => prev.filter((id) => id !== pitchId));
       setPitches((prev) =>
-        prev.map((p) => (p.id === pitchId ? { ...p, votes: Math.max(0, p.votes - 1) } : p))
+        prev.map((p) => (p.id === pitchId ? { ...p, votes: Math.max(0, (p.votes || 0) - 1), has_voted: false } : p))
       );
       setToastMessage({
         type: 'info',
@@ -215,80 +232,90 @@ export const IdeasPitchWallView = ({ player }) => {
         description: 'You took back your vote for this concept.',
       });
     } else {
-      updatedVotes = [...votedIds, pitchId];
+      setVotedIds((prev) => [...prev, pitchId]);
       setPitches((prev) =>
-        prev.map((p) => (p.id === pitchId ? { ...p, votes: p.votes + 1 } : p))
+        prev.map((p) => (p.id === pitchId ? { ...p, votes: (p.votes || 0) + 1, has_voted: true } : p))
       );
       setToastMessage({
         type: 'success',
-        title: '+10 Arena PTS Earned!',
+        title: '+10 Arena PTS Awarded to Author!',
         description: 'Ballot cast for this pitch demo! Thanks for voting.',
       });
     }
 
-    setVotedIds(updatedVotes);
     try {
-      localStorage.setItem(STORAGE_VOTES_KEY, JSON.stringify(updatedVotes));
-    } catch {}
-  }, [votedIds]);
+      const res = await togglePitchVote(pitchId, myId);
+      if (res?.success && res.votes_count !== undefined) {
+        setPitches((prev) =>
+          prev.map((p) => (p.id === pitchId ? { ...p, votes: res.votes_count, has_voted: res.has_voted } : p))
+        );
+      }
+    } catch (err) {
+      console.error('[IdeasPitchWallView] Vote failed:', err);
+      // Re-sync on error
+      loadLivePitches();
+    }
+  }, [votedIds, player?.id, loadLivePitches]);
 
-  // Handle new pitch submission
-  const handleSubmitPitch = (e) => {
+  // Handle new pitch submission live to PostgreSQL (awards +50 PTS)
+  const handleSubmitPitch = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+
+    const myId = player?.id || getPlayerUuid();
+    if (!myId) {
+      setToastMessage({
+        type: 'error',
+        title: 'Player identity missing',
+        description: 'Please refresh the page and try again.',
+      });
+      return;
+    }
 
     setIsSubmitting(true);
 
     const cleanTitle = normalizePitchTitle(formTitle, 100).trim();
     const cleanPitch = normalizePitchDescription(formPitch, 500).trim();
 
-    const newPitch = {
-      id: `pitch-${Date.now()}`,
-      title: cleanTitle,
-      category: 'General',
-      presenter: displayName,
-      avatar: String(avatar),
-      guestId: guestId,
-      summary: cleanPitch,
-      votes: 1, // User gets an immediate self-vote
-      stage: 'Concept',
-      timeAgo: 'Just now',
-      timestamp: Date.now(),
-      isMyPitch: true,
-    };
+    try {
+      const res = await submitNewPitch({
+        playerId: myId,
+        title: cleanTitle,
+        summary: cleanPitch,
+        category: 'General',
+        stage: 'Concept',
+      });
 
-    setTimeout(() => {
-      const updated = [newPitch, ...pitches];
-      setPitches(updated);
-
-      // Persist custom pitch in storage
-      try {
-        const existing = JSON.parse(localStorage.getItem(STORAGE_CUSTOM_PITCHES_KEY) || '[]');
-        localStorage.setItem(STORAGE_CUSTOM_PITCHES_KEY, JSON.stringify([newPitch, ...existing]));
-      } catch {}
-
-      // Automatically register user's own initial ballot
-      const newVoted = [...votedIds, newPitch.id];
-      setVotedIds(newVoted);
-      try {
-        localStorage.setItem(STORAGE_VOTES_KEY, JSON.stringify(newVoted));
-      } catch {}
+      if (!res?.success) {
+        throw new Error(res?.message || 'Failed to submit pitch');
+      }
 
       // Reset form fields
       setFormTitle('');
       setFormPitch('');
       setErrors({});
-      setIsSubmitting(false);
 
-      // Switch back to wall view so user sees their new pitch live
+      // Refresh live pitches
+      await loadLivePitches();
+
+      // Switch to wall view so user sees their new pitch live
       setActiveSection('wall');
 
       setToastMessage({
         type: 'success',
         title: 'Pitch Published to Wall! 🚀',
-        description: '+10 Arena PTS earned! Your concept is live for peer ballots.',
+        description: '+50 Arena PTS earned! Your concept is live for peer ballots.',
       });
-    }, 200);
+    } catch (err) {
+      console.error('[IdeasPitchWallView] Submit error:', err);
+      setToastMessage({
+        type: 'error',
+        title: 'Submission Failed',
+        description: err.message || 'Could not save idea. Please try again.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Accumulated pitches sorted by votes or recent
@@ -302,7 +329,7 @@ export const IdeasPitchWallView = ({ player }) => {
   }, [pitches, sortBy]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-5 pb-20 font-sans select-none">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 space-y-4 sm:space-y-5 pb-20 font-sans select-none">
       {/* Floating Arena Toast Notification */}
       {toastMessage && (
         <div className="fixed top-14 sm:top-16 left-1/2 -translate-x-1/2 z-[100] w-[92%] sm:w-auto max-w-sm bg-[#ebedf2]/95 backdrop-blur-xl border border-white/90 rounded-2xl px-4 py-3 shadow-[inset_2px_2px_4px_#ffffff,inset_-2px_-2px_4px_#c5ccd6,0_8px_24px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3 duration-200">
