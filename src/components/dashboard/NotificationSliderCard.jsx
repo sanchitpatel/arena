@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Clock, User, CheckCircle, Swords } from '../icons';
+import { Clock, User, CheckCircle, Swords, Bell } from '../icons';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import {
   fetchNotificationQueue,
@@ -8,65 +8,19 @@ import {
 import { respondToChessChallenge } from '../../services/notificationService';
 import { getPlayerUuid } from '../../utils/playerId';
 
-// Dummy draft notifications for UI preview (superseded by DB when populated)
-export const DUMMY_NOTIFICATIONS = [
-  {
-    id: 'draft-1',
-    title: 'Arena Quest',
-    message: "New speed quest unlocked at Hall B beacon!",
-    time: 'now',
-    avatar: '3',
-    variant: 'light',
-  },
-  {
-    id: 'draft-2',
-    title: 'Daily Streak Bonus',
-    message: "+50 XP claimed! 3-day active streak.",
-    time: '12m ago',
-    avatar: null,
-    variant: 'light',
-  },
-  {
-    id: 'draft-3',
-    title: 'Special Event Alert',
-    message: "Round 2 tournament bracket is now live.",
-    time: '1h ago',
-    avatar: '7',
-    variant: 'dark',
-  },
-  {
-    id: 'draft-4',
-    title: '1v1 Chess Challenge',
-    message: "Guest014 invited you to a 5m Blitz duel!",
-    time: '2h ago',
-    avatar: '11',
-    variant: 'light',
-  },
-  {
-    id: 'draft-5',
-    title: 'Mystery Chest Unlocked',
-    message: "Stage 2 Prize Road reward ready to claim.",
-    time: '3h ago',
-    avatar: '14',
-    variant: 'dark',
-  },
-  {
-    id: 'draft-6',
-    title: 'Zone Beacon Ping',
-    message: "Connected to Zone 3 Living Room Beacon.",
-    time: '5h ago',
-    avatar: null,
-    variant: 'light',
-  },
-  {
-    id: 'draft-7',
-    title: 'Pitch Wall Upvotes',
-    message: "Your clinical AI pitch crossed 100 votes!",
-    time: '7h ago',
-    avatar: '5',
-    variant: 'light',
-  },
-];
+// Helper to format timestamps into relative time ("now", "12m ago", "1h ago")
+function getTimeAgo(dateStr) {
+  if (!dateStr) return 'now';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  if (isNaN(diff) || diff < 0) return 'now';
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 /**
  * NotificationSliderCard - Tactile Neumorphic Mobile Notification Slider Card.
@@ -365,9 +319,8 @@ export const NotificationSliderCard = ({
     }
   };
 
-  // Active notification queue: uses real DB notifications when available, falls back to dummy draft for preview
-  const hasDbItems = Array.isArray(queue) && queue.length > 0;
-  const notifications = hasDbItems ? queue : DUMMY_NOTIFICATIONS;
+  // Active notification queue: uses real DB notifications exclusively (dummy notifications removed)
+  const notifications = Array.isArray(queue) ? queue : [];
   const hasItems = notifications.length > 0;
 
   // Dynamic transform styles: gradual, physical drawer curves identical to QuestSliderCard
@@ -423,7 +376,14 @@ export const NotificationSliderCard = ({
                 className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1 avatar-scroll overscroll-contain touch-pan-y"
               >
                 {notifications.map((item) => {
-                  const isDark = item.variant === 'dark';
+                  const isDark = Boolean(
+                    item.variant === 'dark' ||
+                    (item.type === 'chess_challenge' && item.action_status === 'pending') ||
+                    item.type === 'announcement'
+                  );
+                  const avatarSrc = item.data?.challenger_avatar || item.sender?.avatar || item.avatar;
+                  const displayTime = item.time || (item.created_at ? getTimeAgo(item.created_at) : 'now');
+
                   return (
                     <div
                       key={item.id}
@@ -441,11 +401,13 @@ export const NotificationSliderCard = ({
                             : 'bg-gradient-to-b from-zinc-300 to-zinc-400 border border-white shadow-[inset_0_1px_1px_#ffffff,0_1px_2px_rgba(0,0,0,0.08)]'
                         }`}
                       >
-                        {item.data?.challenger_avatar || item.sender?.avatar || item.avatar ? (
+                        {avatarSrc ? (
                           <ArenaAvatar
-                            id={item.data?.challenger_avatar || item.sender?.avatar || item.avatar}
+                            id={avatarSrc}
                             size="badge"
                           />
+                        ) : item.type === 'chess_challenge' ? (
+                          <Swords size={20} weight="bold" className={isDark ? 'text-zinc-200' : 'text-zinc-700'} />
                         ) : (
                           <User size={20} weight="fill" className={isDark ? 'text-zinc-200' : 'text-white'} />
                         )}
@@ -466,7 +428,7 @@ export const NotificationSliderCard = ({
                               isDark ? 'text-zinc-400' : 'text-zinc-400'
                             }`}
                           >
-                            {item.time || 'now'}
+                            {displayTime}
                           </span>
                         </div>
                         <p
@@ -525,18 +487,26 @@ export const NotificationSliderCard = ({
               </div>
             </div>
           ) : (
-            /* Blank State */
-            <div className="flex-1 flex flex-col items-center justify-center text-center py-2 px-1 gap-2 touch-none">
-              <p className="text-[12.5px] sm:text-[13px] text-zinc-500/90 leading-relaxed font-medium">
-                No new notifications or activity alerts at this time.
-              </p>
+            /* Blank State - Zero dummy notifications */
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-6 px-4 gap-2.5 touch-none">
+              <div className="w-12 h-12 rounded-2xl bg-white/80 border border-white shadow-[0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_1px_#ffffff] flex items-center justify-center text-zinc-400">
+                <Bell size={22} weight="duotone" className="text-zinc-500" />
+              </div>
+              <div>
+                <p className="text-[13px] text-zinc-700 leading-tight font-bold">
+                  No notifications yet
+                </p>
+                <p className="text-[11.5px] text-zinc-500 mt-1 leading-snug">
+                  1v1 chess challenges and live alerts will appear here.
+                </p>
+              </div>
 
               {/* Tactile Auto-Clear Info Capsule */}
               <div
-                className="font-arena inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[9px] tracking-wider shadow-sm w-fit"
+                className="font-arena inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-white to-zinc-200 border border-white text-zinc-600 text-[9px] tracking-wider shadow-sm w-fit mt-1"
                 style={{ WebkitTextStroke: '0.4px', fontWeight: 400 }}
               >
-                <Clock size={14} weight="bold" className="text-zinc-600 shrink-0" />
+                <Clock size={12} weight="bold" className="text-zinc-600 shrink-0" />
                 <span>
                   Notifications auto-clear after 12 hrs
                 </span>
