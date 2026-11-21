@@ -38,87 +38,6 @@ const STORAGE_CUSTOM_PITCHES_KEY = 'arena_pitch_wall_custom_pitches';
 
 const STAGES = ['Concept', 'Prototype Demo', 'Live Beta'];
 
-const INITIAL_PITCHES = [
-  {
-    id: 'pitch-1',
-    title: 'Autonomous EHR Scribe & Clinical Agent',
-    category: 'AI & Agents',
-    presenter: 'Dr. Elena Vance',
-    avatar: '7',
-    guestId: 'Guest012',
-    summary: 'Ambient clinical listening that converts doctor-patient conversations into structured ICD-10 notes and real-time drug interaction alerts in under 2 seconds.',
-    votes: 124,
-    stage: 'Live Beta',
-    timeAgo: '14m ago',
-    timestamp: Date.now() - 14 * 60 * 1000,
-  },
-  {
-    id: 'pitch-2',
-    title: 'Gamified PT with LiDAR Spatial Tracking',
-    category: 'Hardware & Robotics',
-    presenter: 'Alex Chen',
-    avatar: '14',
-    guestId: 'Guest045',
-    summary: 'Using smartphone LiDAR to turn post-op orthopedic rehab exercises into an immersive rhythm mini-game with millimeter-accurate range-of-motion metrics.',
-    votes: 98,
-    stage: 'Prototype Demo',
-    timeAgo: '32m ago',
-    timestamp: Date.now() - 32 * 60 * 1000,
-  },
-  {
-    id: 'pitch-3',
-    title: 'Sub-4min Drone Defibrillator Dispatch',
-    category: 'Hardware & Robotics',
-    presenter: 'Sarah Jenkins',
-    avatar: '21',
-    guestId: 'Guest088',
-    summary: 'Sub-4-minute urban drone deployment delivering automated external defibrillator (AED) units and voice-guided CPR instruction to cardiac arrest scenes before ambulances arrive.',
-    votes: 86,
-    stage: 'Prototype Demo',
-    timeAgo: '1h ago',
-    timestamp: Date.now() - 60 * 60 * 1000,
-  },
-  {
-    id: 'pitch-4',
-    title: 'Point-of-Care Blood Biomarker Spectrometer',
-    category: 'BioTech & Health',
-    presenter: 'Marcus Thorne',
-    avatar: '3',
-    guestId: 'Guest033',
-    summary: 'Pocket spectrophotometer analyzing a single blood droplet for troponin, CRP, and creatinine in 90 seconds using microfluidic sensor chips.',
-    votes: 74,
-    stage: 'Lab Tested',
-    timeAgo: '2h ago',
-    timestamp: Date.now() - 120 * 60 * 1000,
-  },
-  {
-    id: 'pitch-5',
-    title: 'Zero-Knowledge Venue Access & Health Pass',
-    category: 'Web3 & Systems',
-    presenter: 'Leo Tanaka',
-    avatar: '18',
-    guestId: 'Guest061',
-    summary: 'Cryptographically proven health credentialing allowing attendees to share verified lab clearances without exposing any underlying medical history or personal identity.',
-    votes: 62,
-    stage: 'Concept',
-    timeAgo: '3h ago',
-    timestamp: Date.now() - 180 * 60 * 1000,
-  },
-  {
-    id: 'pitch-6',
-    title: 'Haptic Feedback VR Surgical Training Gloves',
-    category: 'AI & Agents',
-    presenter: 'Nina Patel',
-    avatar: '29',
-    guestId: 'Guest074',
-    summary: 'Next-gen pneumatic force-feedback gloves enabling residents to feel realistic tissue resistance and micro-vascular tension in virtual reality surgical simulations.',
-    votes: 55,
-    stage: 'Prototype Demo',
-    timeAgo: '4h ago',
-    timestamp: Date.now() - 240 * 60 * 1000,
-  },
-];
-
 export const IdeasPitchWallView = ({ player }) => {
   // Current user identity resolution
   const guestId = player?.guest_id || getPlayerId() || null;
@@ -161,8 +80,14 @@ export const IdeasPitchWallView = ({ player }) => {
     return () => unsub();
   }, [loadLivePitches]);
 
-  // Sort order: 'votes' | 'recent'
-  const [sortBy, setSortBy] = useState('votes');
+  // Maximum 3 submissions & maximum 3 votes constraints
+  const myPitchesCount = useMemo(() => {
+    const myId = player?.id || getPlayerUuid();
+    return pitches.filter(
+      (p) => p.isMyPitch || (myId && p.player_id === myId) || (guestId && p.guestId === guestId)
+    ).length;
+  }, [pitches, player?.id, guestId]);
+  const canSubmit = myPitchesCount < 3;
 
   // Submit Idea Form State (Simple: Idea/Problem & Description)
   const [formTitle, setFormTitle] = useState('');
@@ -213,12 +138,22 @@ export const IdeasPitchWallView = ({ player }) => {
     return () => clearTimeout(timer);
   }, [toastMessage]);
 
-  // Handle voting and un-voting live with PostgreSQL
+  // Handle voting and un-voting live with PostgreSQL (Enforces max 3 votes limit)
   const handleVote = useCallback(async (pitchId) => {
     const myId = player?.id || getPlayerUuid();
     if (!myId) return;
 
     const isVoted = votedIds.includes(pitchId);
+
+    // Enforce max 3 votes constraint when casting a new vote
+    if (!isVoted && votedIds.length >= 3) {
+      setToastMessage({
+        type: 'warning',
+        title: 'Vote Limit Reached (3/3)',
+        description: 'You can vote for at most 3 ideas. Unvote a previous idea to vote for this one.',
+      });
+      return;
+    }
 
     // Optimistic UI update
     if (isVoted) {
@@ -261,6 +196,15 @@ export const IdeasPitchWallView = ({ player }) => {
   const handleSubmitPitch = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+
+    if (myPitchesCount >= 3) {
+      setToastMessage({
+        type: 'warning',
+        title: 'Submission Limit Reached (3/3)',
+        description: 'You can submit at most 3 ideas for this event.',
+      });
+      return;
+    }
 
     const myId = player?.id || getPlayerUuid();
     if (!myId) {
@@ -318,15 +262,10 @@ export const IdeasPitchWallView = ({ player }) => {
     }
   };
 
-  // Accumulated pitches sorted by votes or recent
+  // Accumulated pitches sorted strictly by votes count
   const sortedPitches = useMemo(() => {
-    return [...pitches].sort((a, b) => {
-      if (sortBy === 'votes') {
-        return b.votes - a.votes;
-      }
-      return (b.timestamp || 0) - (a.timestamp || 0);
-    });
-  }, [pitches, sortBy]);
+    return [...pitches].sort((a, b) => (b.votes || 0) - (a.votes || 0));
+  }, [pitches]);
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 space-y-4 sm:space-y-5 pb-20 font-sans select-none">
@@ -455,6 +394,31 @@ export const IdeasPitchWallView = ({ player }) => {
           noValidate
           className="!mt-8 sm:!mt-7 bg-[#ebedf2] border border-white/80 rounded-[1rem] p-5 sm:p-8 shadow-[-3px_-3px_10px_rgba(0,0,0,0.06),3px_3px_10px_rgba(255,255,255,0.65),inset_4px_4px_12px_#ffffff,inset_-4px_-4px_12px_rgba(0,0,0,0.14)] space-y-4 sm:space-y-5 animate-in fade-in duration-150"
         >
+          {/* Header indicator for submission limit (Max 3) */}
+          <div className="flex items-center justify-between pb-1 px-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-600">
+              Your Submissions
+            </span>
+            <span
+              className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border shadow-sm ${
+                myPitchesCount >= 3
+                  ? 'bg-rose-50 text-rose-600 border-rose-200'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              }`}
+            >
+              {myPitchesCount} / 3 ideas used
+            </span>
+          </div>
+
+          {!canSubmit && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 text-center space-y-0.5">
+              <p className="text-xs font-bold text-amber-900">Submission Limit Reached (3/3)</p>
+              <p className="text-[11px] text-amber-700 font-medium">
+                You have already submitted the maximum of 3 ideas for this event.
+              </p>
+            </div>
+          )}
+
           {/* Field 1: Idea / Problem */}
           <div>
             <label className="block text-[11px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 ml-1">
@@ -466,12 +430,13 @@ export const IdeasPitchWallView = ({ player }) => {
               </div>
               <input
                 type="text"
+                disabled={!canSubmit || isSubmitting}
                 placeholder="e.g. AI OPD Scribe, Smart ICU Alert..."
                 value={formTitle}
                 onChange={handleTitleChange}
                 maxLength={100}
                 style={{ outline: 'none' }}
-                className={`w-full pl-11 pr-4 py-2.5 sm:py-3 bg-[#F2F7FC] rounded-2xl text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium ${
+                className={`w-full pl-11 pr-4 py-2.5 sm:py-3 bg-[#F2F7FC] rounded-2xl text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)] transition-[box-shadow] duration-150 ease-out font-medium disabled:opacity-60 disabled:cursor-not-allowed ${
                   errors.title ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(244,63,94,0.6)]' : ''
                 }`}
               />
@@ -494,12 +459,13 @@ export const IdeasPitchWallView = ({ player }) => {
             <div className="relative group">
               <textarea
                 rows={4}
+                disabled={!canSubmit || isSubmitting}
                 maxLength={500}
                 placeholder="Describe the clinical problem or idea in detail (what is the problem, your solution, and the impact)..."
                 value={formPitch}
                 onChange={handlePitchChange}
                 style={{ outline: 'none' }}
-                className={`w-full p-3.5 sm:p-4 bg-[#F2F7FC] rounded-2xl text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(244,63,94,0.6)] font-medium leading-relaxed ${
+                className={`w-full p-3.5 sm:p-4 bg-[#F2F7FC] rounded-2xl text-xs sm:text-sm text-zinc-800 placeholder:text-zinc-400 border-0 outline-none focus:outline-none ring-0 focus:ring-0 shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(244,63,94,0.6)] font-medium leading-relaxed disabled:opacity-60 disabled:cursor-not-allowed ${
                   errors.pitch ? 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(244,63,94,0.6)]' : 'shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff] focus:shadow-[inset_4px_4px_8px_#c8d0db,inset_-4px_-4px_8px_#ffffff,0_0_0_1.5px_rgba(24,24,27,0.25)]'
                 }`}
               />
@@ -513,11 +479,11 @@ export const IdeasPitchWallView = ({ player }) => {
           <div className="pt-2 flex items-center justify-center">
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full sm:w-auto min-w-[280px] py-3.5 px-8 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black text-white font-bold text-sm rounded-2xl sm:rounded-full transition-all duration-150 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.98] cursor-pointer border border-zinc-800/80 disabled:opacity-60 group"
+              disabled={isSubmitting || !canSubmit}
+              className="w-full sm:w-auto min-w-[280px] py-3.5 px-8 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black text-white font-bold text-sm rounded-2xl sm:rounded-full transition-all duration-150 ease-out flex items-center justify-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),2px_2px_6px_#c5ccd6,-2px_-2px_6px_#ffffff] hover:shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] active:scale-[0.98] cursor-pointer border border-zinc-800/80 disabled:opacity-60 disabled:cursor-not-allowed group"
             >
               <PaperPlaneTilt size={18} weight="bold" className="shrink-0 transition-transform duration-200 ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-              <span>{isSubmitting ? 'Submitting...' : 'Submit'}</span>
+              <span>{isSubmitting ? 'Submitting...' : canSubmit ? 'Submit' : 'Limit Reached (3/3)'}</span>
             </button>
           </div>
         </form>
@@ -528,7 +494,7 @@ export const IdeasPitchWallView = ({ player }) => {
           ======================================================== */}
       {activeSection === 'wall' && (
         <div className="!mt-6 sm:!mt-7 space-y-4 animate-in fade-in duration-150">
-          {/* Section Header: Title, Subtitle & Sort Control */}
+          {/* Section Header: Title, Subtitle & Votes Counter */}
           <div className="flex items-center justify-between gap-3 px-1">
             <div>
               <h2 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight">
@@ -538,15 +504,11 @@ export const IdeasPitchWallView = ({ player }) => {
                 All submitted pitches for this event. Vote for the ideas you like.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setSortBy((prev) => (prev === 'votes' ? 'recent' : 'votes'))}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ebedf2] border border-white/90 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] active:shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] text-xs font-bold text-zinc-700 hover:text-zinc-900 transition-all cursor-pointer select-none shrink-0"
-              title="Click to toggle sorting"
-            >
-              <span>{sortBy === 'votes' ? 'Top Voted' : 'Latest'}</span>
-              <CaretDown size={13} weight="bold" className="text-zinc-500" />
-            </button>
+            {/* Votes Counter Badge (Max 3) */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ebedf2] border border-white/90 shadow-[inset_1px_1px_2px_#ffffff,2px_2px_5px_#c8d0db] text-xs font-bold text-zinc-700 shrink-0">
+              <span className="text-amber-500">★</span>
+              <span>Votes: <strong className="text-zinc-900">{votedIds.length}</strong>/3</span>
+            </div>
           </div>
 
           {/* Pitch Cards Feed */}

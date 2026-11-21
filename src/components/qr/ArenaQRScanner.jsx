@@ -968,21 +968,21 @@ export default function ArenaQRScanner({
               type="button"
               onClick={handleInitiateDuel}
               disabled={duelLoading || duelStatus === 'sent'}
-              className={`flex-1 py-2.5 sm:py-3 px-2 text-xs sm:text-[13px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.96] group ${
+              className={`flex-1 py-2.5 sm:py-3 px-2 text-xs sm:text-[13px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 group ${
                 duelStatus === 'sent'
-                  ? 'bg-gradient-to-tr from-sky-500 to-blue-600 text-white border border-sky-400/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.25),inset_0_2px_5px_rgba(255,255,255,0.45)] opacity-95'
-                  : 'bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)]'
+                  ? 'bg-gradient-to-tr from-sky-500 to-blue-600 text-white border border-sky-400/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.25),inset_0_2px_5px_rgba(255,255,255,0.45)] opacity-95 cursor-wait'
+                  : 'bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:from-black active:to-black text-white border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45)] hover:shadow-[inset_0_-4px_7px_rgba(0,0,0,0.3),inset_0_2px_6px_rgba(255,255,255,0.55)] active:shadow-[inset_0_-4px_8px_rgba(0,0,0,0.32),inset_0_2px_5px_rgba(255,255,255,0.4)] cursor-pointer active:scale-[0.96]'
               }`}
             >
               {duelLoading ? (
                 <>
-                  <CircleNotch size={16} className="animate-spin text-white" />
+                  <CircleNotch size={16} className="animate-spin text-white shrink-0" />
                   <span className="truncate">Sending...</span>
                 </>
               ) : duelStatus === 'sent' ? (
                 <>
-                  <Swords size={18} strokeWidth={2.2} className="text-white shrink-0" />
-                  <span className="truncate">Sent</span>
+                  <CircleNotch size={16} className="animate-spin text-white shrink-0" />
+                  <span className="truncate">Waiting...</span>
                 </>
               ) : (
                 <>

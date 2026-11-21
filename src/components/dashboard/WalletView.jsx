@@ -72,7 +72,7 @@ export const WalletView = ({ player, onNavigate }) => {
     let isMounted = true;
     const loadStandings = async () => {
       try {
-        const res = await fetchLeaderboard(25);
+        const res = await fetchLeaderboard(50);
         const live = Array.isArray(res) ? res : (res?.data || []);
         if (isMounted && live.length > 0) {
           const myGid = player?.guest_id || getPlayerId();
@@ -107,14 +107,14 @@ export const WalletView = ({ player, onNavigate }) => {
     };
   }, [player?.guest_id, player?.id]);
 
-  // Partition top 3 podium vs rest
+  // Partition top 3 podium vs rest (up to 50 players)
   const rank1 = players[0] || { rank: 1, name: 'Arena Leader', points: 0, avatar: '18', isYou: false };
   const rank2 = players[1] || { rank: 2, name: 'Contender', points: 0, avatar: '1', isYou: false };
   const rank3 = players[2] || { rank: 3, name: 'Challenger', points: 0, avatar: '3', isYou: false };
-  const listPlayers = players.slice(3, 10);
+  const listPlayers = players.slice(3, 50);
 
-  // If current user is outside top 3 and not in top list, add "You" at the bottom with real rank
-  const userInTopList = players.slice(0, 10).some((p) => p.isYou);
+  // If current user is outside top 50, add "You" at the bottom with real rank
+  const userInTopList = players.slice(0, 50).some((p) => p.isYou);
   const displayList = [...listPlayers];
   if (!userInTopList && walletStats.rank > 3) {
     displayList.push({
@@ -309,7 +309,7 @@ export const WalletView = ({ player, onNavigate }) => {
             </div>
           </div>
 
-          {/* ---------------- Rankings List: Rank 4 to 10 ---------------- */}
+          {/* ---------------- Rankings List: Rank 4 to 50 ---------------- */}
           <div className="space-y-2 pt-1">
             {displayList.map((item) => {
               const isUserRow = item.isYou;

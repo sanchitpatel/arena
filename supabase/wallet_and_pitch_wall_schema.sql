@@ -161,6 +161,11 @@ BEGIN
         RETURN jsonb_build_object('success', FALSE, 'message', 'Description must be at least 15 characters');
     END IF;
 
+    -- Enforce maximum 3 ideas limit per attendee
+    IF (SELECT COUNT(*) FROM public.pitches WHERE player_id = p_player_id) >= 3 THEN
+        RETURN jsonb_build_object('success', FALSE, 'message', 'You can submit at most 3 ideas for this event');
+    END IF;
+
     -- 2. Insert new pitch
     INSERT INTO public.pitches (
         player_id,
@@ -273,6 +278,11 @@ BEGIN
             'votes_count', v_new_votes
         );
     ELSE
+        -- Enforce maximum 3 votes limit per attendee
+        IF (SELECT COUNT(*) FROM public.pitch_votes WHERE player_id = p_player_id) >= 3 THEN
+            RETURN jsonb_build_object('success', FALSE, 'message', 'You can vote for at most 3 ideas');
+        END IF;
+
         -- Cast ballot
         INSERT INTO public.pitch_votes (pitch_id, player_id)
         VALUES (p_pitch_id, p_player_id);
@@ -498,51 +508,4 @@ BEGIN
     END IF;
 END $$;
 
--- --------------------------------------------------------------------------
--- 11. SEED STARTER IDEAS (Conference Launch Starters)
--- Inserts initial curated attendee prompts if pitches table is completely empty
--- --------------------------------------------------------------------------
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM public.pitches LIMIT 1) THEN
-        INSERT INTO public.pitches (
-            guest_id, presenter_name, avatar, title, summary, category, stage, votes_count
-        ) VALUES 
-        (
-            'Guest012', 'Dr. Elena Vance', '7',
-            'Autonomous EHR Scribe & Clinical Agent',
-            'Ambient clinical listening that converts doctor-patient conversations into structured ICD-10 notes and real-time drug interaction alerts in under 2 seconds.',
-            'AI & Agents', 'Live Beta', 124
-        ),
-        (
-            'Guest045', 'Alex Chen', '14',
-            'Gamified PT with LiDAR Spatial Tracking',
-            'Using smartphone LiDAR to turn post-op orthopedic rehab exercises into an immersive rhythm mini-game with millimeter-accurate range-of-motion metrics.',
-            'Hardware & Robotics', 'Prototype Demo', 98
-        ),
-        (
-            'Guest088', 'Sarah Jenkins', '21',
-            'Sub-4min Drone Defibrillator Dispatch',
-            'Sub-4-minute urban drone deployment delivering automated external defibrillator (AED) units and voice-guided CPR instruction to cardiac arrest scenes before ambulances arrive.',
-            'Hardware & Robotics', 'Prototype Demo', 86
-        ),
-        (
-            'Guest033', 'Marcus Thorne', '3',
-            'Point-of-Care Blood Biomarker Spectrometer',
-            'Pocket spectrophotometer analyzing a single blood droplet for troponin, CRP, and creatinine in 90 seconds using microfluidic sensor chips.',
-            'BioTech & Health', 'Lab Tested', 74
-        ),
-        (
-            'Guest061', 'Leo Tanaka', '18',
-            'Zero-Knowledge Venue Access & Health Pass',
-            'Cryptographically proven health credentialing allowing attendees to share verified lab clearances without exposing any underlying medical history or personal identity.',
-            'Web3 & Systems', 'Concept', 62
-        ),
-        (
-            'Guest074', 'Nina Patel', '29',
-            'Haptic Feedback VR Surgical Training Gloves',
-            'Next-gen pneumatic force-feedback gloves enabling residents to feel realistic tissue resistance and micro-vascular tension in virtual reality surgical simulations.',
-            'AI & Agents', 'Prototype Demo', 55
-        );
-    END IF;
-END $$;
+
