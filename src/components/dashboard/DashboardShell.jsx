@@ -711,39 +711,24 @@ export const DashboardShell = ({
               </div>
             </button>
 
-            {/* Map Icon on the Rightmost End (Two-layer GPU opacity cross-fade + dual-icon scale morph) */}
+            {/* Map Icon on the Rightmost End (Disabled) */}
             <button
               type="button"
-              onClick={() => {
-                closeNotification();
-                if (typeof onTabChange === 'function') onTabChange('map');
-              }}
-              title="Tactical Map"
-              className="relative w-10 h-9 flex items-center justify-center rounded-xl shrink-0 cursor-pointer select-none outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] active:scale-[0.92] transition-transform duration-100 ease-out"
+              disabled
+              aria-disabled="true"
+              title="Tactical Map (Disabled)"
+              className="relative w-10 h-9 flex items-center justify-center rounded-xl shrink-0 opacity-30 cursor-not-allowed select-none outline-none focus:outline-none pointer-events-none"
             >
-              {/* Default / Inactive State Layer (Fades out when active) */}
+              {/* Inactive State Layer */}
               <span
-                className={`absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/80 shadow-[inset_2px_2px_4px_#c8d0db,inset_-2px_-2px_4px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${activeTab === 'map' ? 'opacity-0' : 'opacity-100'
-                  }`}
+                className="absolute inset-0 rounded-lg bg-[#ebedf2] border border-white/60 shadow-[inset_1px_1px_3px_#c8d0db,inset_-1px_-1px_3px_#ffffff] pointer-events-none"
               />
 
-              {/* Active State Layer (Fades in when active) */}
-              <span
-                className={`absolute inset-0 rounded-lg bg-gradient-to-b from-zinc-900 to-black border border-zinc-800/80 shadow-[inset_0_-3px_6px_rgba(0,0,0,0.22),inset_0_2px_5px_rgba(255,255,255,0.45),2px_2px_5px_#c5ccd6,-2px_-2px_5px_#ffffff] transition-opacity duration-150 ease-out pointer-events-none will-change-[opacity] ${activeTab === 'map' ? 'opacity-100' : 'opacity-0'
-                  }`}
-              />
-
-              {/* Dual-Color Cross-Fade: Inactive text-zinc-600 vs Active text-white */}
+              {/* Disabled Map Icon */}
               <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
                 <ArenaMapIcon
                   size={27}
-                  className={`absolute text-zinc-700 transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${activeTab === 'map' ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
-                    }`}
-                />
-                <ArenaMapIcon
-                  size={27}
-                  className={`absolute text-white transition-[opacity,transform] duration-150 ease-out will-change-[opacity,transform] ${activeTab === 'map' ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-                    }`}
+                  className="text-zinc-500"
                 />
               </div>
             </button>

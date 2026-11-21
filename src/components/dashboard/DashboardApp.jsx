@@ -232,6 +232,7 @@ export default function DashboardApp() {
    * Adds entry to history stack so Back button returns to previous tab or Root (/arena).
    */
   const handleTabChange = useCallback((newTab) => {
+    if (newTab === 'map') return;
     if (newTab === 'notifications') {
       setIsNotificationOpen(true);
       return;
@@ -324,7 +325,7 @@ export default function DashboardApp() {
         onCloseNotification={() => setIsNotificationOpen(false)}
       >
         <div className={activeTab === 'quests' ? 'block' : 'hidden'}>
-          <QuestsView onNavigate={handleTabChange} />
+          <QuestsView onNavigate={handleTabChange} player={player} />
         </div>
         <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
           <WalletView

@@ -101,6 +101,7 @@ export { Printer } from '@phosphor-icons/react/dist/icons/Printer';
 export { QrCode } from '@phosphor-icons/react/dist/icons/QrCode';
 export { Queue } from '@phosphor-icons/react/dist/icons/Queue';
 export { Quotes } from '@phosphor-icons/react/dist/icons/Quotes';
+export { Rocket } from '@phosphor-icons/react/dist/icons/Rocket';
 export { Scales } from '@phosphor-icons/react/dist/icons/Scales';
 export const Scan = ({ size = 16, className = '', weight, ...props }) =>
   React.createElement(
