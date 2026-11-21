@@ -225,6 +225,22 @@ DECLARE
     v_white_id UUID;
     v_black_id UUID;
 BEGIN
+    -- 1. If declining, always succeed and clean up notifications and challenge even if expired!
+    IF NOT p_accept THEN
+        UPDATE public.chess_challenges 
+        SET status = 'declined' 
+        WHERE id = p_challenge_id;
+
+        UPDATE public.notifications
+        SET action_status = 'declined',
+            is_read = TRUE
+        WHERE data->>'challenge_id' = p_challenge_id::TEXT
+           OR (player_id = p_player_id AND data->>'challenge_id' = p_challenge_id::TEXT);
+
+        RETURN jsonb_build_object('success', TRUE, 'action', 'declined');
+    END IF;
+
+    -- 2. If accepting, check active challenge
     SELECT * INTO v_challenge
     FROM public.chess_challenges
     WHERE id = p_challenge_id
@@ -234,20 +250,13 @@ BEGIN
     FOR UPDATE;
 
     IF NOT FOUND THEN
-        RETURN jsonb_build_object('success', FALSE, 'message', 'Challenge not found or already expired');
-    END IF;
-
-    IF NOT p_accept THEN
-        UPDATE public.chess_challenges 
-        SET status = 'declined' 
-        WHERE id = p_challenge_id;
-
+        -- Auto-expire notification so user is not stuck with pending state
         UPDATE public.notifications
-        SET action_status = 'declined',
+        SET action_status = 'expired',
             is_read = TRUE
         WHERE data->>'challenge_id' = p_challenge_id::TEXT;
 
-        RETURN jsonb_build_object('success', TRUE, 'action', 'declined');
+        RETURN jsonb_build_object('success', FALSE, 'message', 'Challenge not found or already expired');
     END IF;
 
     -- Verify responder photo

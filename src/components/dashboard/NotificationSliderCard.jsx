@@ -5,7 +5,10 @@ import {
   fetchNotificationQueue,
   subscribeToClinicRealtime,
 } from '../../services/clinicService';
-import { respondToChessChallenge } from '../../services/notificationService';
+import {
+  respondToChessChallenge,
+  updateNotificationActionStatus,
+} from '../../services/notificationService';
 import { getPlayerUuid } from '../../utils/playerId';
 
 // Helper to format timestamps into relative time ("now", "12m ago", "1h ago")
@@ -86,7 +89,34 @@ export const NotificationSliderCard = ({
       const myId = player?.id || getPlayerUuid();
       const res = await fetchNotificationQueue(myId);
       if (res.success && Array.isArray(res.data)) {
-        setQueue(res.data);
+        const now = Date.now();
+        const expiredIds = [];
+
+        // Check each pending notification for expiration (> 5 minutes old)
+        const processed = res.data.map((item) => {
+          if (item.type === 'chess_challenge' && item.action_status === 'pending') {
+            const expTime = item.expires_at ? new Date(item.expires_at).getTime() : null;
+            const createdTime = item.created_at ? new Date(item.created_at).getTime() : null;
+            const isExpired = expTime ? expTime <= now : (createdTime ? (now - createdTime > 5 * 60 * 1000) : false);
+
+            if (isExpired) {
+              expiredIds.push(item.id);
+              return { ...item, action_status: 'expired', is_read: true };
+            }
+          }
+          return item;
+        });
+
+        setQueue(processed);
+
+        // Auto-update expired rows in DB so they stop counting as unread
+        if (expiredIds.length > 0) {
+          Promise.all(expiredIds.map((id) => updateNotificationActionStatus(id, 'expired'))).then(() => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('arena:notification-updated'));
+            }
+          });
+        }
       }
     } catch (err) {
       console.warn('[NotificationSliderCard] Error loading notifications:', err);
@@ -106,21 +136,39 @@ export const NotificationSliderCard = ({
   const handleAcceptChallenge = async (item) => {
     const challengeId = item.data?.challenge_id;
     const myId = player?.id || getPlayerUuid();
+    const notificationId = item.id;
     if (!challengeId || !myId) return;
 
-    setRespondingId(item.id);
+    setRespondingId(notificationId);
     try {
       const res = await respondToChessChallenge(challengeId, myId, true);
       if (res?.success) {
+        if (notificationId) {
+          await updateNotificationActionStatus(notificationId, 'accepted');
+        }
         setQueue((prev) =>
-          prev.map((n) => (n.id === item.id ? { ...n, action_status: 'accepted' } : n))
+          prev.map((n) => (n.id === notificationId ? { ...n, action_status: 'accepted', is_read: true } : n))
         );
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('arena:notification-updated'));
+        }
         onClose?.();
         if (typeof onNavigate === 'function') {
           onNavigate('chess');
         }
       } else {
         alert(res?.message || 'Could not join challenge');
+        if (res?.message?.includes('expired') || res?.message?.includes('not found')) {
+          if (notificationId) {
+            await updateNotificationActionStatus(notificationId, 'expired');
+          }
+          setQueue((prev) =>
+            prev.map((n) => (n.id === notificationId ? { ...n, action_status: 'expired', is_read: true } : n))
+          );
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('arena:notification-updated'));
+          }
+        }
       }
     } catch (err) {
       console.error('[NotificationSliderCard] Accept duel error:', err);
@@ -132,14 +180,29 @@ export const NotificationSliderCard = ({
   const handleDeclineChallenge = async (item) => {
     const challengeId = item.data?.challenge_id;
     const myId = player?.id || getPlayerUuid();
-    if (!challengeId || !myId) return;
+    const notificationId = item.id;
 
-    setRespondingId(item.id);
+    setRespondingId(notificationId);
+    // 1. Immediate optimistic UI update
+    setQueue((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, action_status: 'declined', is_read: true } : n))
+    );
+
     try {
-      await respondToChessChallenge(challengeId, myId, false);
-      setQueue((prev) =>
-        prev.map((n) => (n.id === item.id ? { ...n, action_status: 'declined' } : n))
-      );
+      // 2. Persist to PostgreSQL notifications table
+      if (notificationId) {
+        await updateNotificationActionStatus(notificationId, 'declined');
+      }
+
+      // 3. Inform chess challenges RPC
+      if (challengeId && myId) {
+        await respondToChessChallenge(challengeId, myId, false);
+      }
+
+      // 4. Fire event so DashboardShell clears unread badge immediately
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('arena:notification-updated'));
+      }
     } catch (err) {
       console.error('[NotificationSliderCard] Decline duel error:', err);
     } finally {
@@ -378,7 +441,6 @@ export const NotificationSliderCard = ({
                 {notifications.map((item) => {
                   const isDark = Boolean(
                     item.variant === 'dark' ||
-                    (item.type === 'chess_challenge' && item.action_status === 'pending') ||
                     item.type === 'announcement'
                   );
                   const avatarSrc = item.data?.challenger_avatar || item.sender?.avatar || item.avatar;
@@ -398,7 +460,7 @@ export const NotificationSliderCard = ({
                         className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
                           isDark
                             ? 'bg-gradient-to-b from-zinc-700 to-zinc-800 border border-zinc-700 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.25)]'
-                            : 'bg-gradient-to-b from-zinc-300 to-zinc-400 border border-white shadow-[inset_0_1px_1px_#ffffff,0_1px_2px_rgba(0,0,0,0.08)]'
+                            : 'bg-gradient-to-b from-zinc-100 to-zinc-200 border border-white shadow-[inset_0_1px_1px_#ffffff,0_1px_2px_rgba(0,0,0,0.08)]'
                         }`}
                       >
                         {avatarSrc ? (
@@ -409,7 +471,7 @@ export const NotificationSliderCard = ({
                         ) : item.type === 'chess_challenge' ? (
                           <Swords size={20} weight="bold" className={isDark ? 'text-zinc-200' : 'text-zinc-700'} />
                         ) : (
-                          <User size={20} weight="fill" className={isDark ? 'text-zinc-200' : 'text-white'} />
+                          <User size={20} weight="fill" className={isDark ? 'text-zinc-200' : 'text-zinc-600'} />
                         )}
                       </div>
 
@@ -441,7 +503,7 @@ export const NotificationSliderCard = ({
 
                         {/* Interactive 1v1 Chess Action Buttons */}
                         {item.type === 'chess_challenge' && (
-                          <div className="mt-2 pt-2 border-t border-zinc-200/60 flex items-center gap-2">
+                          <div className={`mt-2 pt-2 border-t ${isDark ? 'border-zinc-800' : 'border-zinc-100'} flex items-center gap-2`}>
                             {item.action_status === 'pending' ? (
                               <>
                                 <button
@@ -451,7 +513,7 @@ export const NotificationSliderCard = ({
                                     handleAcceptChallenge(item);
                                   }}
                                   disabled={respondingId === item.id}
-                                  className="flex-1 py-1.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-600 hover:from-emerald-400 hover:to-sky-500 active:scale-95 text-white text-xs font-bold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                  className="flex-1 py-1.5 px-3.5 rounded-xl bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-900 active:scale-95 text-white text-xs font-bold shadow-[0_2px_4px_rgba(0,0,0,0.15)] transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                                 >
                                   <Swords size={14} weight="bold" />
                                   <span>{respondingId === item.id ? 'Joining...' : 'Accept Duel'}</span>
@@ -463,7 +525,7 @@ export const NotificationSliderCard = ({
                                     handleDeclineChallenge(item);
                                   }}
                                   disabled={respondingId === item.id}
-                                  className="py-1.5 px-3 rounded-xl bg-zinc-200 hover:bg-zinc-300 text-zinc-700 text-xs font-semibold active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                                  className="py-1.5 px-3.5 rounded-xl bg-[#F2F7FC] hover:bg-zinc-200 border border-zinc-200/80 text-zinc-700 text-xs font-semibold active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                                 >
                                   <span>Decline</span>
                                 </button>

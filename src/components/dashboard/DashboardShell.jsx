@@ -18,6 +18,7 @@ import {
 import {
   subscribeToPlayerNotifications,
   respondToChessChallenge,
+  updateNotificationActionStatus,
 } from '../../services/notificationService';
 
 export const DashboardShell = ({
@@ -180,8 +181,15 @@ export const DashboardShell = ({
     const myId = player?.id || getPlayerUuid();
     setIsRespondingChallenge(true);
     try {
+      if (incomingChallenge.id) {
+        await updateNotificationActionStatus(incomingChallenge.id, 'declined');
+      }
       await respondToChessChallenge(incomingChallenge.data.challenge_id, myId, false);
       setIncomingChallenge(null);
+      setPendingCount((prev) => Math.max(0, prev - 1));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('arena:notification-updated'));
+      }
     } catch (err) {
       console.error('Decline duel error:', err);
     } finally {
@@ -191,8 +199,10 @@ export const DashboardShell = ({
 
   useEffect(() => {
     let isMounted = true;
+    const myId = player?.id || getPlayerUuid();
+
     const fetchCount = async () => {
-      const res = await getPendingNotificationCount();
+      const res = await getPendingNotificationCount(myId);
       if (isMounted && res.success) {
         setPendingCount(res.count);
       }
@@ -203,11 +213,17 @@ export const DashboardShell = ({
       fetchCount();
     });
 
+    const handleCustomUpdate = () => {
+      fetchCount();
+    };
+    window.addEventListener('arena:notification-updated', handleCustomUpdate);
+
     return () => {
       isMounted = false;
       unsubscribe();
+      window.removeEventListener('arena:notification-updated', handleCustomUpdate);
     };
-  }, []);
+  }, [player?.id]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

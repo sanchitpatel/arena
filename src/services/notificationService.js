@@ -73,6 +73,21 @@ export async function markNotificationAsRead(notificationId) {
 }
 
 /**
+ * Update notification action status (e.g. 'declined', 'accepted', 'expired') and mark read
+ */
+export async function updateNotificationActionStatus(notificationId, actionStatus = 'declined') {
+  if (!notificationId) return;
+  try {
+    await supabase
+      .from('notifications')
+      .update({ action_status: actionStatus, is_read: true })
+      .eq('id', notificationId);
+  } catch (err) {
+    console.warn('[NotificationService] updateNotificationActionStatus error:', err);
+  }
+}
+
+/**
  * Mark all notifications as read for a player
  */
 export async function markAllNotificationsAsRead(playerId) {
