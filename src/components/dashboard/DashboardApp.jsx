@@ -7,6 +7,7 @@ import { getPlayerId, getOrbNumber, getStoredOrbNumber, getPlayerUuid } from '..
 import { claimOrRegisterGuest } from '../../services/arenaService';
 
 // Lazy-load individual heavy dashboard views on demand
+const QuestsView = lazy(() => import('./QuestsView').then(m => ({ default: m.QuestsView })));
 const NewPatientView = lazy(() => import('./NewPatientView').then(m => ({ default: m.NewPatientView })));
 const ExistingPatientView = lazy(() => import('./ExistingPatientView').then(m => ({ default: m.ExistingPatientView })));
 const DoctorDashboardView = lazy(() => import('./DoctorDashboardView').then(m => ({ default: m.DoctorDashboardView })));
@@ -24,6 +25,7 @@ const prefetchDashboard = () => {
   const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 200));
   idle(() => {
     import('./DashboardShell');
+    import('./QuestsView');
     import('./NewPatientView');
     import('./ExistingPatientView');
     import('./DoctorDashboardView');
@@ -74,7 +76,8 @@ const ROOT_PATH = '/profile';
 
 const TAB_TO_PATH = {
   'profile': '/profile',
-  'new-patient': '/arena',
+  'quests': '/quests',
+  'new-patient': '/quests',
   'existing-patient': '/leaderboard',
   'dashboard': '/wallet',
   'scanner': '/scanner',
@@ -86,7 +89,9 @@ const TAB_TO_PATH = {
 
 const PATH_TO_TAB = {
   '/profile': 'profile',
-  '/arena': 'new-patient',
+  '/quests': 'quests',
+  '/arena': 'quests',
+  '/new-patient': 'quests',
   '/leaderboard': 'existing-patient',
   '/live': 'dashboard',
   '/wallet': 'dashboard',
@@ -324,8 +329,8 @@ export default function DashboardApp() {
         onToggleNotification={() => setIsNotificationOpen((prev) => !prev)}
         onCloseNotification={() => setIsNotificationOpen(false)}
       >
-        <div className={activeTab === 'new-patient' ? 'block' : 'hidden'}>
-          <NewPatientView onNavigate={handleTabChange} />
+        <div className={(activeTab === 'quests' || activeTab === 'new-patient') ? 'block' : 'hidden'}>
+          <QuestsView onNavigate={handleTabChange} />
         </div>
         <div className={activeTab === 'existing-patient' ? 'block' : 'hidden'}>
           <ExistingPatientView

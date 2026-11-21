@@ -124,6 +124,7 @@ export const Scan = ({ size = 16, className = '', weight, ...props }) =>
     }),
     React.createElement('path', { d: 'M12 9h2V8h-2z' })
   );
+export { Scroll } from '@phosphor-icons/react/dist/icons/Scroll';
 export { ShieldCheck } from '@phosphor-icons/react/dist/icons/ShieldCheck';
 export { ShieldWarning } from '@phosphor-icons/react/dist/icons/ShieldWarning';
 export { SignOut } from '@phosphor-icons/react/dist/icons/SignOut';

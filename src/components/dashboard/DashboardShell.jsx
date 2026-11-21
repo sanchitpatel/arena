@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { UserCirclePlus, ChessPawn, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X, ArenaMapIcon, CurrencyCircleDollar, Lightbulb } from '../icons';
+import { Scroll, ChessPawn, SquaresFour, SignOut, UserCircle, CalendarCheck, CaretUp, Bell, QrCode, Scan, X, ArenaMapIcon, CurrencyCircleDollar, Lightbulb } from '../icons';
 import Logo from '../Logo';
 import ArenaAvatar from '../avatars/ArenaAvatar';
 import PlayerQRBadge from '../qr/PlayerQRBadge';
@@ -328,10 +328,10 @@ export const DashboardShell = ({
 
   const navItems = [
     {
-      id: 'new-patient',
-      label: 'New Patient',
-      icon: UserCirclePlus,
-      description: 'Register new patient',
+      id: 'quests',
+      label: 'Quests',
+      icon: Scroll,
+      description: 'Event quests & challenges',
     },
     {
       id: 'chess',
