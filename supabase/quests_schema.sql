@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.quest_scores (
     quest_id TEXT NOT NULL,
     score INTEGER NOT NULL DEFAULT 0,
     correct_count INTEGER NOT NULL DEFAULT 0,
-    total_questions INTEGER NOT NULL DEFAULT 5,
+    total_questions INTEGER NOT NULL DEFAULT 10,
     completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(player_id, quest_id)
@@ -24,19 +24,20 @@ CREATE INDEX IF NOT EXISTS idx_quest_scores_score ON public.quest_scores (score 
 -- Enable RLS
 ALTER TABLE public.quest_scores ENABLE ROW LEVEL SECURITY;
 
--- Allow read for anon and authenticated
+-- Drop existing policies first so the script can be safely re-run without error 42710
+DROP POLICY IF EXISTS "Allow public read quest_scores" ON public.quest_scores;
 CREATE POLICY "Allow public read quest_scores"
 ON public.quest_scores FOR SELECT
 TO anon, authenticated
 USING (true);
 
--- Allow insert/upsert for anon and authenticated
+DROP POLICY IF EXISTS "Allow public insert quest_scores" ON public.quest_scores;
 CREATE POLICY "Allow public insert quest_scores"
 ON public.quest_scores FOR INSERT
 TO anon, authenticated
 WITH CHECK (true);
 
--- Allow update for anon and authenticated
+DROP POLICY IF EXISTS "Allow public update quest_scores" ON public.quest_scores;
 CREATE POLICY "Allow public update quest_scores"
 ON public.quest_scores FOR UPDATE
 TO anon, authenticated

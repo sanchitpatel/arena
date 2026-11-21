@@ -64,7 +64,7 @@ export async function fetchPlayerQuestScores(playerId) {
         merged[row.quest_id] = {
           score: Number(row.score || 0),
           correctCount: Number(row.correct_count || 0),
-          totalQuestions: Number(row.total_questions || 5),
+          totalQuestions: Number(row.total_questions || 10),
           completedAt: row.completed_at || row.updated_at,
         };
       });
