@@ -165,6 +165,8 @@ export default function ChatGPTOrb({
   onOrbClick,
   numberSize,
   labelSize,
+  label = 'ORB',
+  children,
 }) {
   const canvasRef = useRef(null);
   const [isGlReady, setIsGlReady] = useState(false);
@@ -215,17 +217,25 @@ export default function ChatGPTOrb({
           }`}
         />
 
-        <div className="relative z-10 flex h-full w-full flex-col items-center justify-center text-center pointer-events-none">
-          <span className={`font-sans ${labelSize || 'text-[11px] sm:text-[12px]'} -mt-1 font-black uppercase tracking-widest text-sky-950/70`}>ORB</span>
-          <span
-            className={`font-arena mt-0.5 sm:-mt-1 ${
-              numberSize || (badge === 'qr' ? 'text-[40px] sm:text-[40px]' : 'text-4xl sm:text-[40px]')
-            } font-black leading-none tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,40,160,0.6)]`}
-            style={{ WebkitTextStroke: numberSize ? '0.6px #a4a4a9ff' : '1px #a4a4a9ff', paintOrder: 'stroke fill' }}
-          >
-            {(orbNumber !== null && orbNumber !== undefined && orbNumber !== '') ? orbNumber : '?'}
-          </span>
-        </div>
+        {children ? (
+          <div className="relative z-10 flex h-full w-full flex-col items-center justify-center text-center pointer-events-none">
+            {children}
+          </div>
+        ) : (
+          <div className="relative z-10 flex h-full w-full flex-col items-center justify-center text-center pointer-events-none">
+            <span className={`font-sans ${labelSize || 'text-[11px] sm:text-[12px]'} -mt-1 font-black uppercase tracking-widest text-sky-950/70`}>
+              {label || 'ORB'}
+            </span>
+            <span
+              className={`font-arena mt-0.5 sm:-mt-1 ${
+                numberSize || (badge === 'qr' ? 'text-[40px] sm:text-[40px]' : 'text-4xl sm:text-[40px]')
+              } font-black leading-none tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,40,160,0.6)]`}
+              style={{ WebkitTextStroke: numberSize ? '0.6px #a4a4a9ff' : '1px #a4a4a9ff', paintOrder: 'stroke fill' }}
+            >
+              {(orbNumber !== null && orbNumber !== undefined && orbNumber !== '') ? orbNumber : '?'}
+            </span>
+          </div>
+        )}
       </div>
 
       {badge && (

@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import ArenaAvatar from '../avatars/ArenaAvatar';
+import ChatGPTOrb from './ChatGPTOrb';
+import PlayerQRBadge from '../qr/PlayerQRBadge';
 import { fetchLeaderboard, subscribeToLeaderboard } from '../../services/arenaService';
 import { getPlayerId, getOrbNumber, getStoredOrbNumber } from '../../utils/playerId';
 
@@ -50,9 +53,20 @@ const DEFAULT_TOP_PLAYERS = [
 ];
 
 export const WalletView = ({ player, onNavigate }) => {
-  const [activeTab, setActiveTab] = useState('leaderboard'); // 'leaderboard' | 'activity'
+  const guestId = player?.guest_id || getPlayerId() || null;
+  const orbNumber = player?.orb_number || (guestId ? getOrbNumber(guestId) : null) || getStoredOrbNumber() || '?';
+
   const [players, setPlayers] = useState(DEFAULT_TOP_PLAYERS);
   const [isLoading, setIsLoading] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+
+  const handleCloseQrModal = () => setQrModalOpen(false);
+  const handleOpenScanner = () => {
+    setQrModalOpen(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('arena:open-scanner'));
+    }
+  };
 
   // Synchronize player stats with local user data
   const userPoints = useMemo(() => {
@@ -146,33 +160,17 @@ export const WalletView = ({ player, onNavigate }) => {
           2. MAIN CARD: Points 3D Orb + Quick Stats List
           ======================================================== */}
       <div className="bg-white/80 backdrop-blur-xl border border-white/90 rounded-[2.2rem] p-4 sm:p-5 shadow-[0_16px_36px_rgba(180,200,225,0.38),inset_0_2px_4px_#ffffff] flex items-center justify-between gap-3 sm:gap-4">
-        {/* Left: Glowing 3D Celestial Points Orb */}
-        <div className="relative w-[138px] h-[138px] sm:w-[152px] sm:h-[152px] shrink-0 flex items-center justify-center">
-          {/* Ambient Blue Halo */}
-          <div className="absolute inset-0 rounded-full bg-sky-400/40 blur-xl pointer-events-none" />
-
-          {/* Volumetric Spherical Glass Body */}
-          <div
-            className="relative w-full h-full rounded-full flex flex-col items-center justify-center text-center overflow-hidden"
-            style={{
-              background: 'radial-gradient(circle at 35% 26%, #ffffff 0%, #d2ecff 24%, #6ec2ff 54%, #1c86ff 84%, #0284c7 100%)',
-              boxShadow: 'inset -8px -8px 18px rgba(2, 110, 220, 0.38), inset 6px 6px 14px rgba(255, 255, 255, 0.9), 0 10px 24px rgba(2, 110, 220, 0.28)',
-            }}
-          >
-            {/* 3D Specular Curvature Glint */}
-            <div className="absolute top-[12%] left-[16%] w-[34%] h-[22%] rounded-full bg-gradient-to-br from-white/95 via-white/30 to-transparent blur-[1.5px] -rotate-12 pointer-events-none" />
-
-            {/* Inner Content */}
-            <span className="text-[11.5px] sm:text-[12px] font-bold text-sky-950/85 tracking-tight -mt-0.5">
-              My Points
-            </span>
-            <span className="text-[25px] sm:text-[28px] font-black text-slate-900 tracking-tight leading-none mt-0.5">
-              {userPoints.toLocaleString()}
-            </span>
-            <div className="mt-1">
-              <StackedCoinsIcon size={20} />
-            </div>
-          </div>
+        {/* Left: Authentic ChatGPT-Style Player Orb from Profile page */}
+        <div className="shrink-0 flex items-center justify-center py-1 pl-1">
+          <ChatGPTOrb
+            orbNumber={orbNumber}
+            avatar={userAvatar}
+            badge="qr"
+            onBadgeClick={() => setQrModalOpen(true)}
+            onOrbClick={() => setQrModalOpen(true)}
+            size="w-28 h-28 sm:w-28 sm:h-28"
+            numberSize="text-[40px] sm:text-[40px]"
+          />
         </div>
 
         {/* Right: Quick Stats List (Ideas, Votes, Challenges) */}
@@ -231,53 +229,9 @@ export const WalletView = ({ player, onNavigate }) => {
       </div>
 
       {/* ========================================================
-          3. SEGMENTED TAB SWITCHER: [ Leaderboard | My Activity ]
+          3. LEADERBOARD CARD & PODIUM
           ======================================================== */}
-      <div className="bg-white/70 backdrop-blur-md p-1.5 rounded-full border border-white/90 shadow-[0_4px_16px_rgba(197,204,214,0.3)] flex items-center gap-1">
-        {/* Leaderboard Tab */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('leaderboard')}
-          className={`flex-1 py-2.5 sm:py-3 rounded-full flex items-center justify-center gap-2 text-[13px] sm:text-[14px] font-bold transition-all duration-200 cursor-pointer ${
-            activeTab === 'leaderboard'
-              ? 'bg-[#0f172a] text-white shadow-md'
-              : 'text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-            <path d="M4 22h16" />
-            <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1 .45-1 1v3h12v-3c0-.55-.45-1-1-1h-2c-.55 0-1-.45-1-1v-2.34" />
-            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-          </svg>
-          <span>Leaderboard</span>
-        </button>
-
-        {/* My Activity Tab */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('activity')}
-          className={`flex-1 py-2.5 sm:py-3 rounded-full flex items-center justify-center gap-2 text-[13px] sm:text-[14px] font-bold transition-all duration-200 cursor-pointer ${
-            activeTab === 'activity'
-              ? 'bg-[#0f172a] text-white shadow-md'
-              : 'text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-            <line x1="6" y1="20" x2="6" y2="14" />
-          </svg>
-          <span>My Activity</span>
-        </button>
-      </div>
-
-      {/* ========================================================
-          4. LEADERBOARD CARD & PODIUM
-          ======================================================== */}
-      {activeTab === 'leaderboard' ? (
-        <div className="bg-white/80 backdrop-blur-xl border border-white/90 rounded-[2.2rem] p-4 sm:p-5 shadow-[0_16px_36px_rgba(180,200,225,0.38),inset_0_2px_4px_#ffffff] space-y-4">
+      <div className="bg-white/80 backdrop-blur-xl border border-white/90 rounded-[2.2rem] p-4 sm:p-5 shadow-[0_16px_36px_rgba(180,200,225,0.38),inset_0_2px_4px_#ffffff] space-y-4">
           {/* Top 3 Podium (Rank 2 Silver | Rank 1 Gold | Rank 3 Bronze) */}
           <div className="grid grid-cols-3 gap-1 sm:gap-2 items-end pt-2 pb-1">
             {/* ---------------- Rank 2 (Dr. Arjun Mehta - Silver) ---------------- */}
@@ -412,61 +366,26 @@ export const WalletView = ({ player, onNavigate }) => {
             })}
           </div>
         </div>
-      ) : (
-        /* ========================================================
-            5. MY ACTIVITY TAB (Detailed Player Achievements View)
-            ======================================================== */
-        <div className="bg-white/80 backdrop-blur-xl border border-white/90 rounded-[2.2rem] p-4 sm:p-5 shadow-[0_16px_36px_rgba(180,200,225,0.38),inset_0_2px_4px_#ffffff] space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
-            <h3 className="font-black text-slate-900 text-sm tracking-tight">
-              Recent Points Activity
-            </h3>
-            <span className="text-[11px] font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-full">
-              Live Feed
-            </span>
+      {/* ========================================================
+          3. PLAYER QR BADGE POP-UP MODAL (Triggered via Orb QR Icon)
+          ======================================================== */}
+      {qrModalOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          onClick={handleCloseQrModal}
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] w-screen h-screen min-h-screen bg-black/50 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150 cursor-pointer"
+        >
+          <div onClick={(e) => e.stopPropagation()} className="cursor-default">
+            <PlayerQRBadge
+              playerId={guestId}
+              playerName={player?.name || guestId}
+              orbNumber={orbNumber}
+              avatar={userAvatar}
+              onClose={handleCloseQrModal}
+              onOpenScanner={handleOpenScanner}
+            />
           </div>
-
-          <div className="space-y-2.5">
-            <div className="bg-white/70 p-3 rounded-2xl border border-white/90 shadow-sm flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
-                  ✓
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Lab Quest 3 Completed</p>
-                  <p className="text-[10.5px] text-slate-500">Floorplan Gem Scan</p>
-                </div>
-              </div>
-              <span className="text-xs font-black text-emerald-600">+500 PTS</span>
-            </div>
-
-            <div className="bg-white/70 p-3 rounded-2xl border border-white/90 shadow-sm flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
-                  ★
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Innovation Idea Voted</p>
-                  <p className="text-[10.5px] text-slate-500">Pitch Wall community vote</p>
-                </div>
-              </div>
-              <span className="text-xs font-black text-amber-600">+100 PTS</span>
-            </div>
-
-            <div className="bg-white/70 p-3 rounded-2xl border border-white/90 shadow-sm flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                  ⚡
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Speed Quiz Round 1</p>
-                  <p className="text-[10.5px] text-slate-500">Correct rapid response</p>
-                </div>
-              </div>
-              <span className="text-xs font-black text-blue-600">+1,200 PTS</span>
-            </div>
-          </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

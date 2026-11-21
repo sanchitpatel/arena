@@ -1,4 +1,5 @@
 import { supabase } from '../utils/supabase';
+import { playTinNotificationSound } from '../utils/chessAudio';
 
 /**
  * Notification Service — Real-time PostgreSQL notifications for Arena
@@ -111,6 +112,9 @@ export function subscribeToPlayerNotifications(playerId, onNotification) {
         },
         (payload) => {
           try {
+            if (payload?.eventType === 'INSERT') {
+              playTinNotificationSound();
+            }
             if (typeof onNotification === 'function') {
               onNotification(payload);
             }

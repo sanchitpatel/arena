@@ -250,6 +250,66 @@ export function playDefeatSound() {
   triggerHaptic(20);
 }
 
+/**
+ * 6. Tin Notification Chime:
+ * Produces a crisp, bright, metallic "tin" bell ping using dual inharmonic sine & metallic overtones.
+ * Perfect for incoming duel alerts and real-time push notifications.
+ */
+export function playTinNotificationSound() {
+  if (isMuted) return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    const t = ctx.currentTime;
+
+    const playMetallicPing = (startTime, fundamentalFreq, gainVol, decaySec) => {
+      // 1. Pure crystalline core tone
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(fundamentalFreq, startTime);
+
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.linearRampToValueAtTime(gainVol, startTime + 0.003);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + decaySec);
+
+      osc.connect(gain);
+      gain.connect(master || ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + decaySec + 0.05);
+
+      // 2. High inharmonic metallic overtone (gives the distinctive "tin / bell" ring)
+      const overtone = ctx.createOscillator();
+      const overtoneGain = ctx.createGain();
+      overtone.type = 'triangle';
+      overtone.frequency.setValueAtTime(fundamentalFreq * 2.76, startTime);
+
+      overtoneGain.gain.setValueAtTime(0.0001, startTime);
+      overtoneGain.gain.linearRampToValueAtTime(gainVol * 0.4, startTime + 0.002);
+      overtoneGain.gain.exponentialRampToValueAtTime(0.0001, startTime + decaySec * 0.45);
+
+      overtone.connect(overtoneGain);
+      overtoneGain.connect(master || ctx.destination);
+
+      overtone.start(startTime);
+      overtone.stop(startTime + decaySec * 0.45 + 0.05);
+    };
+
+    // Crisp dual-tone metallic "tin" chime: A6 (1760 Hz) -> D7 (2349 Hz)
+    playMetallicPing(t, 1760, 0.28, 0.32);
+    playMetallicPing(t + 0.075, 2349.3, 0.35, 0.42);
+
+    triggerHaptic([35, 45, 35]);
+  } catch (err) {
+    console.warn('[Audio] playTinNotificationSound failed:', err);
+  }
+}
+
 export function triggerHaptic(pattern = 15) {
   if (typeof window !== 'undefined' && 'vibrate' in navigator) {
     try { navigator.vibrate(pattern); } catch {}

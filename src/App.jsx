@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import DashboardApp from './components/dashboard/DashboardApp';
+import { initAudioUnlock } from './utils/chessAudio';
 
 // Non-critical legal and error routes lazy-loaded on demand
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
@@ -52,6 +53,7 @@ export default function App() {
   const [route, setRoute] = useState(resolveRoute);
 
   useEffect(() => {
+    initAudioUnlock();
     const handleNav = () => setRoute(resolveRoute());
     window.addEventListener('popstate', handleNav);
     window.addEventListener('hashchange', handleNav);
