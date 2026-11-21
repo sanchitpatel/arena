@@ -1780,7 +1780,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
                     window.dispatchEvent(new CustomEvent('arena:open-scanner'));
                   }
                 }}
-                className="w-full py-2.5 px-3 rounded-2xl bg-[#F2F7FC] hover:bg-white active:scale-[0.98] border border-white text-zinc-800 text-xs font-bold flex items-center justify-center gap-2 shadow-[2px_2px_5px_#c8d0db,-2px_-2px_5px_#ffffff] cursor-pointer transition-all"
+                className="w-full py-2.5 px-3 rounded-2xl bg-[#F2F7FC] hover:bg-slate-100/70 active:scale-[0.98] border border-white/90 text-zinc-800 text-xs font-bold flex items-center justify-center gap-2 shadow-[inset_2px_2px_5px_#c8d0db,inset_-2px_-2px_5px_#ffffff] cursor-pointer transition-all"
               >
                 <Scan size={16} weight="bold" className="text-sky-600" />
                 <span>Scan Opponent's QR Badge to Duel</span>
