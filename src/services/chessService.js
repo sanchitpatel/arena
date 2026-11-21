@@ -1,4 +1,5 @@
 import { supabase } from '../utils/supabase';
+import { getPlayerUuid, getDeviceId } from '../utils/playerId';
 
 /**
  * ARENA CHESS SERVICE (100% DATABASE-NATIVE MODE)
@@ -163,16 +164,23 @@ export async function submitMove({
   endReason = null,
 }) {
   try {
+    const resolvedPlayerId = playerId || getPlayerUuid();
+    if (!resolvedPlayerId) {
+      console.error('[ChessService] submitMove: No valid player UUID available.');
+      throw new Error('Player identity not found. Please refresh and try again.');
+    }
+    const resolvedDeviceId = deviceId || getDeviceId();
+
     const { data, error } = await supabase.rpc('submit_chess_move', {
       p_game_id: gameId,
-      p_player_id: playerId,
-      p_device_id: deviceId,
+      p_player_id: resolvedPlayerId,
+      p_device_id: resolvedDeviceId || null,
       p_new_fen: newFen,
-      p_new_pgn: newPgn,
-      p_is_game_over: isGameOver,
-      p_end_status: endStatus,
-      p_winner_id: winnerId,
-      p_end_reason: endReason,
+      p_new_pgn: newPgn || '',
+      p_is_game_over: Boolean(isGameOver),
+      p_end_status: endStatus || null,
+      p_winner_id: winnerId || null,
+      p_end_reason: endReason || null,
     });
 
     if (error) throw error;
@@ -189,10 +197,12 @@ export async function submitMove({
 // 8. Direct Database Resign RPC (With Device Identity Check)
 export async function resignChessGame(gameId, playerId, deviceId) {
   try {
+    const resolvedPlayerId = playerId || getPlayerUuid();
+    const resolvedDeviceId = deviceId || getDeviceId();
     const { data, error } = await supabase.rpc('resign_chess_game', {
       p_game_id: gameId,
-      p_player_id: playerId,
-      p_device_id: deviceId,
+      p_player_id: resolvedPlayerId,
+      p_device_id: resolvedDeviceId || null,
     });
 
     if (error) throw error;
@@ -209,9 +219,10 @@ export async function resignChessGame(gameId, playerId, deviceId) {
 // 9. Claim Timeout / Flag-Fall
 export async function claimChessTimeout(gameId, claimingPlayerId) {
   try {
+    const resolvedClaimingId = claimingPlayerId || getPlayerUuid();
     const { data, error } = await supabase.rpc('claim_chess_timeout', {
       p_game_id: gameId,
-      p_claiming_player_id: claimingPlayerId,
+      p_claiming_player_id: resolvedClaimingId,
     });
     if (error) throw error;
     return data;

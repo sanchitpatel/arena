@@ -315,7 +315,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
   const lastInteractionRef = useRef({ time: 0, square: null });
   const pendingMoveRef = useRef(null);
   const activeChallengeIdRef = useRef(null);
-  const playerIdRef = useRef(player?.id || getPlayerUuid());
+  const playerIdRef = useRef(player?.id || player?.player_id || getPlayerUuid());
   const actionErrorTimeoutRef = useRef(null);
   const [queueSeconds, setQueueSeconds] = useState(0);
 
@@ -324,8 +324,8 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
   }, [activeChallengeId]);
 
   useEffect(() => {
-    if (player?.id) {
-      playerIdRef.current = player.id;
+    if (player?.id || player?.player_id) {
+      playerIdRef.current = player?.id || player?.player_id;
     } else if (!playerIdRef.current) {
       const stored = getPlayerUuid();
       if (stored) {
@@ -340,7 +340,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
           .catch(() => {});
       }
     }
-  }, [player?.id]);
+  }, [player?.id, player?.player_id]);
 
   // Unmount safety: Cancel queue challenge if player navigates away while matching
   useEffect(() => {
@@ -819,7 +819,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
       if (isStale) {
         const res = await joinOrCreateMatchmaking(player?.id, 300).catch(() => null);
         if (!alive) {
-          if (res?.challenge_id) cancelChessMatchmaking(res.challenge_id, player.id).catch(() => {});
+          if (res?.challenge_id) cancelChessMatchmaking(res.challenge_id, playerIdRef.current || player?.id || player?.player_id || getPlayerUuid()).catch(() => {});
           return;
         }
         if (res?.action === 'waiting' && res.challenge_id) {
@@ -1035,7 +1035,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
   };
 
   const handleCancelQueue = async () => {
-    const currentId = player?.id || playerIdRef.current;
+    const currentId = playerIdRef.current || player?.id || player?.player_id || getPlayerUuid();
     if (activeChallengeId && currentId) {
       try {
         const res = await cancelChessMatchmaking(activeChallengeId, currentId);
@@ -1337,6 +1337,12 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
 
       // PVP Mode: Direct database submission with rollback on failure
       const deviceId = getDeviceId();
+      const effectivePlayerId = playerIdRef.current || player?.id || player?.player_id || getPlayerUuid();
+      if (!effectivePlayerId) {
+        showActionError('Player identity not found. Please refresh and try again.');
+        return false;
+      }
+
       const newFen = chessRef.current.fen();
       const newPgn = chessRef.current.pgn();
       const isGameOver = chessRef.current.isGameOver();
@@ -1347,7 +1353,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
       if (isGameOver) {
         if (chessRef.current.isCheckmate()) {
           endStatus = 'checkmate';
-          winnerId = player.id;
+          winnerId = effectivePlayerId;
           endReason = 'checkmate';
         } else {
           endStatus = 'stalemate';
@@ -1372,7 +1378,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
 
       submitMove({
         gameId,
-        playerId: player.id,
+        playerId: effectivePlayerId,
         deviceId,
         newFen,
         newPgn,
@@ -1560,7 +1566,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
       return;
     }
 
-    const currentId = player?.id || playerIdRef.current;
+    const currentId = playerIdRef.current || player?.id || player?.player_id || getPlayerUuid();
     if (gameId && currentId) {
       setLoadingAction(true);
       try {
@@ -1586,7 +1592,7 @@ export function ChessView({ player, onBack, onNavigate, onUpdatePlayer, isActive
       handleBotGameOver('player_timeout');
       return;
     }
-    const currentId = player?.id || playerIdRef.current;
+    const currentId = playerIdRef.current || player?.id || player?.player_id || getPlayerUuid();
     if (hasClaimedTimeoutRef.current || !gameId || !currentId) return;
     hasClaimedTimeoutRef.current = true;
     claimChessTimeout(gameId, currentId).catch((err) => {
